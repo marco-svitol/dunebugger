@@ -144,7 +144,7 @@ def cycle(channel):
 
     if testdunebuggger:
         #Test relè
-        RPiwrite("LuciChiesa",1)
+        RPiwrite("DimGiorno",1)
         return
         t = 0
         vplaysfx(easteregg)
@@ -207,7 +207,7 @@ def cycle(channel):
         # RPiwrite("ArduinoReset",1)
         # time.sleep(0.3)
         # RPiwrite("ArduinoReset",0)
-        musicplayer.audio_set_channel(2)
+        #musicplayer.audio_set_channel(2)
         if eastereggEnabled:
             time.sleep(1)
             if GPIO.input(channel) == 1:
@@ -220,17 +220,16 @@ def cycle(channel):
         RPiwrite("LuceSopraNat",0)
         RPiwrite("Fuochi",0)
         waituntil(2) #
-        RPiwrite("DimBosco",1)
+        RPiwrite("LuceBosco",1)
         waituntil(15)
         vplaysfx(sfxuccelli)
         waituntil(70) #durata strofa bosco
-        musicplayer.audio_set_channel(3)
+        #musicplayer.audio_set_channel(3)
         RPiwrite("LuciChiesa",1)
-        RPiwrite("DimBosco",0)
+        RPiwrite("LuceBosco",0)
         waituntil(100)	
 
-        #Natività
-        musicplayer.audio_set_channel(1)
+        #primo ciclo: notte 
         vplaysfx(sfxfile)
         RPiwrite("Fontane",1)
         waituntil(103)
@@ -244,47 +243,66 @@ def cycle(channel):
         waituntil(114)
         RPiwrite("Fuochi",1)
         waituntil(116)
-        RPiwrite("Case3",1)
-        waituntil(125)
         RPiwrite("DimAlba",1)
-        waituntil(140)
+        waituntil(125)
         RPiwrite("Fuochi",0)
         waituntil(145)
-        RPiwrite("Case3",0)
-        waituntil(150)
-        RPiwrite("DimGiorno,1")
+        RPiwrite("DimAlba",0)
+        RPiwrite("DimGiorno",1)
         RPiwrite("Case2",0)
         waituntil(160)
         RPiwrite("DimTramonto",1)
         RPiwrite("Case1",0)
-        waituntil(230)
+        waituntil(190)
+        RPiwrite("DimGiorno",0)
+        waituntil(200)
+        RPiwrite("DimTramonto",0)
+        RPiwrite("FarettoVolta",0)
+        waituntil(205)
+        RPiwrite("Fuochi",1)
+        RPiwrite("Case2",1)
+        waituntil(210)
+        RPiwrite("Case1",1)
+        
+        #secondo ciclo
+        waituntil(225)
+        RPiwrite("DimAlba",1)
+        waituntil(240)
+        RPiwrite("Fuochi",0)
+        waituntil(250)
+        RPiwrite("DimGiorno",1)
+        RPiwrite("Case2",0)
+        waituntil(260)
+        RPiwrite("DimTramonto",1)
+        RPiwrite("Case1",0)
+        waituntil(290)
         RPiwrite("DimAlba",0)
         RPiwrite("DimGiorno",0)
-        waituntil(303)
+        waituntil(320)
         RPiwrite("DimTramonto",0)
-        waituntil(321)
+        waituntil(331)
         RPiwrite("FarettoVolta",0)
-        waituntil(348)
-        RPiwrite("Fuochi")
-        waituntil(367)
-        RPiwrite("Case3",1)
-        waituntil(379)
+        waituntil(338)
+        RPiwrite("Fuochi",1)
+        waituntil(347)
+        #RPiwrite("Case3",1)
+        waituntil(359)
         RPiwrite("Case2",1)
-        waituntil(383)
+        waituntil(367)
         RPiwrite("Case1",1)
-        waituntil(407)
+        waituntil(377)
         RPiwrite("FarettoVolta",1)
-        waituntil(453)
+        waituntil(383)
         RPiwrite("Fuochi,0")
-        waituntil(480)
+        waituntil(390)
         RPiwrite("Case2",0)
         RPiwrite("Fontane",0)
-        waituntil(487)
+        waituntil(399)
         vstopaudio()
         RPiwrite("Case1",0)
-        waituntil(490)
-        RPiwrite("Case3",0)
-        waituntil(495)
+        waituntil(403)
+        #RPiwrite("Case3",0)
+        waituntil(409)
         RPiwrite("FarettoVolta",0)
         cycleoffset = 0
         if GPIO.input(GPIOMap["I_ThreeStateLoop"])!=1 :
@@ -344,7 +362,7 @@ try:
             "DimChiesa":GPIOMapPhysical["Dimmer3"],
             "DimAlba":GPIOMapPhysical["Dimmer4"],
             "DimTramonto":GPIOMapPhysical["Dimmer2"],
-            "DimTramonto":GPIOMapPhysical["Dimmer6"],
+            "DimGiorno":GPIOMapPhysical["Dimmer6"],
             "Accensione":GPIOMapPhysical["Rele6"],
             "AmpliWood":GPIOMapPhysical["Rele7"],
             "Fontane":GPIOMapPhysical["Rele8"],
@@ -416,7 +434,7 @@ try:
     eastereggEnabled = False
     cycleoffset = 0
 
-    testdunebuggger = True
+    testdunebuggger = False
 
     GPIO.add_event_detect(GPIOMap["I_StartButton"],GPIO.RISING,callback=cycle,bouncetime=5)
 
