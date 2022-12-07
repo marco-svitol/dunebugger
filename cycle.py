@@ -146,6 +146,11 @@ def cycle(channel):
         #Test relè
         t = 0
         vplaysfx(easteregg)
+        musicplayer.audio_set_channel(1)
+        vplaysfx(easteregg)
+        musicplayer.audio_set_channel(2)
+        vplaysfx(easteregg)
+        musicplayer.audio_set_channel(3)
         for k in GPIOMap.keys():
             if not k.startswith('Dim') and not k.startswith('I_'):
                 logger.info ("GPIO"+str(k))
@@ -200,6 +205,7 @@ def cycle(channel):
         # RPiwrite("ArduinoReset",1)
         # time.sleep(0.3)
         # RPiwrite("ArduinoReset",0)
+        musicplayer.audio_set_channel(2)
         if eastereggEnabled:
             time.sleep(1)
             if GPIO.input(channel) == 1:
@@ -216,11 +222,13 @@ def cycle(channel):
         waituntil(15)
         vplaysfx(sfxuccelli)
         waituntil(70) #durata strofa bosco
+        musicplayer.audio_set_channel(3)
         RPiwrite("LuciChiesa",1)
         RPiwrite("DimBosco",0)
         waituntil(100)	
 
         #Natività
+        musicplayer.audio_set_channel(1)
         vplaysfx(sfxfile)
         RPiwrite("Fontane",1)
         waituntil(103)
