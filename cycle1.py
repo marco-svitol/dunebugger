@@ -144,7 +144,7 @@ def cycle(channel):
 
     if testdunebuggger:
         #Test relè
-        RPiwrite("LuciChiesa",1)
+        RPiwrite("DimGiorno",1)
         return
         t = 0
         vplaysfx(easteregg)
@@ -207,7 +207,7 @@ def cycle(channel):
         # RPiwrite("ArduinoReset",1)
         # time.sleep(0.3)
         # RPiwrite("ArduinoReset",0)
-        musicplayer.audio_set_channel(2)
+        #musicplayer.audio_set_channel(2)
         if eastereggEnabled:
             time.sleep(1)
             if GPIO.input(channel) == 1:
@@ -220,17 +220,17 @@ def cycle(channel):
         RPiwrite("LuceSopraNat",0)
         RPiwrite("Fuochi",0)
         waituntil(2) #
-        RPiwrite("DimBosco",1)
+        RPiwrite("LuceBosco",1)
         waituntil(15)
         vplaysfx(sfxuccelli)
         waituntil(70) #durata strofa bosco
-        musicplayer.audio_set_channel(3)
+        #musicplayer.audio_set_channel(3)
         RPiwrite("LuciChiesa",1)
-        RPiwrite("DimBosco",0)
+        RPiwrite("LuceBosco",0)
         waituntil(100)	
 
         #Natività
-        musicplayer.audio_set_channel(1)
+        #musicplayer.audio_set_channel(1)
         vplaysfx(sfxfile)
         RPiwrite("Fontane",1)
         waituntil(103)
@@ -244,15 +244,15 @@ def cycle(channel):
         waituntil(114)
         RPiwrite("Fuochi",1)
         waituntil(116)
-        RPiwrite("Case3",1)
+        #RPiwrite("Case3",1)
         waituntil(125)
         RPiwrite("DimAlba",1)
         waituntil(140)
         RPiwrite("Fuochi",0)
         waituntil(145)
-        RPiwrite("Case3",0)
+        #RPiwrite("Case3",0)
         waituntil(150)
-        RPiwrite("DimGiorno,1")
+        RPiwrite("DimGiorno",1)
         RPiwrite("Case2",0)
         waituntil(160)
         RPiwrite("DimTramonto",1)
@@ -265,9 +265,9 @@ def cycle(channel):
         waituntil(321)
         RPiwrite("FarettoVolta",0)
         waituntil(348)
-        RPiwrite("Fuochi")
+        RPiwrite("Fuochi",1)
         waituntil(367)
-        RPiwrite("Case3",1)
+        #RPiwrite("Case3",1)
         waituntil(379)
         RPiwrite("Case2",1)
         waituntil(383)
@@ -283,7 +283,7 @@ def cycle(channel):
         vstopaudio()
         RPiwrite("Case1",0)
         waituntil(490)
-        RPiwrite("Case3",0)
+        #RPiwrite("Case3",0)
         waituntil(495)
         RPiwrite("FarettoVolta",0)
         cycleoffset = 0
@@ -344,7 +344,7 @@ try:
             "DimChiesa":GPIOMapPhysical["Dimmer3"],
             "DimAlba":GPIOMapPhysical["Dimmer4"],
             "DimTramonto":GPIOMapPhysical["Dimmer2"],
-            "DimTramonto":GPIOMapPhysical["Dimmer6"],
+            "DimGiorno":GPIOMapPhysical["Dimmer6"],
             "Accensione":GPIOMapPhysical["Rele6"],
             "AmpliWood":GPIOMapPhysical["Rele7"],
             "Fontane":GPIOMapPhysical["Rele8"],
@@ -416,7 +416,7 @@ try:
     eastereggEnabled = False
     cycleoffset = 0
 
-    testdunebuggger = True
+    testdunebuggger = False
 
     GPIO.add_event_detect(GPIOMap["I_StartButton"],GPIO.RISING,callback=cycle,bouncetime=5)
 
