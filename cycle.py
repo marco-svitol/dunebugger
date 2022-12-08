@@ -189,6 +189,7 @@ def cycle(channel):
         
         musicVolume = normalMusicVolume
         sfxVolume = normalSfxVolume
+        logger.debug("MusicVolume: "+str(musicVolume)+" SfxVolume: "+str(sfxVolume))
         if not ignoreQuietTime:
             if not isinstance(InTime.getNTPTime(),int): #time not synced
                 musicVolume = quietMusicVol
@@ -207,7 +208,7 @@ def cycle(channel):
         # RPiwrite("ArduinoReset",1)
         # time.sleep(0.3)
         # RPiwrite("ArduinoReset",0)
-        #musicplayer.audio_set_channel(2)
+        musicplayer.audio_set_channel(1)
         if eastereggEnabled:
             time.sleep(1)
             if GPIO.input(channel) == 1:
@@ -215,8 +216,11 @@ def cycle(channel):
             else:
                 vplaymusic(False)
         else:
+            logger.debug("Playing music...")
             vplaymusic(False)
-        
+        musicplayer.audio_set_channel(1)
+        musicplayer.audio_set_volume(normalMusicVolume)
+        sfxplayer.audio_set_volume(normalSfxVolume)
         RPiwrite("LuceSopraNat",0)
         RPiwrite("Fuochi",0)
         waituntil(2) #
@@ -224,7 +228,6 @@ def cycle(channel):
         waituntil(15)
         vplaysfx(sfxuccelli)
         waituntil(70) #durata strofa bosco
-        #musicplayer.audio_set_channel(3)
         RPiwrite("LuciChiesa",1)
         RPiwrite("LuceBosco",0)
         waituntil(100)	
@@ -265,6 +268,7 @@ def cycle(channel):
         RPiwrite("FarettoVolta",1)
         waituntil(213)
         RPiwrite("LedFontana",1)
+        
         #secondo ciclo
         waituntil(225)
         RPiwrite("DimAlba",1)
@@ -298,7 +302,7 @@ def cycle(channel):
         RPiwrite("LedFontana",1)
         RPiwrite("Fuochi",1)
         waituntil(390)
-        
+
         RPiwrite("Case2",0)
         RPiwrite("Fontane",0)
         waituntil(399)
@@ -430,8 +434,8 @@ try:
     sfxpath = "/home/pi/dunebugger/sfx/"
     sfxfile = "2009.mp3"
     easteregg = "ohhche.mp3"
-    entrysong = "fincosong2022.wav"
-    sfxuccelli = "allodole.m4a"
+    entrysong = "fincosong2022.mp3"
+    sfxuccelli = "allodole.mp3"
 
     cyclespeed = 1#0.2
     ignoreThreeStateSingle = True
