@@ -1,5 +1,0 @@
-140sec alba
-170sec giorno
-180 sec tramonto
-190 sec spegn giorno
-200 sec spegno tramonto
