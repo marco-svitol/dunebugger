@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # coding: utf8
 import os, time, RPi.GPIO as GPIO, serial, random, vlc, subprocess, logging, logging.config, InTime
+
 from datetime import datetime
 
 #Functions definition:
@@ -19,10 +20,16 @@ def dimmer1(channel, level, speed):
     args = ['python','/home/pi/dunebugger/dimmer1.py','0x27',str(channel),str(level),str(speed)]
     subprocess.Popen(args)
 
-def RPiwrite(gpio,bit):
+def RPiwrite(gpio,at,bit):
     bit = not bit
+    atsec = get_seconds(at)
+    waituntil(atsec)
     GPIO.output(GPIOMap[gpio],bit)
     logger.debug("RPi "+gpio+" write "+str(bit))
+
+def get_seconds(time_str):
+    mm, ss = time_str.split(':')
+    return int(mm) * 60 + int(ss)
 
 def waituntil(sec):
     global cyclespeed
@@ -221,8 +228,8 @@ def cycle(channel):
         musicplayer.audio_set_channel(1)
         musicplayer.audio_set_volume(normalMusicVolume)
         sfxplayer.audio_set_volume(normalSfxVolume)
-        RPiwrite("LuceSopraNat",0)
-        RPiwrite("Fuochi",0)
+        RPiwrite("0:02","LuceSopraNat",0)
+        RPiwrite("0:02","Fuochi",0)
         waituntil(2) #
         RPiwrite("LuceBosco",1)
         waituntil(15)
