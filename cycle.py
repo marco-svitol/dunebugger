@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
 # coding: utf8
-import os, time, RPi.GPIO as GPIO, serial, random, vlc, subprocess, logging, logging.config, InTime
-
+import os, time, serial, random, vlc, subprocess, logging, logging.config, InTime
 from datetime import datetime
+#from supervisor import getswitchstate
+from supervisoremulator import getswitchstate
+#import RPi.GPIO as GPIO
+import gpioemulator as GPIO
 
 #Functions definition:
+pauseSupervisor = False
 
 def ArduinoSend(command):
     global Arduino    
@@ -17,15 +21,18 @@ def ArduinoSend(command):
         logger.warning("ignoring command "+ccommand+" to Arduino")
 
 def dimmer1(channel, level, speed):
-    args = ['python','/home/pi/dunebugger/dimmer1.py','0x27',str(channel),str(level),str(speed)]
+    args = ['python','./dimmer1.py','0x27',str(channel),str(level),str(speed)]
     subprocess.Popen(args)
 
-def RPiwrite(gpio,at,bit):
+def RPiwrite(gpio, bit):
     bit = not bit
-    atsec = get_seconds(at)
-    waituntil(atsec)
     GPIO.output(GPIOMap[gpio],bit)
     logger.debug("RPi "+gpio+" write "+str(bit))
+
+def RPiwriteat(at, gpio, bit):
+    atsec = get_seconds(at)
+    waituntil(atsec)
+    RPiwrite(gpio,bit)
 
 def get_seconds(time_str):
     mm, ss = time_str.split(':')
@@ -38,6 +45,13 @@ def waituntil(sec):
     time.sleep((sec-cycleoffset) * cyclespeed)
     cycleoffset = sec
 
+def setStandbyState(bit):
+    logger.info("Setting stand by state to "+str(bit))
+    RPiwrite("LuceSopraNat",bit)
+    RPiwrite("AmpliWood",bit)
+    RPiwrite("Fuochi",bit)
+    RPiwrite("Accensione",bit)
+    
 #>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>      Music section     <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 def vplaymusic(customsong):
     global musicplayer
@@ -56,12 +70,12 @@ def vplaymusic(customsong):
         fileplaylist = fileplaylist[:19]  # get only first 20 songs
 
     #Velasquez 2022 Finco entry song
-    playlist.add_media(vlcinstance.media_new(sfxpath + entrysong))    
+    #playlist.add_media(vlcinstance.media_new(sfxpath + entrysong))    
 
     if customsong: #eastereggg
         logger.info("EasterEgg enabled!!")
         playlist.add_media(vlcinstance.media_new(sfxpath + easteregg))
-        playlist.add_media(vlcinstance.media_new(sfxpath + "A.mp3"))
+        playlist.add_media(vlcinstance.media_new(sfxpath + "dunebuggy.mp3"))
 
     for song in range(len(fileplaylist)):  # add path to songname
         playlist.add_media(vlcinstance.media_new(musicpath + fileplaylist[song]))
@@ -186,6 +200,10 @@ def cycle(channel):
         vstopaudio()
         return
 
+    if getswitchstate == False:
+        setStandbyState(1)
+        #extend switch on of for 30 minutes
+        time.sleep(5)
 
     while True:
 
@@ -228,12 +246,12 @@ def cycle(channel):
         musicplayer.audio_set_channel(1)
         musicplayer.audio_set_volume(normalMusicVolume)
         sfxplayer.audio_set_volume(normalSfxVolume)
-        RPiwrite("0:02","LuceSopraNat",0)
-        RPiwrite("0:02","Fuochi",0)
+        RPiwriteat("0:02","LuceSopraNat",0)
+        RPiwriteat("0:02","Fuochi",0)
         waituntil(2) #
         RPiwrite("LuceBosco",1)
         waituntil(15)
-        vplaysfx(sfxuccelli)
+        #vplaysfx(sfxuccelli)
         waituntil(70) #durata strofa bosco
         RPiwrite("LuciChiesa",1)
         RPiwrite("LuceBosco",0)
@@ -329,7 +347,7 @@ def cycle(channel):
     logger.info("\nDunebugger listening. Press enter to quit\n")
 
 try:
-    logging.config.fileConfig('/home/pi/dunebugger/dunebuggerlogging.conf') #load logging config file
+    logging.config.fileConfig('./dunebuggerlogging.conf') #load logging config file
     logger = logging.getLogger('dunebuggerLog')
     logger.info('DuneBugger started')        
     GPIO.setwarnings(False)
@@ -417,11 +435,7 @@ try:
     GPIO.setup(chan_contr, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
     logger.info ("GPIO     : initilized")
     
-    # set initial state
-    RPiwrite("LuceSopraNat",1)
-    RPiwrite("AmpliWood",1)
-    RPiwrite("Fuochi",1)
-    RPiwrite("Accensione",1)
+    #setStandbyState(1)
     #Music and sfx
     vlcinstance = vlc.Instance('--aout=alsa')
     musiclistplayer = vlcinstance.media_list_player_new()
@@ -437,8 +451,8 @@ try:
     cyclelength = 372
 	
     fadeoutsec = 8 #fade out seconds
-    musicpath = "/home/pi/dunebugger/music/"
-    sfxpath = "/home/pi/dunebugger/sfx/"
+    musicpath = "./music/"
+    sfxpath = "./sfx/"
     sfxfile = "2009.mp3"
     easteregg = "ohhche.mp3"
     entrysong = "fincosong2022.mp3"
@@ -447,7 +461,7 @@ try:
     cyclespeed = 1#0.2
     ignoreThreeStateSingle = True
     ignoreQuietTime = True
-    eastereggEnabled = False
+    eastereggEnabled = True
     cycleoffset = 0
 
     testdunebuggger = False
@@ -457,13 +471,26 @@ try:
     #GPIO.add_event_detect(GPIOMap["ThreeStateLoop"],GPIO.RISING,callback=cycle,bouncetime=5)
     logger.info ("GPIO     : Callback function 'cycle' binded to event detection on GPIO "+str(GPIOMap["I_StartButton"]))
         
-    input("\nDunebugger listening. Press enter to quit\n")
+    while True:    
+        userinput=input("\nDunebugger listening. Press enter to quit\n")
+        logger.info("Key:"+userinput)
+        if userinput=="off":
+            setStandbyState(0)
+        elif userinput=="on":
+            setStandbyState(1)
+            #reschedule sw off in 30 mins
+        elif userinput=="c":
+            #GPIO.remove_event_detect(GPIOMap["I_StartButton"])
+            cycle(GPIOMap["I_StartButton"])
+            #GPIO.add_event_detect(GPIOMap["I_StartButton"],GPIO.RISING,callback=cycle,bouncetime=5)
+        elif userinput=="qq":
+            break
 
 except KeyboardInterrupt:
     logger.debug ("stopped through keyboard")
 	
 except Exception as exc:
-    logger.critical ("Exception: "+str(exc)+". Exiting." )
+    logger.exception ("Exception: "+str(exc)+". Exiting." )
 
 finally:
     logger.info ("GPIO     : removing interrupt on GPIO "+str(GPIOMap["I_StartButton"])+" and cleaning up GPIOs")

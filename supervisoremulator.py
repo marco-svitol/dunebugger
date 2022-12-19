@@ -1,0 +1,2 @@
+def getswitchstate():
+    return True

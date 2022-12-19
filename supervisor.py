@@ -1,56 +1,15 @@
 #!/usr/bin/python3
-import os,schedule,time,subprocess, pipes, logging, logging.config
+import schedule,time, logging, logging.config
 from datetime import time as dtime
 from datetime import datetime
 from itertools import tee, islice, chain
 from InTime import getNTPTime
+#import tmux
+import tmuxemulator as tmux
 
 #TODO verific timesync su orologio hw
 #TODO forza switch on tramite tree state
-
-def tmuxsessioneexist(sessname):
-    cmd = ["tmux","has-session","-t",sessname]
-    res = subprocess.Popen(cmd)
-    res.communicate()[0]
-    if res.returncode == 1: #session does not exist
-        return False
-    return True
-
-def switchon():
-    global showoffsched
-    cmd = ["tmux","send","-t",mainpaneid,"q","ENTER"]
-    subprocess.Popen(cmd)
-    cmd = ["tmux","send","-t",mainpaneid,"python /home/pi/dunebugger/cycle.py","ENTER"]
-    logger.info ("Switching on dunebugger")
-    subprocess.Popen(cmd)
-    showoffsched = True
-
-def switchoff():
-    global showonsched
-    if timesyncJob is None:
-        logger.info ("Switching off dunebugger")
-        cmd = ["tmux","send","-t",mainpaneid,"ENTER"]
-        subprocess.Popen(cmd)
-    else:
-        logger.warning("Time not synced, scheduled switching off not done")
-    showonsched = True
-
-def tmuxnewpane():
-    pipepath = "paneid"
-    cmd = ["tmux","split-window","-h","-c","/home/pi/dunebugger"]
-    subprocess.Popen(cmd)
-    if not os.path.exists(pipepath):
-        logger.debug("Creating named pipe")
-        os.mkfifo(pipepath)
-    cmd = ["tmux","send","echo $TMUX_PANE > ",pipepath,"ENTER"]
-    subprocess.Popen(cmd)
-    time.sleep(0.5)
-    pipe = os.open(pipepath,os.O_RDONLY)
-    paneid = (os.read(pipe,100)).decode('ascii')
-    os.close(pipe)
-    os.remove(pipepath)
-    logger.info("New tmux pane created with id: "+paneid.strip())
-    return paneid.strip()
+global switchstate
 
 def previous_and_next(some_iterable):
     prevs, items, nexts = tee(some_iterable, 3)
@@ -119,7 +78,27 @@ def checktimeonandswitch():
         logger.info("Current time is after a switch off and before a switch on: switching off")
         switchoff()
 
-logging.config.fileConfig('/home/pi/dunebugger/supervisorlogging.conf') #load logging config file
+def getswitchstate():
+    return switchstate
+
+def switchon():
+    global showoffsched, switchstate
+    tmux.switchon()
+    logger.info ("Standby state on")
+    showoffsched = True
+    switchstate = True
+
+def switchoff():
+    global showonsched, switchstate
+    if timesyncJob is None:
+        tmux.switchoff()
+        logger.info ("Standby state off")
+        switchstate = False
+    else:
+        logger.warning("Time not synced, scheduled switching off not done")
+    showonsched = True
+
+logging.config.fileConfig('./supervisorlogging.conf') #load logging config file
 logger = logging.getLogger('supervisorLog')
 logger.info('Dunebugger supervisor started')
 
@@ -137,7 +116,8 @@ checkinterval = 20 #checkscheduling interval
 showoffsched = False
 showonsched = False
 
-mainpaneid = tmuxnewpane() #creates new tmux pane and return ID num
+#logger.info("New tmux pane created with id: "+str(mainpaneid))
+
 
 logger.info("Checking if time sync is available...")
 
@@ -172,7 +152,7 @@ if len(onoffsorted) % 2 != 0:
 for ind,onoff in enumerate(onoffsorted):
     if ind % 2 ==  starton :
         logger.debug("Adding SwitchOn scheduling at "+str(onoff))
-        schedule.every().day.at(str(onoff.hour)+":"+str(onoff.minute)).do(switchon)
+        schedule.every().day.at(str(onoff.hour).zfill(2)+":"+str(onoff.minute).zfill(2)).do(switchon)
     else:
         logger.debug("Adding SwitchOff scheduling at "+str(onoff))
         schedule.every().day.at(str(onoff.hour)+":"+str(onoff.minute)).do(switchoff)
