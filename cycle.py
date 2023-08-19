@@ -100,7 +100,6 @@ def vstopaudio():
             if sfxplayer is not None and svol > 0: svol-=1; sfxplayer.audio_set_volume(svol)
             print ('.',end="",flush=True)
             time.sleep(fadeoutpause)
-
     try:
         logger.info("")
         logger.info('Stopping music and sfx player')
@@ -124,9 +123,9 @@ def cycle(channel):
     global sfxVolume
     global cycleoffset
 
-    time.sleep(0.10)    # avoid catching a bouncing
+    time.sleep(bouncingTreshold)    # avoid catching a bouncing
     if GPIO.input(channel) != 1:
-        #logger.debug ("Bouncing: false interrupt on channel"+str(channel))
+        logger.debug ("Warning! Below treshold of "+str(bouncingTreshold)+" on channel"+str(channel))
         return
     if channel==GPIOMap["I_ThreeStateLoop"]: #switching three state to 'loop' mode triggers this function
         logger.info("ThreeState switched to 'loop' mode on channel"+str(channel))
@@ -140,49 +139,9 @@ def cycle(channel):
 
     if testdunebuggger:
         #Test relè
-        RPiwrite("DimGiorno",1)
         return
-        t = 0
-        vplaysfx(easteregg)
-        musicplayer.audio_set_channel(1)
-        vplaysfx(easteregg)
-        musicplayer.audio_set_channel(2)
-        vplaysfx(easteregg)
-        musicplayer.audio_set_channel(3)
-        for k in GPIOMap.keys():
-            if not k.startswith('Dim') and not k.startswith('I_'):
-                logger.info ("GPIO"+str(k))
-                waituntil(t)
-                RPiwrite(k,1)
-                t+=5
-                waituntil(t)
-                RPiwrite(k,0)
-                t+=1
-        #Test dimmer
-        vplaysfx(sfxuccelli)
-        t+=5
-        vplaymusic(False)
-        for k in GPIOMap.keys():
-            if k.startswith('Dim') and not k.startswith('I_'):
-                logger.info ("GPIO"+str(k))
-                waituntil(t)
-                RPiwrite(k,1)
-                t+=30
-                waituntil(t)
-                RPiwrite(k,0)
-                t+=2
-        cycleoffset = 0
-        vstopaudio()
-        return
-
 
     while True:
-
-        #ArduinoDimmerStart()
-        ##ArduinoSend(Ch1Rst)
-        ##ArduinoSend(Ch1FIn)
-        #check current date against calendar delle messe per impostare volume
-        
         musicVolume = normalMusicVolume
         sfxVolume = normalSfxVolume
         logger.debug("MusicVolume: "+str(musicVolume)+" SfxVolume: "+str(sfxVolume))
@@ -191,37 +150,19 @@ def cycle(channel):
                 musicVolume = quietMusicVol
                 sfxVolume = quietSfxVol
                 logger.info("Orario non sincronizzato: vol musica="+str(musicVolume)+" vol sfx="+str(sfxVolume))
-            elif InTime.duranteCelebrazioni(datetime.now(),cyclelength):
+            elif InTime.duranteCelebrazioni(datetime.now(),cyclelength): #check current date against calendar delle messe per impostare volume
                 musicVolume = quietMusicVol
                 sfxVolume = quietSfxVol
                 logger.info("Siamo durante una celebrazione: vol music="+str(musicVolume)+" vol sfx="+str(sfxVolume))
-        
-        # Lista di (Time,Action) - ordina la lista - eseguo una runpending() che scansiona la lista ed esegue action
-	#0 sec
 
-        # RPiwrite("ResetDimmer",1)
-        # time.sleep(2)
-        # RPiwrite("ArduinoReset",1)
-        # time.sleep(0.3)
-        # RPiwrite("ArduinoReset",0)
         musicplayer.audio_set_channel(1)
-        time.sleep(1)
+        time.sleep(2)
         if GPIO.input(channel) == 1:
-            logger.debug("Starting alternative cycle: button hold")
+            logger.debug("------ Starting alternative cycle: button hold")
             vplaymusic(False)
             musicplayer.audio_set_channel(1)
             musicplayer.audio_set_volume(normalMusicVolume)
             sfxplayer.audio_set_volume(normalSfxVolume)
-            # RPiwrite("LuceSopraNat",0)
-            # RPiwrite("Fuochi",0)
-            # waituntil(2) #
-            # RPiwrite("LuceBosco",1)
-            # waituntil(15)
-            # vplaysfx(sfxuccelli)
-            # waituntil(70) #durata strofa bosco
-            # RPiwrite("LuciChiesa",1)
-            # RPiwrite("LuceBosco",0)
-            # waituntil(100)	
 
             #primo ciclo: notte 
             vplaysfx(sfxfile)
@@ -282,7 +223,6 @@ def cycle(channel):
             waituntil(338)
             RPiwrite("Fuochi",1)
             waituntil(347)
-            #RPiwrite("Case3",1)
             waituntil(359)
             RPiwrite("Case2",1)
             waituntil(367)
@@ -293,7 +233,6 @@ def cycle(channel):
             RPiwrite("LedFontana",1)
             RPiwrite("Fuochi",1)
             waituntil(390)
-
             RPiwrite("Case2",0)
             RPiwrite("Fontane",0)
             waituntil(399)
@@ -301,11 +240,10 @@ def cycle(channel):
             RPiwrite("Case1",0)
             waituntil(403)
             RPiwrite("LedFontana",0)
-            #RPiwrite("Case3",0)
             waituntil(409)
             RPiwrite("FarettoVolta",0)
         else:
-            logger.debug("Starting main cycle")
+            logger.debug("------Starting main cycle")
             vplaymusic(True)
 
             musicplayer.audio_set_channel(1)
@@ -405,11 +343,13 @@ def cycle(channel):
             RPiwrite("FarettoVolta",0)
         cycleoffset = 0
         if GPIO.input(GPIOMap["I_ThreeStateLoop"])!=1 :
+            logger.info("\n----- Cycle end ----\n")
             break # only reason to stay in the loop is that gpio
         else:
+            logger.info("\n----- Cycle pause ----\n")
             time.sleep(2) # pause between cycles in loop mode
 
-    logger.info("\nDunebugger listening. Press enter to quit\n")
+    logger.info("\nDunebugger listening. Press enter to quit --\n")
 
 try:
     logging.config.fileConfig('/home/pi/dunebugger/dunebuggerlogging.conf') #load logging config file
@@ -518,7 +458,7 @@ try:
     quietMusicVol = 95
     quietSfxVol = 90
     cyclelength = 372
-	
+
     fadeoutsec = 8 #fade out seconds
     musicpath = "/home/pi/dunebugger/music/"
     sfxpath = "/home/pi/dunebugger/sfx/"
@@ -528,6 +468,7 @@ try:
     sfxuccelli = "allodole.mp3"
 
     cyclespeed = 1#0.2
+    bouncingTreshold = 0.25
     ignoreThreeStateSingle = True
     ignoreQuietTime = True
     eastereggEnabled = False
@@ -539,8 +480,8 @@ try:
 
     #GPIO.add_event_detect(GPIOMap["ThreeStateLoop"],GPIO.RISING,callback=cycle,bouncetime=5)
     logger.info ("GPIO     : Callback function 'cycle' binded to event detection on GPIO "+str(GPIOMap["I_StartButton"]))
-        
-    input("\nDunebugger listening. Press enter to quit\n")
+    logger.info ("MV:"+str(musicVolume)+"SV:"+str(sfxVolume)+"qMV:"+str(quietMusicVol)+"qSV:"+str(quietSfxVol))
+    input("\nDunebugger listening. Press enter to quit -\n")
 
 except KeyboardInterrupt:
     logger.debug ("stopped through keyboard")
