@@ -2,6 +2,8 @@
 # coding: utf8
 import os, time, RPi.GPIO as GPIO, serial, random, vlc, subprocess, logging, logging.config, InTime
 from datetime import datetime
+from setupGPIOs import GPIOMap, initGPIOs
+import motor
 
 #Functions definition:
 
@@ -46,10 +48,7 @@ def vplaymusic(customsong):
     random.shuffle(fileplaylist)  # shuffle list
 	
     if len(fileplaylist) > 20:
-        fileplaylist = fileplaylist[:19]  # get only first 20 songs
-
-    #Velasquez 2022 Finco entry song
-    playlist.add_media(vlcinstance.media_new(sfxpath + entrysong))    
+        fileplaylist = fileplaylist[:19]  # get only first 20 songs  
 
     if customsong: #eastereggg
         logger.info("EasterEgg enabled!!")
@@ -144,7 +143,15 @@ def cycle(channel):
 
     if testdunebuggger:
         #Test relè
-        RPiwrite("DimGiorno",1)
+        #RPiwrite("DimGiorno",1)
+        waituntil(3)
+        motor.start(1,ccw,100)
+        waituntil(10)
+        motor.stop(1)
+        waituntil(1)
+        motor.start(1,cw,50)
+        waituntil(10)
+        motor.stop(1)
         return
         t = 0
         vplaysfx(easteregg)
@@ -218,19 +225,9 @@ def cycle(channel):
         else:
             logger.debug("Playing music...")
             vplaymusic(False)
-        musicplayer.audio_set_channel(1)
+        #musicplayer.audio_set_channel(1)
         musicplayer.audio_set_volume(normalMusicVolume)
         sfxplayer.audio_set_volume(normalSfxVolume)
-        RPiwrite("LuceSopraNat",0)
-        RPiwrite("Fuochi",0)
-        waituntil(2) #
-        RPiwrite("LuceBosco",1)
-        waituntil(15)
-        vplaysfx(sfxuccelli)
-        waituntil(70) #durata strofa bosco
-        RPiwrite("LuciChiesa",1)
-        RPiwrite("LuceBosco",0)
-        waituntil(100)	
 
         #primo ciclo: notte 
         vplaysfx(sfxfile)
@@ -334,80 +331,7 @@ try:
         Arduino = False
         logger.critical('Arduino  : serial port on /dev/ttyUSB0 not available: no com with Arduino')
     
-    #Mapping GPIO Names
-    chan_I2C   = [2,3]
-    chan_releA = [5,11,9,10,22,27,17,4]
-    chan_releB = [21,20,16,12,7,8,25,24]
-    chan_contr = [6,13,19]
-    chan_ArduinoReset = [14]
-    chan_ResetDimmer = [15]
-    
-    GPIOMapPhysical={
-            "SDA1":chan_I2C[0],
-            "SCL1":chan_I2C[1],
-            "Dimmer6":chan_releA[0],
-            "Dimmer5":chan_releA[1],
-            "Dimmer4":chan_releA[2],
-            "Dimmer3":chan_releA[3],
-            "Dimmer2":chan_releA[4],
-            "Rele6":chan_releA[5],
-            "Rele7":chan_releA[6],
-            "Rele8":chan_releA[7],
-            "Rele9":chan_releB[0],
-            "Rele10":chan_releB[1],
-            "Rele11":chan_releB[2],
-            "Rele12":chan_releB[3],
-            "Rele13":chan_releB[4],
-            "Rele14":chan_releB[5],
-            "Rele15":chan_releB[6],
-            "Rele16":chan_releB[7],
-            "Dimmer1Reset":chan_ResetDimmer[0],
-            "ArduinoReset":chan_ArduinoReset[0],
-            "StartButton":chan_contr[0],
-            "ThreeStateSingle":chan_contr[1],
-            "ThreeStateLoop":chan_contr[2]
-            }
-    GPIOMap={
-            "DimChiesa":GPIOMapPhysical["Dimmer3"],
-            "DimAlba":GPIOMapPhysical["Dimmer4"],
-            "DimTramonto":GPIOMapPhysical["Dimmer2"],
-            "DimGiorno":GPIOMapPhysical["Dimmer6"],
-            "Accensione":GPIOMapPhysical["Rele6"],
-            "AmpliWood":GPIOMapPhysical["Rele7"],
-            "Fontane":GPIOMapPhysical["Rele8"],
-            "Case1":GPIOMapPhysical["Rele9"],
-            "Case2":GPIOMapPhysical["Rele10"],
-            "LuceBosco":GPIOMapPhysical["Rele11"],
-            "LuceSopraNat":GPIOMapPhysical["Rele12"],
-            "FarettoVolta":GPIOMapPhysical["Rele13"],
-            "LuciChiesa":GPIOMapPhysical["Rele14"],
-            "Fuochi":GPIOMapPhysical["Rele15"],
-            "LedFontana":GPIOMapPhysical["Rele16"],
-            "I_StartButton":GPIOMapPhysical["StartButton"],
-            "ResetDimmer":GPIOMapPhysical["Dimmer1Reset"],
-            "ArduinoReset":GPIOMapPhysical["ArduinoReset"],
-            "I_ThreeStateSingle":GPIOMapPhysical["ThreeStateSingle"],
-            "I_ThreeStateLoop":GPIOMapPhysical["ThreeStateLoop"]
-            }
-    
-    #Dimmer1 I2C - Light dimmering : 0 Fully open - 100 Fully closed
-    Dimmer1Add = '0x27'
-    Dimmer1Ch1 = '0x80'
-    Dimmer1Ch2 = '0x81'
-    Dimmer1Ch3 = '0x82'
-    Dimmer1Ch4 = '0x83'
-    
-    #Dimmer2 Serial - Protocol commands
-    Ch1Rst = "900\n"
-    Ch1FIn = "i\n"
-    Ch1FOu = "o\n"
-	
-    # set gpio modes
-    GPIO.setup(chan_releA, GPIO.OUT,initial=GPIO.HIGH)
-    GPIO.setup(chan_releB, GPIO.OUT,initial=GPIO.HIGH)
-    GPIO.setup(chan_ArduinoReset, GPIO.OUT,initial=GPIO.HIGH)
-    GPIO.setup(chan_ResetDimmer, GPIO.OUT,initial=GPIO.HIGH)
-    GPIO.setup(chan_contr, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+    initGPIOs()
     logger.info ("GPIO     : initilized")
     
     # set initial state
@@ -443,7 +367,7 @@ try:
     eastereggEnabled = False
     cycleoffset = 0
 
-    testdunebuggger = False
+    testdunebuggger = true
 
     GPIO.add_event_detect(GPIOMap["I_StartButton"],GPIO.RISING,callback=cycle,bouncetime=5)
 
