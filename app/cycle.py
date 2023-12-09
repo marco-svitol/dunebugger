@@ -367,7 +367,7 @@ try:
     eastereggEnabled = False
     cycleoffset = 0
 
-    testdunebuggger = true
+    testdunebuggger = True
 
     GPIO.add_event_detect(GPIOMap["I_StartButton"],GPIO.RISING,callback=cycle,bouncetime=5)
 
