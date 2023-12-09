@@ -18,7 +18,7 @@ def ArduinoSend(command):
         logger.warning("ignoring command "+ccommand+" to Arduino")
 
 def dimmer1(channel, level, speed):
-    args = ['python','/home/pi/dunebugger/dimmer1.py','0x27',str(channel),str(level),str(speed)]
+    args = ['python','./dimmer1.py','0x27',str(channel),str(level),str(speed)]
     subprocess.Popen(args)
 
 def RPiwrite(gpio,bit):
@@ -319,7 +319,7 @@ def cycle(channel):
     logger.info("\nDunebugger listening. Press enter to quit\n")
 
 try:
-    logging.config.fileConfig('/home/pi/dunebugger/dunebuggerlogging.conf') #load logging config file
+    logging.config.fileConfig('./dunebuggerlogging.conf') #load logging config file
     logger = logging.getLogger('dunebuggerLog')
     logger.info('DuneBugger started')        
     GPIO.setwarnings(False)
@@ -354,8 +354,8 @@ try:
     cyclelength = 372
 	
     fadeoutsec = 8 #fade out seconds
-    musicpath = "/home/pi/dunebugger/music/"
-    sfxpath = "/home/pi/dunebugger/sfx/"
+    musicpath = "./music/"
+    sfxpath = "./sfx/"
     sfxfile = "2009.mp3"
     easteregg = "ohhche.mp3"
     entrysong = "fincosong2022.mp3"
