@@ -148,9 +148,9 @@ def cycle(channel):
         motor.start(1,"ccw",100)
         waituntil(10)
         motor.stop(1)
-        waituntil(1)
+        waituntil(15)
         motor.start(1,"cw",50)
-        waituntil(10)
+        waituntil(20)
         motor.stop(1)
         return
         t = 0
