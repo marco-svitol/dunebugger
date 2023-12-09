@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-import os,schedule,time,subprocess, pipes, logging, logging.config
+import os,schedule,time,subprocess, logging, logging.config
 from datetime import time as dtime
 from datetime import datetime
 from itertools import tee, islice, chain
