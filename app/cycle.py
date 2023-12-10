@@ -153,6 +153,7 @@ def cycle(channel):
         motor.start(1,"cw",50)
         waituntil(20)
         motor.stop(1)
+        cycleoffset = 0
         return
         t = 0
         vplaysfx(easteregg)
