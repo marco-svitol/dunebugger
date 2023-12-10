@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 # coding: utf8
-import os, time, RPi.GPIO as GPIO, serial, random, vlc, subprocess, logging, logging.config, InTime
+import os, time, RPi.GPIO as GPIO, serial, random, vlc, subprocess, InTime
 from datetime import datetime
 from setupGPIOs import GPIOMap, initGPIOs
 import motor
+from dunebuggerlogging import logger 
 
 #Functions definition:
 
@@ -319,8 +320,8 @@ def cycle(channel):
     logger.info("\nDunebugger listening. Press enter to quit\n")
 
 try:
-    logging.config.fileConfig('./dunebuggerlogging.conf') #load logging config file
-    logger = logging.getLogger('dunebuggerLog')
+    # logging.config.fileConfig('./dunebuggerlogging.conf') #load logging config file
+    # logger = logging.getLogger('dunebuggerLog')
     logger.info('DuneBugger started')        
     GPIO.setwarnings(False)
     GPIO.setmode(GPIO.BCM)
