@@ -379,8 +379,6 @@ try:
     # motor.reset(1)
     #motor.reset(2)
 
-    
-
     logger.info ("GPIO     : Callback function 'cycle' binded to event detection on GPIO "+str(mygpio_handler.GPIOMap["I_StartButton"]))
         
     input("\nDunebugger listening. Press enter to quit\n")

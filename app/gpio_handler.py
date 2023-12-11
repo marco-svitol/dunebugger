@@ -103,6 +103,6 @@ class GPIOHandler:
             if value == GPIONum:
                 return key
             # Return None if the value is not found
-            return None
+            return "_not_found_"
 
 mygpio_handler = GPIOHandler()
