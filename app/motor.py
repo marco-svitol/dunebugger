@@ -34,6 +34,7 @@ def limitTouch(switch, event = None):
         time.sleep(0.2)
         start(motornum,"cw", speed=100)
     elif event != None:
+        logger.debug("Event set")
         event.set()
 
 def reset(motornum):
