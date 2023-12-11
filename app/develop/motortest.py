@@ -18,11 +18,12 @@ print("\n")
 print("The default speed & direction of motor is LOW & Forward.....")
 print("r-run s-stop f-forward b-backward l-low m-medium h-high e-exit")
 print("\n")    
-
+x='r'
 #while(1):
-def motortest(x):
+def motortest(channel):
     #x=input()
-    print("motortest func in")
+    global x
+    print("motortest func in "+str(channel))
     p.ChangeDutyCycle(100)
     global in1, in2, en, temp1
 
@@ -150,7 +151,7 @@ try:
             "Motor1In2":GPIOMapPhysical["Motor1In2"]
             }
 
-    GPIO.add_event_detect(GPIOMap["I_StartButton"],GPIO.RISING,callback=motortest("r"),bouncetime=5)
+    GPIO.add_event_detect(GPIOMap["I_StartButton"],GPIO.RISING,callback=motortest,bouncetime=5)
 
 finally:
     GPIO.remove_event_detect(GPIOMap["I_StartButton"])
