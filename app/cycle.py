@@ -24,7 +24,7 @@ def dimmer1(channel, level, speed):
 
 def RPiwrite(gpio,bit):
     bit = not bit
-    GPIO.output(GPIOMap[gpio],bit)
+    GPIO.output(mygpio_handler[gpio],bit)
     logger.debug("RPi "+gpio+" write "+str(bit))
 
 def waituntil(sec):
@@ -368,7 +368,7 @@ try:
 
     GPIO.add_event_detect(mygpio_handler.GPIOMap["I_StartButton"],GPIO.RISING,callback=cycle,bouncetime=5)
 
-    #GPIO.add_event_detect(GPIOMap["ThreeStateLoop"],GPIO.RISING,callback=cycle,bouncetime=5)
+    #GPIO.add_event_detect(mygpio_handler["ThreeStateLoop"],GPIO.RISING,callback=cycle,bouncetime=5)
     logger.info ("GPIO     : Callback function 'cycle' binded to event detection on GPIO "+str(mygpio_handler.GPIOMap["I_StartButton"]))
         
     input("\nDunebugger listening. Press enter to quit\n")
