@@ -19,7 +19,6 @@ entrysong = "fincosong2022.mp3"
 sfxuccelli = "allodole.mp3"
 
 def vplaymusic(customsong):
-    global musicplayer
     playlist = vlcinstance.media_list_new()
 
     fileplaylist = os.listdir(musicpath) #get filenames

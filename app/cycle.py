@@ -53,7 +53,7 @@ def cycle(channel):
         audioPlayer.vstopaudio()
 #--------------- end cycle
 
-        cycleoffset = 0
+        settings.cycleoffset = 0
         logger.info("\nDunebugger listening. Press enter to quit\n")
 
 def main():
