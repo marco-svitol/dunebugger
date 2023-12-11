@@ -146,13 +146,13 @@ def cycle(channel):
         #RPiwrite("DimGiorno",1)
         waituntil(3)
         motor.start(1,"ccw",30)
-        waituntil(10)
-        motor.stop(1)
-        waituntil(20)
-        motor.start(1,"cw",100)
-        waituntil(30)
-        motor.stop(1)
-        cycleoffset = 0
+        # waituntil(10)
+        # motor.stop(1)
+        # waituntil(20)
+        # motor.start(1,"cw",100)
+        # waituntil(30)
+        # motor.stop(1)
+        # cycleoffset = 0
         return
         t = 0
         vplaysfx(easteregg)

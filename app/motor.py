@@ -23,6 +23,8 @@ def stop(motornum):
 
 def limitTouch(switch):
     logger.debug("Limit touched on switch "+str(switch))
+    if switch == mygpio_handler.GPIOMap["Motor1LimitLeft"] or switch == mygpio_handler.GPIOMap["Motor1LimitRight"]:
+        stop(1)
 
 
     
