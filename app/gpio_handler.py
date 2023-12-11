@@ -106,6 +106,7 @@ class GPIOHandler:
         for key, value in self.GPIOMap.items():
             logger.debug(str(value)+" == "+str(GPIONum))
             if value == GPIONum:
+                logger.debug("found!")
                 return key
             # Return None if the value is not found
         return "_not_found_"
