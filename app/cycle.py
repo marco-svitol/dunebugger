@@ -146,11 +146,11 @@ def cycle(channel):
         #Test relè
         #RPiwrite("DimGiorno",1)
         waituntil(3)
-        motor.start(1,"cw",25)
+        motor.start(1,"ccw",30)
         waituntil(10)
         motor.stop(1)
         waituntil(20)
-        motor.start(1,"ccw",100)
+        motor.start(1,"cw",100)
         waituntil(30)
         motor.stop(1)
         cycleoffset = 0
