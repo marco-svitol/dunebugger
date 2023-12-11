@@ -22,7 +22,7 @@ print("\n")
 print("The default speed & direction of motor is LOW & Forward.....")
 print("r-run s-stop f-forward b-backward l-low m-medium h-high e-exit")
 print("\n")    
-x='r'
+x='z'
 #while(1):
 def motortest(channel):
     #x=input()
@@ -79,11 +79,6 @@ def motortest(channel):
         print("high")
         p.ChangeDutyCycle(100)
         x='z'
-     
-    
-    elif x=='e':
-        GPIO.cleanup()
-        #break
     
     else:
         print("<<<  wrong data  >>>")
@@ -157,6 +152,13 @@ try:
 
     GPIO.add_event_detect(GPIOMap["I_StartButton"],GPIO.RISING,callback=motortest,bouncetime=5)
 
+    while(1):
+        x = input("\nDunebugger listening. Press enter to quit\n")
+        if x!='e':
+            print("Next button press will perform: "+x)
+        else:
+            print("Exit")
+            break
 finally:
     GPIO.remove_event_detect(GPIOMap["I_StartButton"])
     GPIO.cleanup()
