@@ -146,13 +146,13 @@ def cycle(channel):
         #Test relè
         #RPiwrite("DimGiorno",1)
         waituntil(3)
-        motor.start(GPIO, 1,"cw",25)
+        motor.start(1,"cw",25)
         waituntil(10)
-        motor.stop(GPIO, 1)
+        motor.stop(1)
         waituntil(20)
-        motor.start(GPIO, 1,"ccw",100)
+        motor.start(1,"ccw",100)
         waituntil(30)
-        motor.stop(GPIO, 1)
+        motor.stop(1)
         cycleoffset = 0
         return
         t = 0
@@ -331,7 +331,8 @@ try:
         Arduino = False
         logger.critical('Arduino  : serial port on /dev/ttyUSB0 not available: no com with Arduino')
     
-    initGPIOs(GPIO)
+    
+    initGPIOs()
     logger.info ("GPIO     : initilized")
     
     # set initial state

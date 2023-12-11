@@ -1,4 +1,6 @@
 #Mapping GPIO Names
+import RPi.GPIO as GPIO
+
 chan_I2C   = [2,3]
 chan_releA = [5,11,9,10,22,27,17,4]
 chan_releB = [21,20,16,12,7,8,25,24]
@@ -75,7 +77,7 @@ Ch1Rst = "900\n"
 Ch1FIn = "i\n"
 Ch1FOu = "o\n"
 	
-def initGPIOs(GPIO):
+def initGPIOs():
     # set gpio mode
     GPIO.setwarnings(False)
     GPIO.setmode(GPIO.BCM)
