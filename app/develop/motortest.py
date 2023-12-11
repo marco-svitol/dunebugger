@@ -5,6 +5,7 @@ in1 = 1
 in2 = 23
 en = 18
 temp1=1
+chan_contr=6
 
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(in1,GPIO.OUT)
@@ -12,6 +13,9 @@ GPIO.setup(in2,GPIO.OUT)
 GPIO.setup(en,GPIO.OUT)
 GPIO.output(in1,GPIO.LOW)
 GPIO.output(in2,GPIO.LOW)
+
+GPIO.setup(chan_contr, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+
 p=GPIO.PWM(en,5000)
 p.start(25)
 print("\n")
