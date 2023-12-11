@@ -133,6 +133,8 @@ def cycle(channel):
         logger.warning("Cycle is already running in thread"+threading.current_thread().name)
         return
 
+    cyclerunning = True
+    
     time.sleep(0.10)    # avoid catching a bouncing
     if GPIO.input(channel) != 1:
         #logger.debug ("Bouncing: false interrupt on channel"+str(channel))
