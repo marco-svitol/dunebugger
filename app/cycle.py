@@ -382,8 +382,7 @@ finally:
     logger.info ("GPIO     : removing interrupt on GPIO "+str(mygpio_handler.GPIOMap["I_StartButton"])+" and cleaning up GPIOs")
     GPIO.remove_event_detect(mygpio_handler.GPIOMap["I_StartButton"])
     mygpio_handler.cleanup()
-    if (musicVolume):
-        vstopaudio()
+    vstopaudio()
 
 #NICETOHAVE:
 #timing random con range di variabilità da aggiungere a funzione sleep
