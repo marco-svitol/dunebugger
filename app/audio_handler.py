@@ -132,3 +132,5 @@ class AudioPlayer:
                 self.sfxVolume = self.quietSfxVol
                 logger.info("Siamo durante una celebrazione: vol music=" + str(self.musicVolume) + " vol sfx=" + str(self.sfxVolume))
 
+audioPlayer = AudioPlayer()
+
