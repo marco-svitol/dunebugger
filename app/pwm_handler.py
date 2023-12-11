@@ -18,4 +18,4 @@ class PWMHandler:
     def cleanup(self):
         self.pwm.stop()
 
-pwm_motor1 = PWMHandler(GPIO.PWM(mygpio_handler.GPIOMap["Motor1PWM"],5000))
+pwm_motor1 = PWMHandler(mygpio_handler.GPIOMap["Motor1PWM"],5000)
