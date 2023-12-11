@@ -1,5 +1,3 @@
-import RPi.GPIO as GPIO
-
 #Mapping GPIO Names
 chan_I2C   = [2,3]
 chan_releA = [5,11,9,10,22,27,17,4]
@@ -77,8 +75,11 @@ Ch1Rst = "900\n"
 Ch1FIn = "i\n"
 Ch1FOu = "o\n"
 	
-def initGPIOs():
-    # set gpio modes
+def initGPIOs(GPIO):
+    # set gpio mode
+    GPIO.setwarnings(False)
+    GPIO.setmode(GPIO.BCM)
+    
     GPIO.setup(chan_releA, GPIO.OUT,initial=GPIO.HIGH)
     GPIO.setup(chan_releB, GPIO.OUT,initial=GPIO.HIGH)
     GPIO.setup(chan_ArduinoReset, GPIO.OUT,initial=GPIO.HIGH)

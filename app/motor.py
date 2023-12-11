@@ -1,8 +1,7 @@
 from setupGPIOs import GPIOMap
-import RPi.GPIO as GPIO
 from dunebuggerlogging import logger 
 
-def start(motornum, rotation="cw",speed=100):
+def start(GPIO, motornum, rotation="cw",speed=100):
     pwm = GPIO.PWM(GPIOMap["Motor"+str(motornum)+"PWM"],5000)
     pwm.start(25)
     logger.debug("motor "+str(motornum)+" start with rotation "+rotation+" and speed "+str(speed))

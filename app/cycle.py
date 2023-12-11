@@ -143,23 +143,16 @@ def cycle(channel):
             return
 
     if testdunebuggger:
-        pwm = GPIO.PWM(GPIOMap["Motor1PWM"],5000)
-        pwm.start(25)
-        logger.debug("motor 1 start with rotation cw and speed 100")
-        GPIO.output(GPIOMap["Motor1In1"],GPIO.HIGH)
-        GPIO.output(GPIOMap["Motor1In2"],GPIO.LOW)
-        pwm.ChangeDutyCycle(100)
-        return
         #Test relè
         #RPiwrite("DimGiorno",1)
         waituntil(3)
-        motor.start(1,"cw",25)
+        motor.start(GPIO, 1,"cw",25)
         waituntil(10)
-        motor.stop(1)
+        motor.stop(GPIO, 1)
         waituntil(20)
-        motor.start(1,"ccw",100)
+        motor.start(GPIO, 1,"ccw",100)
         waituntil(30)
-        motor.stop(1)
+        motor.stop(GPIO, 1)
         cycleoffset = 0
         return
         t = 0
@@ -331,8 +324,6 @@ try:
     # logging.config.fileConfig('./dunebuggerlogging.conf') #load logging config file
     # logger = logging.getLogger('dunebuggerLog')
     logger.info('DuneBugger started')        
-    GPIO.setwarnings(False)
-    GPIO.setmode(GPIO.BCM)
     if os.path.exists('/dev/ttyUSB0') :                 # Arduino communication over serial port
         Arduino = serial.Serial('/dev/ttyUSB0',9600)
         logger.info('Arduino  : found device on /dev/ttyUSB0 and connected')
@@ -340,7 +331,7 @@ try:
         Arduino = False
         logger.critical('Arduino  : serial port on /dev/ttyUSB0 not available: no com with Arduino')
     
-    initGPIOs()
+    initGPIOs(GPIO)
     logger.info ("GPIO     : initilized")
     
     # set initial state
