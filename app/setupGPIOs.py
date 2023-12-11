@@ -10,6 +10,7 @@ chan_ArduinoReset = [14]
 chan_ResetDimmer = [15]
 
 chan_motor_1 = [18,1,23]
+global pwm_motor1
 
 GPIOMapPhysical={
         "SDA1":chan_I2C[0],
@@ -79,6 +80,8 @@ Ch1FOu = "o\n"
 	
 def initGPIOs():
     # set gpio mode
+    global pwm_motor1
+
     GPIO.setwarnings(False)
     GPIO.setmode(GPIO.BCM)
     
@@ -88,3 +91,5 @@ def initGPIOs():
     GPIO.setup(chan_ResetDimmer, GPIO.OUT,initial=GPIO.HIGH)
     GPIO.setup(chan_contr, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
     GPIO.setup(chan_motor_1, GPIO.OUT,initial=GPIO.LOW)
+
+    pwm_motor1 = GPIO.PWM(GPIOMap["Motor1PWM"],5000)
