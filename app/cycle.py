@@ -122,17 +122,14 @@ def vstopaudio():
 def cycletest(channel):
     print("button pressed")
     dimmer1(1,100,10)
-	
+
+def cycle_trigger(channel):
+    threading.Thread(name='_cycle_thread', target=cycle, args=(channel,)).start()
+
 def cycle(channel):
-    global cyclerunning
     global musicVolume
     global sfxVolume
     global cycleoffset
-    global lock
-    
-    if not lock.acquire(blocking=False):
-        logger.warning("Cycle is already running in thread "+threading.current_thread().name)
-        return
 
     time.sleep(bouncingTreshold)    # avoid catching a bouncing
     if GPIO.input(channel) != 1:
@@ -140,7 +137,6 @@ def cycle(channel):
         return
     
     logger.info("Start button pressed on channel "+str(channel)) #if function is triggered from button then check three state mode
-    cyclerunning = True
 
     if testdunebuggger:
         #Test relè
@@ -316,7 +312,6 @@ def cycle(channel):
         waituntil(409)
         RPiwrite("FarettoVolta",0)
         cycleoffset = 0
-        cyclerunning = False
 
         break
 
@@ -341,7 +336,6 @@ try:
     RPiwrite("Fuochi",1)
     RPiwrite("Accensione",1)
     #Music and sfx
-    cyclerunning = False
     vlcinstance = vlc.Instance('--aout=alsa')
     musiclistplayer = vlcinstance.media_list_player_new()
     sfxplayer = vlcinstance.media_player_new()
@@ -372,11 +366,9 @@ try:
 
     testdunebuggger = False
 
-    GPIO.add_event_detect(mygpio_handler.GPIOMap["I_StartButton"],GPIO.RISING,callback=lambda x: threading.Thread(target=cycle, args=(x,)).start(),bouncetime=5)
-
-    lock = threading.Lock()
-    
-    #GPIO.add_event_detect(mygpio_handler.GPIOMap["I_StartButton"],GPIO.RISING,callback=cycle,bouncetime=5)
+    #GPIO.add_event_detect(mygpio_handler.GPIOMap["I_StartButton"],GPIO.RISING,callback=lambda x: threading.Thread(target=cycle, args=(x,)).start(),bouncetime=5)
+ 
+    GPIO.add_event_detect(mygpio_handler.GPIOMap["I_StartButton"],GPIO.RISING,callback=cycle_trigger,bouncetime=5)
 
     # GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor1LimitCCW"],GPIO.RISING,callback=motor.limitTouch,bouncetime=5)
     # GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor1LimitCW"],GPIO.RISING,callback=motor.limitTouch,bouncetime=5)
