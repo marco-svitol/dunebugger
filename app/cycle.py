@@ -35,17 +35,6 @@ def waituntil(sec):
     time.sleep((sec-cycleoffset) * cyclespeed)
     cycleoffset = sec
 
-def my_sleep(delay):
-    abort_sleep = False
-    start = time.time()
-    while not abort_sleep and (time.time()-start) < delay:
-        if flash(true):
-            flash = 0
-            abort_sleep = True
-        else:
-            time.sleep(0.01)
-               
-
 #>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>      Music section     <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 def vplaymusic(customsong):
     global musicplayer
@@ -135,11 +124,14 @@ def cycletest(channel):
     dimmer1(1,100,10)
 	
 def cycle(channel):
+    global cyclerunning
     global musicVolume
     global sfxVolume
     global cycleoffset
 
-    logger.debug("cycleoffset:"+str(cycleoffset))
+    if cyclerunning:
+        logger.warning("Cycle is already running in thread"+threading.current_thread().name)
+        return
 
     time.sleep(0.10)    # avoid catching a bouncing
     if GPIO.input(channel) != 1:
@@ -326,6 +318,7 @@ def cycle(channel):
         waituntil(409)
         RPiwrite("FarettoVolta",0)
         cycleoffset = 0
+        cyclerunning = False
         if GPIO.input(mygpio_handler.GPIOMap["I_ThreeStateLoop"])!=1 :
             break # only reason to stay in the loop is that gpio
         else:
@@ -350,6 +343,7 @@ try:
     RPiwrite("Fuochi",1)
     RPiwrite("Accensione",1)
     #Music and sfx
+    cyclerunning = False
     vlcinstance = vlc.Instance('--aout=alsa')
     musiclistplayer = vlcinstance.media_list_player_new()
     sfxplayer = vlcinstance.media_player_new()
