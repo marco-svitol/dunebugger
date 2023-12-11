@@ -35,6 +35,17 @@ def waituntil(sec):
     time.sleep((sec-cycleoffset) * cyclespeed)
     cycleoffset = sec
 
+def my_sleep(delay):
+    abort_sleep = False
+    start = time.time()
+    while not abort_sleep and (time.time()-start) < delay:
+        if flash(true):
+            flash = 0
+            abort_sleep = True
+        else:
+            time.sleep(0.01)
+               
+
 #>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>      Music section     <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 def vplaymusic(customsong):
     global musicplayer
@@ -366,7 +377,7 @@ try:
 
     testdunebuggger = True
 
-    GPIO.add_event_detect(mygpio_handler.GPIOMap["I_StartButton"],GPIO.RISING,callback=lambda x: threading.Thread(target=cycle).start(mygpio_handler.GPIOMap["I_StartButton"]),bouncetime=5)
+    GPIO.add_event_detect(mygpio_handler.GPIOMap["I_StartButton"],GPIO.RISING,callback=lambda x: threading.Thread(target=cycle), args=(mygpio_handler.GPIOMap["I_StartButton"]),bouncetime=5)
 
     GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor1LimitLeft"],GPIO.RISING,callback=motor.limitTouch,bouncetime=100)
 
