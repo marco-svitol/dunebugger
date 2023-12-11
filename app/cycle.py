@@ -243,6 +243,9 @@ def cycle(channel):
         RPiwrite("Fontane",1)
         RPiwrite("LuceSopraNat",1)
         RPiwrite("FarettoVolta",1)
+
+        motor.start(1,"ccw",30)
+
         RPiwrite("Fuochi",1)
         RPiwrite("LedFontana",1)
         waituntil(103)
@@ -373,7 +376,7 @@ try:
     eastereggEnabled = False
     cycleoffset = 0
 
-    testdunebuggger = True
+    testdunebuggger = False
 
     GPIO.add_event_detect(mygpio_handler.GPIOMap["I_StartButton"],GPIO.RISING,callback=lambda x: threading.Thread(target=cycle, args=(x,)).start(),bouncetime=5)
     GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor1LimitLeft"],GPIO.RISING,callback=motor.limitTouch,bouncetime=500)
