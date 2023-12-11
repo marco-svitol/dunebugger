@@ -88,29 +88,28 @@ def checkaudioext(filename):
     return False
 
 def vstopaudio():
-    if musicVolume >0 or sfxVolume > 0:
-        if musicVolume > sfxVolume: # calculate pause interval. Takes higher volume
-            fadeoutpause = fadeoutsec / (musicVolume * 1.0)
-        else:
-            fadeoutpause = fadeoutsec / (sfxVolume * 1.0)
-
-        logger.info("Fading out in " + str(fadeoutsec) + " seconds")
-
-        mvol = musicVolume
-        svol = sfxVolume
-
-        while (mvol>0 or svol > 0):
-            if musicplayer is not None and mvol > 0: mvol-=1; musicplayer.audio_set_volume(mvol)
-            if sfxplayer is not None and svol > 0: svol-=1; sfxplayer.audio_set_volume(svol)
-            print ('.',end="",flush=True)
-            time.sleep(fadeoutpause)
-
     try:
-        logger.info("")
-        logger.info('Stopping music and sfx player')
-        musiclistplayer.stop()
-        sfxplayer.stop()
+        if musicVolume >0 or sfxVolume > 0:
+            if musicVolume > sfxVolume: # calculate pause interval. Takes higher volume
+                fadeoutpause = fadeoutsec / (musicVolume * 1.0)
+            else:
+                fadeoutpause = fadeoutsec / (sfxVolume * 1.0)
+
+            logger.info("Fading out in " + str(fadeoutsec) + " seconds")
+
+            mvol = musicVolume
+            svol = sfxVolume
+
+            while (mvol>0 or svol > 0):
+                if musicplayer is not None and mvol > 0: mvol-=1; musicplayer.audio_set_volume(mvol)
+                if sfxplayer is not None and svol > 0: svol-=1; sfxplayer.audio_set_volume(svol)
+                print ('.',end="",flush=True)
+                time.sleep(fadeoutpause)
+            logger.info('Stopping music and sfx player')
+            musiclistplayer.stop()
+            sfxplayer.stop()
     except:
+        logger.warning("vstopaudio exception, most probably sound was not even playing.")
         return
 #>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>   end music section    <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
