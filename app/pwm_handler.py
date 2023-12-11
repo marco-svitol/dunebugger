@@ -1,5 +1,4 @@
 import RPi.GPIO as GPIO
-#from setupGPIOs import GPIOMap
 from gpio_handler import mygpio_handler
 
 class PWMHandler:

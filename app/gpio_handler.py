@@ -8,6 +8,7 @@ class GPIOHandler:
     chan_ArduinoReset = [14]
     chan_ResetDimmer = [15]
     chan_motor_1 = [18, 1, 23]
+    chan_limitswitch_motor1 = [0,19]
 
     GPIOMapPhysical={
             "SDA1":chan_I2C[0],
@@ -35,7 +36,9 @@ class GPIOHandler:
             "ThreeStateLoop":chan_contr[2],
             "Motor1PWM":chan_motor_1[0],
             "Motor1In1":chan_motor_1[1],
-            "Motor1In2":chan_motor_1[2]
+            "Motor1In2":chan_motor_1[2],
+            "Motor1LimitA":chan_limitswitch_motor1[0],
+            "Motor1LimitB":chan_limitswitch_motor1[1],
             }
     GPIOMap={
             "DimChiesa":GPIOMapPhysical["Dimmer3"],
@@ -60,7 +63,9 @@ class GPIOHandler:
             "I_ThreeStateLoop":GPIOMapPhysical["ThreeStateLoop"],
             "Motor1PWM":GPIOMapPhysical["Motor1PWM"],
             "Motor1In1":GPIOMapPhysical["Motor1In1"],
-            "Motor1In2":GPIOMapPhysical["Motor1In2"]
+            "Motor1In2":GPIOMapPhysical["Motor1In2"],
+            "Motor1LimitLeft":GPIOMapPhysical["Motor1LimitA"],
+            "Motor1LimitRight":GPIOMapPhysical["Motor1LimitB"],
             }
 
     # Dimmer1 I2C - Light dimmering : 0 Fully open - 100 Fully closed
@@ -86,6 +91,7 @@ class GPIOHandler:
         GPIO.setup(self.chan_ResetDimmer, GPIO.OUT, initial=GPIO.HIGH)
         GPIO.setup(self.chan_contr, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
         GPIO.setup(self.chan_motor_1, GPIO.OUT, initial=GPIO.LOW)
+        GPIO.setup(self.chan_limitswitch_motor1, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 
     def cleanup(self):
         # Clean up GPIO

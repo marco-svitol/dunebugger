@@ -1,4 +1,4 @@
-#from setupGPIOs import GPIOMap
+
 from gpio_handler import mygpio_handler
 import RPi.GPIO as GPIO
 from dunebuggerlogging import logger 
@@ -20,3 +20,9 @@ def stop(motornum):
     GPIO.output(mygpio_handler.GPIOMap["Motor"+str(motornum)+"In1"],GPIO.LOW)
     GPIO.output(mygpio_handler.GPIOMap["Motor"+str(motornum)+"In2"],GPIO.LOW)
     GPIO.output(mygpio_handler.GPIOMap["Motor"+str(motornum)+"PWM"],GPIO.LOW)
+
+def limitTouch(switch):
+    logger.debug("Limit touched on switch "+str(switch))
+
+
+    
