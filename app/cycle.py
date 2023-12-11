@@ -8,6 +8,7 @@ import threading
 from utils import RPiwrite, waituntil
 from audio_handler import audioPlayer
 from dunebugger_settings import settings
+from functools import partial
 
 testdunebuggger = False
 
@@ -75,10 +76,13 @@ def main():
         RPiwrite("Accensione",1)
 
         motor_reset_event = threading.Event()
+        # Add event detection for motor limit touch with functools.partial
+        callback_with_params = partial(motor.limitTouch, event=motor_reset_event)
         motor_reset_thread = threading.Thread(target=motor.reset_motor_and_set_event, args=(motor_reset_event,1))
         motor_reset_event = threading.Event()
         GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor1LimitCCW"],GPIO.RISING,callback=motor.limitTouch,bouncetime=200)
-        GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor1LimitCW"],GPIO.RISING,callback=motor.limitTouch(motor_reset_event),bouncetime=200)
+        GPIO.add_event_detect(mygpio_handler.GPIOMap["MotorLimitTouch"], GPIO.RISING, callback=callback_with_params, bouncetime=200)
+        #GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor1LimitCW"],GPIO.RISING,callback=motor.limitTouch(channel,motor_reset_event),bouncetime=200)
         GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor2LimitCCW"],GPIO.RISING,callback=motor.limitTouch,bouncetime=200)
         GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor2LimitCW"],GPIO.RISING,callback=motor.limitTouch,bouncetime=200)
         motor_reset_thread.start()
