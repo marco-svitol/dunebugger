@@ -131,191 +131,193 @@ def cycle(channel):
     global sfxVolume
     global cycleoffset
 
-    time.sleep(bouncingTreshold)    # avoid catching a bouncing
-    if GPIO.input(channel) != 1:
-        logger.debug ("Warning! Below treshold of "+str(bouncingTreshold)+" on channel"+str(channel))
-        return
-    
-    logger.info("Start button pressed on channel "+str(channel)) #if function is triggered from button then check three state mode
+    with cycle_thread_lock:
 
-    if testdunebuggger:
-        #Test relè
-        #RPiwrite("DimGiorno",1)
-        waituntil(3)
-        motor.start(1,"ccw",30)
-        # waituntil(10)
-        # motor.stop(1)
-        # waituntil(20)
-        # motor.start(1,"cw",100)
-        # waituntil(30)
-        # motor.stop(1)
-        # cycleoffset = 0
-        return
-        t = 0
-        vplaysfx(easteregg)
-        musicplayer.audio_set_channel(1)
-        vplaysfx(easteregg)
-        musicplayer.audio_set_channel(2)
-        vplaysfx(easteregg)
-        musicplayer.audio_set_channel(3)
-        for k in mygpio_handler.GPIOMap.keys():
-            if not k.startswith('Dim') and not k.startswith('I_'):
-                logger.info ("GPIO"+str(k))
-                waituntil(t)
-                RPiwrite(k,1)
-                t+=5
-                waituntil(t)
-                RPiwrite(k,0)
-                t+=1
-        #Test dimmer
-        vplaysfx(sfxuccelli)
-        t+=5
-        vplaymusic(False)
-        for k in mygpio_handler.GPIOMap.keys():
-            if k.startswith('Dim') and not k.startswith('I_'):
-                logger.info ("GPIO"+str(k))
-                waituntil(t)
-                RPiwrite(k,1)
-                t+=30
-                waituntil(t)
-                RPiwrite(k,0)
-                t+=2
-        cycleoffset = 0
-        vstopaudio()
-        return
-
-
-    while True:
-
-        #ArduinoDimmerStart()
-        ##ArduinoSend(Ch1Rst)
-        ##ArduinoSend(Ch1FIn)
-        #check current date against calendar delle messe per impostare volume
+        time.sleep(bouncingTreshold)    # avoid catching a bouncing
+        if GPIO.input(channel) != 1:
+            logger.debug ("Warning! Below treshold of "+str(bouncingTreshold)+" on channel"+str(channel))
+            return
         
-        musicVolume = normalMusicVolume
-        sfxVolume = normalSfxVolume
-        logger.debug("MusicVolume: "+str(musicVolume)+" SfxVolume: "+str(sfxVolume))
-        if not ignoreQuietTime:
-            if not isinstance(InTime.getNTPTime(),int): #time not synced
-                musicVolume = quietMusicVol
-                sfxVolume = quietSfxVol
-                logger.info("Orario non sincronizzato: vol musica="+str(musicVolume)+" vol sfx="+str(sfxVolume))
-            elif InTime.duranteCelebrazioni(datetime.now(),cyclelength):
-                musicVolume = quietMusicVol
-                sfxVolume = quietSfxVol
-                logger.info("Siamo durante una celebrazione: vol music="+str(musicVolume)+" vol sfx="+str(sfxVolume))
-        
-        # Lista di (Time,Action) - ordina la lista - eseguo una runpending() che scansiona la lista ed esegue action
-	#0 sec
+        logger.info("Start button pressed on channel "+str(channel)) #if function is triggered from button then check three state mode
 
-        # RPiwrite("ResetDimmer",1)
-        # time.sleep(2)
-        # RPiwrite("ArduinoReset",1)
-        # time.sleep(0.3)
-        # RPiwrite("ArduinoReset",0)
-        musicplayer.audio_set_channel(1)
-        if eastereggEnabled:
-            time.sleep(1)
-            if GPIO.input(channel) == 1:
-                vplaymusic(True)
-            else:
-                vplaymusic(False)
-        else:
-            logger.debug("Playing music...")
+        if testdunebuggger:
+            #Test relè
+            #RPiwrite("DimGiorno",1)
+            waituntil(3)
+            motor.start(1,"ccw",30)
+            # waituntil(10)
+            # motor.stop(1)
+            # waituntil(20)
+            # motor.start(1,"cw",100)
+            # waituntil(30)
+            # motor.stop(1)
+            # cycleoffset = 0
+            return
+            t = 0
+            vplaysfx(easteregg)
+            musicplayer.audio_set_channel(1)
+            vplaysfx(easteregg)
+            musicplayer.audio_set_channel(2)
+            vplaysfx(easteregg)
+            musicplayer.audio_set_channel(3)
+            for k in mygpio_handler.GPIOMap.keys():
+                if not k.startswith('Dim') and not k.startswith('I_'):
+                    logger.info ("GPIO"+str(k))
+                    waituntil(t)
+                    RPiwrite(k,1)
+                    t+=5
+                    waituntil(t)
+                    RPiwrite(k,0)
+                    t+=1
+            #Test dimmer
+            vplaysfx(sfxuccelli)
+            t+=5
             vplaymusic(False)
-        #musicplayer.audio_set_channel(1)
-        musicplayer.audio_set_volume(normalMusicVolume)
-        sfxplayer.audio_set_volume(normalSfxVolume)
+            for k in mygpio_handler.GPIOMap.keys():
+                if k.startswith('Dim') and not k.startswith('I_'):
+                    logger.info ("GPIO"+str(k))
+                    waituntil(t)
+                    RPiwrite(k,1)
+                    t+=30
+                    waituntil(t)
+                    RPiwrite(k,0)
+                    t+=2
+            cycleoffset = 0
+            vstopaudio()
+            return
 
-        #primo ciclo: notte 
-        vplaysfx(sfxfile)
-        RPiwrite("Fontane",1)
-        RPiwrite("LuceSopraNat",1)
-        RPiwrite("FarettoVolta",1)
 
-        motor.start(1,"ccw",30)
+        while True:
 
-        RPiwrite("Fuochi",1)
-        RPiwrite("LedFontana",1)
-        waituntil(103)
-        RPiwrite("LuciChiesa",0)
-        RPiwrite("Case1", 1)
-        waituntil(105)
-        RPiwrite("Case2",1)
-        waituntil(116)
-        RPiwrite("DimAlba",1)
-        waituntil(158)
-        RPiwrite("DimAlba",0)
-        RPiwrite("DimGiorno",1)
-        RPiwrite("DimTramonto",1)
-        waituntil(170)
-        RPiwrite("Case2",0)
-        waituntil(173)
-        RPiwrite("Case1",0)
-        waituntil(182)
-        RPiwrite("DimGiorno",0)
-        RPiwrite("LedFontana",0)
-        waituntil(192)
-        RPiwrite("DimTramonto",0)
-        RPiwrite("FarettoVolta",0)
-        waituntil(199)
-        RPiwrite("Case1",1)
-        waituntil(203)
-        RPiwrite("Case2",1)
-        waituntil(210)
-        RPiwrite("FarettoVolta",1)
-        waituntil(213)
-        RPiwrite("LedFontana",1)
-        
-        #secondo ciclo
-        waituntil(225)
-        RPiwrite("DimAlba",1)
-        waituntil(240)
-        RPiwrite("Fuochi",0)
-        waituntil(250)
-        RPiwrite("DimGiorno",1)
-        RPiwrite("Case2",0)
-        waituntil(260)
-        RPiwrite("DimTramonto",1)
-        RPiwrite("Case1",0)
-        waituntil(290)
-        RPiwrite("DimAlba",0)
-        RPiwrite("DimGiorno",0)
-        waituntil(320)
-        RPiwrite("LedFontana",0)
-        RPiwrite("DimTramonto",0)
-        waituntil(331)
-        RPiwrite("FarettoVolta",0)
-        waituntil(338)
-        RPiwrite("Fuochi",1)
-        waituntil(347)
-        #RPiwrite("Case3",1)
-        waituntil(359)
-        RPiwrite("Case2",1)
-        waituntil(367)
-        RPiwrite("Case1",1)
-        waituntil(377)
-        RPiwrite("FarettoVolta",1)
-        waituntil(383)
-        RPiwrite("LedFontana",1)
-        RPiwrite("Fuochi",1)
-        waituntil(390)
+            #ArduinoDimmerStart()
+            ##ArduinoSend(Ch1Rst)
+            ##ArduinoSend(Ch1FIn)
+            #check current date against calendar delle messe per impostare volume
+            
+            musicVolume = normalMusicVolume
+            sfxVolume = normalSfxVolume
+            logger.debug("MusicVolume: "+str(musicVolume)+" SfxVolume: "+str(sfxVolume))
+            if not ignoreQuietTime:
+                if not isinstance(InTime.getNTPTime(),int): #time not synced
+                    musicVolume = quietMusicVol
+                    sfxVolume = quietSfxVol
+                    logger.info("Orario non sincronizzato: vol musica="+str(musicVolume)+" vol sfx="+str(sfxVolume))
+                elif InTime.duranteCelebrazioni(datetime.now(),cyclelength):
+                    musicVolume = quietMusicVol
+                    sfxVolume = quietSfxVol
+                    logger.info("Siamo durante una celebrazione: vol music="+str(musicVolume)+" vol sfx="+str(sfxVolume))
+            
+            # Lista di (Time,Action) - ordina la lista - eseguo una runpending() che scansiona la lista ed esegue action
+        #0 sec
 
-        RPiwrite("Case2",0)
-        RPiwrite("Fontane",0)
-        waituntil(399)
-        vstopaudio()
-        RPiwrite("Case1",0)
-        waituntil(403)
-        RPiwrite("LedFontana",0)
-        #RPiwrite("Case3",0)
-        waituntil(409)
-        RPiwrite("FarettoVolta",0)
-        cycleoffset = 0
+            # RPiwrite("ResetDimmer",1)
+            # time.sleep(2)
+            # RPiwrite("ArduinoReset",1)
+            # time.sleep(0.3)
+            # RPiwrite("ArduinoReset",0)
+            musicplayer.audio_set_channel(1)
+            if eastereggEnabled:
+                time.sleep(1)
+                if GPIO.input(channel) == 1:
+                    vplaymusic(True)
+                else:
+                    vplaymusic(False)
+            else:
+                logger.debug("Playing music...")
+                vplaymusic(False)
+            #musicplayer.audio_set_channel(1)
+            musicplayer.audio_set_volume(normalMusicVolume)
+            sfxplayer.audio_set_volume(normalSfxVolume)
 
-        break
+            #primo ciclo: notte 
+            vplaysfx(sfxfile)
+            RPiwrite("Fontane",1)
+            RPiwrite("LuceSopraNat",1)
+            RPiwrite("FarettoVolta",1)
 
-    logger.info("\nDunebugger listening. Press enter to quit\n")
+            motor.start(1,"ccw",30)
+
+            RPiwrite("Fuochi",1)
+            RPiwrite("LedFontana",1)
+            waituntil(103)
+            RPiwrite("LuciChiesa",0)
+            RPiwrite("Case1", 1)
+            waituntil(105)
+            RPiwrite("Case2",1)
+            waituntil(116)
+            RPiwrite("DimAlba",1)
+            waituntil(158)
+            RPiwrite("DimAlba",0)
+            RPiwrite("DimGiorno",1)
+            RPiwrite("DimTramonto",1)
+            waituntil(170)
+            RPiwrite("Case2",0)
+            waituntil(173)
+            RPiwrite("Case1",0)
+            waituntil(182)
+            RPiwrite("DimGiorno",0)
+            RPiwrite("LedFontana",0)
+            waituntil(192)
+            RPiwrite("DimTramonto",0)
+            RPiwrite("FarettoVolta",0)
+            waituntil(199)
+            RPiwrite("Case1",1)
+            waituntil(203)
+            RPiwrite("Case2",1)
+            waituntil(210)
+            RPiwrite("FarettoVolta",1)
+            waituntil(213)
+            RPiwrite("LedFontana",1)
+            
+            #secondo ciclo
+            waituntil(225)
+            RPiwrite("DimAlba",1)
+            waituntil(240)
+            RPiwrite("Fuochi",0)
+            waituntil(250)
+            RPiwrite("DimGiorno",1)
+            RPiwrite("Case2",0)
+            waituntil(260)
+            RPiwrite("DimTramonto",1)
+            RPiwrite("Case1",0)
+            waituntil(290)
+            RPiwrite("DimAlba",0)
+            RPiwrite("DimGiorno",0)
+            waituntil(320)
+            RPiwrite("LedFontana",0)
+            RPiwrite("DimTramonto",0)
+            waituntil(331)
+            RPiwrite("FarettoVolta",0)
+            waituntil(338)
+            RPiwrite("Fuochi",1)
+            waituntil(347)
+            #RPiwrite("Case3",1)
+            waituntil(359)
+            RPiwrite("Case2",1)
+            waituntil(367)
+            RPiwrite("Case1",1)
+            waituntil(377)
+            RPiwrite("FarettoVolta",1)
+            waituntil(383)
+            RPiwrite("LedFontana",1)
+            RPiwrite("Fuochi",1)
+            waituntil(390)
+
+            RPiwrite("Case2",0)
+            RPiwrite("Fontane",0)
+            waituntil(399)
+            vstopaudio()
+            RPiwrite("Case1",0)
+            waituntil(403)
+            RPiwrite("LedFontana",0)
+            #RPiwrite("Case3",0)
+            waituntil(409)
+            RPiwrite("FarettoVolta",0)
+            cycleoffset = 0
+
+            break
+
+        logger.info("\nDunebugger listening. Press enter to quit\n")
 
 try:
     ArduinoConnected = False
@@ -365,6 +367,8 @@ try:
     cycleoffset = 0
 
     testdunebuggger = False
+
+    cycle_thread_lock = threading.Lock()
 
     #GPIO.add_event_detect(mygpio_handler.GPIOMap["I_StartButton"],GPIO.RISING,callback=lambda x: threading.Thread(target=cycle, args=(x,)).start(),bouncetime=5)
  
