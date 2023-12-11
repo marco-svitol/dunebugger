@@ -133,9 +133,9 @@ def cycle(channel):
         logger.warning("Cycle is already running in thread "+threading.current_thread().name)
         return
 
-    time.sleep(0.10)    # avoid catching a bouncing
+    time.sleep(bouncingTreshold)    # avoid catching a bouncing
     if GPIO.input(channel) != 1:
-        logger.debug ("Bouncing: false interrupt on channel"+str(channel))
+        logger.debug ("Warning! Below treshold of "+str(bouncingTreshold)+" on channel"+str(channel))
         return
     
     logger.info("Start button pressed on channel "+str(channel)) #if function is triggered from button then check three state mode
@@ -363,6 +363,7 @@ try:
     sfxuccelli = "allodole.mp3"
 
     cyclespeed = 1#0.2
+    bouncingTreshold = 0.25
     ignoreThreeStateSingle = True
     ignoreQuietTime = True
     eastereggEnabled = False
