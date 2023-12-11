@@ -95,8 +95,8 @@ def main():
     except KeyboardInterrupt:
         logger.debug ("stopped through keyboard")
         
-    except Exception as exc:
-        logger.critical ("Exception: "+str(exc)+". Exiting." )
+    #except Exception as exc:
+    #    logger.critical ("Exception: "+str(exc)+". Exiting." )
 
     finally:
         logger.info ("GPIO     : removing interrupt on GPIO "+str(mygpio_handler.GPIOMap["I_StartButton"])+" and cleaning up GPIOs")
