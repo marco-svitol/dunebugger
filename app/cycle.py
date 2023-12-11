@@ -137,16 +137,8 @@ def cycle(channel):
     if GPIO.input(channel) != 1:
         #logger.debug ("Bouncing: false interrupt on channel"+str(channel))
         return
-    if channel==mygpio_handler.GPIOMap["I_ThreeStateLoop"]: #switching three state to 'loop' mode triggers this function
-        logger.info("ThreeState switched to 'loop' mode on channel"+str(channel))
-    else:
-        logger.info("Start button pressed on channel "+str(channel)) #if function is triggered from button then check three state mode
-        if GPIO.input(mygpio_handler.GPIOMap["I_ThreeStateSingle"])==1 or ignoreThreeStateSingle :
-            logger.debug ("Three state switch on 'single' mode")
-        else:
-            logger.debug ("Three state switch on 'off' mode: not playing")
-            return
     
+    logger.info("Start button pressed on channel "+str(channel)) #if function is triggered from button then check three state mode
     cyclerunning = True
 
     if testdunebuggger:
@@ -324,23 +316,23 @@ def cycle(channel):
         RPiwrite("FarettoVolta",0)
         cycleoffset = 0
         cyclerunning = False
-        if GPIO.input(mygpio_handler.GPIOMap["I_ThreeStateLoop"])!=1 :
-            break # only reason to stay in the loop is that gpio
-        else:
-            time.sleep(2) # pause between cycles in loop mode
+
+        break
 
     logger.info("\nDunebugger listening. Press enter to quit\n")
 
 try:
-    # logging.config.fileConfig('./dunebuggerlogging.conf') #load logging config file
-    # logger = logging.getLogger('dunebuggerLog')
+    ArduinoConnected = False
+
     logger.info('DuneBugger started')        
-    if os.path.exists('/dev/ttyUSB0') :                 # Arduino communication over serial port
-        Arduino = serial.Serial('/dev/ttyUSB0',9600)
-        logger.info('Arduino  : found device on /dev/ttyUSB0 and connected')
-    else :
-        Arduino = False
-        logger.critical('Arduino  : serial port on /dev/ttyUSB0 not available: no com with Arduino')
+    
+    if (ArduinoConnected):
+        if os.path.exists('/dev/ttyUSB0') :                 # Arduino communication over serial port
+            Arduino = serial.Serial('/dev/ttyUSB0',9600)
+            logger.info('Arduino  : found device on /dev/ttyUSB0 and connected')
+        else :
+            Arduino = False
+            logger.critical('Arduino  : serial port on /dev/ttyUSB0 not available: no com with Arduino')
     
     # set initial state
     RPiwrite("LuceSopraNat",1)
@@ -378,21 +370,12 @@ try:
 
     testdunebuggger = False
 
-    #stati motore:
-    # nessun limit switch premuto:
-    #   ruotare cw fino a limit
-    # limitleft premuto
-    #   ruotare cw fino a limit
-    # limitright:
-    #   ok
-    GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor1LimitLeft"],GPIO.RISING,callback=motor.limitTouch,bouncetime=500)
-    GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor1LimitRight"],GPIO.RISING,callback=motor.limitTouch,bouncetime=500)
-    #GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor2LimitLeft"],GPIO.RISING,callback=motor.limitTouch,bouncetime=500)
-    #GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor2LimitLeft"],GPIO.RISING,callback=motor.limitTouch,bouncetime=500)
+    GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor1LimitCCW"],GPIO.RISING,callback=motor.limitTouch,bouncetime=500)
+    GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor1LimitCW"],GPIO.RISING,callback=motor.limitTouch,bouncetime=500)
+    GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor2LimitCCW"],GPIO.RISING,callback=motor.limitTouch,bouncetime=500)
+    GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor2LimitCCW"],GPIO.RISING,callback=motor.limitTouch,bouncetime=500)
     motor.reset(1)
     motor.reset(2)
-
-    
 
     GPIO.add_event_detect(mygpio_handler.GPIOMap["I_StartButton"],GPIO.RISING,callback=lambda x: threading.Thread(target=cycle, args=(x,)).start(),bouncetime=5)
 
