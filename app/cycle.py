@@ -3,7 +3,7 @@
 import os, time, RPi.GPIO as GPIO, serial, random, vlc, subprocess, InTime
 from datetime import datetime
 from setupGPIOs import GPIOMap, initGPIOs
-import motor
+#import motor
 from dunebuggerlogging import logger 
 
 #Functions definition:
@@ -33,6 +33,24 @@ def waituntil(sec):
     logger.debug("Waiting: "+str(sec-cycleoffset))
     time.sleep((sec-cycleoffset) * cyclespeed)
     cycleoffset = sec
+
+def start(GPIO, motornum, rotation="cw",speed=100):
+    pwm = GPIO.PWM(GPIOMap["Motor"+str(motornum)+"PWM"],5000)
+    pwm.start(25)
+    logger.debug("motor "+str(motornum)+" start with rotation "+rotation+" and speed "+str(speed))
+    if rotation == "cw":
+        GPIO.output(GPIOMap["Motor"+str(motornum)+"In1"],GPIO.HIGH)
+        GPIO.output(GPIOMap["Motor"+str(motornum)+"In2"],GPIO.LOW)
+    else:
+        GPIO.output(GPIOMap["Motor"+str(motornum)+"In1"],GPIO.LOW)
+        GPIO.output(GPIOMap["Motor"+str(motornum)+"In2"],GPIO.HIGH)
+    pwm.ChangeDutyCycle(speed)
+
+def stop(GPIO,motornum):
+    logger.debug("motor "+str(motornum)+" stopping")
+    GPIO.output(GPIOMap["Motor"+str(motornum)+"In1"],GPIO.LOW)
+    GPIO.output(GPIOMap["Motor"+str(motornum)+"In2"],GPIO.LOW)
+    GPIO.output(GPIOMap["Motor"+str(motornum)+"PWM"],GPIO.LOW)
 
 #>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>      Music section     <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 def vplaymusic(customsong):
@@ -146,13 +164,13 @@ def cycle(channel):
         #Test relè
         #RPiwrite("DimGiorno",1)
         waituntil(3)
-        motor.start(GPIO, 1,"cw",25)
+        start(GPIO, 1,"cw",25)
         waituntil(10)
-        motor.stop(GPIO, 1)
+        stop(GPIO, 1)
         waituntil(20)
-        motor.start(GPIO, 1,"ccw",100)
+        start(GPIO, 1,"ccw",100)
         waituntil(30)
-        motor.stop(GPIO, 1)
+        stop(GPIO, 1)
         cycleoffset = 0
         return
         t = 0
@@ -331,7 +349,93 @@ try:
         Arduino = False
         logger.critical('Arduino  : serial port on /dev/ttyUSB0 not available: no com with Arduino')
     
-    initGPIOs(GPIO)
+    #Mapping GPIO Names
+    chan_I2C   = [2,3]
+    chan_releA = [5,11,9,10,22,27,17,4]
+    chan_releB = [21,20,16,12,7,8,25,24]
+
+    chan_contr = [6,13,19]
+    chan_ArduinoReset = [14]
+    chan_ResetDimmer = [15]
+
+    chan_motor_1 = [18,1,23]
+
+    GPIOMapPhysical={
+            "SDA1":chan_I2C[0],
+            "SCL1":chan_I2C[1],
+            "Dimmer6":chan_releA[0],
+            "Dimmer5":chan_releA[1],
+            "Dimmer4":chan_releA[2],
+            "Dimmer3":chan_releA[3],
+            "Dimmer2":chan_releA[4],
+            "Rele6":chan_releA[5],
+            "Rele7":chan_releA[6],
+            "Rele8":chan_releA[7],
+            "Rele9":chan_releB[0],
+            "Rele10":chan_releB[1],
+            "Rele11":chan_releB[2],
+            "Rele12":chan_releB[3],
+            "Rele13":chan_releB[4],
+            "Rele14":chan_releB[5],
+            "Rele15":chan_releB[6],
+            "Rele16":chan_releB[7],
+            "Dimmer1Reset":chan_ResetDimmer[0],
+            "ArduinoReset":chan_ArduinoReset[0],
+            "StartButton":chan_contr[0],
+            "ThreeStateSingle":chan_contr[1],
+            "ThreeStateLoop":chan_contr[2],
+            "Motor1PWM":chan_motor_1[0],
+            "Motor1In1":chan_motor_1[1],
+            "Motor1In2":chan_motor_1[2]
+            }
+    GPIOMap={
+            "DimChiesa":GPIOMapPhysical["Dimmer3"],
+            "DimAlba":GPIOMapPhysical["Dimmer4"],
+            "DimTramonto":GPIOMapPhysical["Dimmer2"],
+            "DimGiorno":GPIOMapPhysical["Dimmer6"],
+            "Accensione":GPIOMapPhysical["Rele6"],
+            "AmpliWood":GPIOMapPhysical["Rele7"],
+            "Fontane":GPIOMapPhysical["Rele8"],
+            "Case1":GPIOMapPhysical["Rele9"],
+            "Case2":GPIOMapPhysical["Rele10"],
+            "LuceBosco":GPIOMapPhysical["Rele11"],
+            "LuceSopraNat":GPIOMapPhysical["Rele12"],
+            "FarettoVolta":GPIOMapPhysical["Rele13"],
+            "LuciChiesa":GPIOMapPhysical["Rele14"],
+            "Fuochi":GPIOMapPhysical["Rele15"],
+            "LedFontana":GPIOMapPhysical["Rele16"],
+            "I_StartButton":GPIOMapPhysical["StartButton"],
+            "ResetDimmer":GPIOMapPhysical["Dimmer1Reset"],
+            "ArduinoReset":GPIOMapPhysical["ArduinoReset"],
+            "I_ThreeStateSingle":GPIOMapPhysical["ThreeStateSingle"],
+            "I_ThreeStateLoop":GPIOMapPhysical["ThreeStateLoop"],
+            "Motor1PWM":GPIOMapPhysical["Motor1PWM"],
+            "Motor1In1":GPIOMapPhysical["Motor1In1"],
+            "Motor1In2":GPIOMapPhysical["Motor1In2"]
+            }
+
+    #Dimmer1 I2C - Light dimmering : 0 Fully open - 100 Fully closed
+    Dimmer1Add = '0x27'
+    Dimmer1Ch1 = '0x80'
+    Dimmer1Ch2 = '0x81'
+    Dimmer1Ch3 = '0x82'
+    Dimmer1Ch4 = '0x83'
+
+    #Dimmer2 Serial - Protocol commands
+    Ch1Rst = "900\n"
+    Ch1FIn = "i\n"
+    Ch1FOu = "o\n"
+	
+    # set gpio mode
+    GPIO.setwarnings(False)
+    GPIO.setmode(GPIO.BCM)
+    
+    GPIO.setup(chan_releA, GPIO.OUT,initial=GPIO.HIGH)
+    GPIO.setup(chan_releB, GPIO.OUT,initial=GPIO.HIGH)
+    GPIO.setup(chan_ArduinoReset, GPIO.OUT,initial=GPIO.HIGH)
+    GPIO.setup(chan_ResetDimmer, GPIO.OUT,initial=GPIO.HIGH)
+    GPIO.setup(chan_contr, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+    GPIO.setup(chan_motor_1, GPIO.OUT,initial=GPIO.LOW)
     logger.info ("GPIO     : initilized")
     
     # set initial state
@@ -339,6 +443,7 @@ try:
     RPiwrite("AmpliWood",1)
     RPiwrite("Fuochi",1)
     RPiwrite("Accensione",1)
+
     #Music and sfx
     vlcinstance = vlc.Instance('--aout=alsa')
     musiclistplayer = vlcinstance.media_list_player_new()
