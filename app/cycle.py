@@ -139,6 +139,8 @@ def cycle(channel):
     global sfxVolume
     global cycleoffset
 
+    logger.debug("cycleoffset:"+str(cycleoffset))
+
     time.sleep(0.10)    # avoid catching a bouncing
     if GPIO.input(channel) != 1:
         #logger.debug ("Bouncing: false interrupt on channel"+str(channel))
