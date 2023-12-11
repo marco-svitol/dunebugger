@@ -366,7 +366,7 @@ try:
 
     testdunebuggger = True
 
-    GPIO.add_event_detect(mygpio_handler.GPIOMap["I_StartButton"],GPIO.RISING,callback=lambda x: threading.Thread(target=cycle).start,bouncetime=5)
+    GPIO.add_event_detect(mygpio_handler.GPIOMap["I_StartButton"],GPIO.RISING,callback=lambda x: threading.Thread(target=cycle).start(mygpio_handler.GPIOMap["I_StartButton"]),bouncetime=5)
 
     GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor1LimitLeft"],GPIO.RISING,callback=motor.limitTouch,bouncetime=100)
 
