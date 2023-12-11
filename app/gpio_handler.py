@@ -8,7 +8,7 @@ class GPIOHandler:
     chan_ArduinoReset = [14]
     chan_ResetDimmer = [15]
     chan_motor_1 = [18, 1, 23]
-    chan_limitswitch_motor1 = [0,19]
+    chan_limitswitch_motor1 = [0,26]
 
     GPIOMapPhysical={
             "SDA1":chan_I2C[0],
