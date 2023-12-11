@@ -1,6 +1,7 @@
 from setupGPIOs import GPIOMap
 import RPi.GPIO as GPIO
 from dunebuggerlogging import logger 
+from pwm_handler import pwm_motor1
 
 def start(motornum, rotation="cw",speed=100):
     global pwm_motor1
