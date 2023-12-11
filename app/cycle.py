@@ -4,7 +4,8 @@ import os, time, RPi.GPIO as GPIO, serial, random, vlc, subprocess, InTime
 from datetime import datetime
 from gpio_handler import mygpio_handler
 import motor
-from dunebuggerlogging import logger 
+from dunebuggerlogging import logger
+import threading
 
 #Functions definition:
 
@@ -365,7 +366,7 @@ try:
 
     testdunebuggger = True
 
-    GPIO.add_event_detect(mygpio_handler.GPIOMap["I_StartButton"],GPIO.RISING,callback=cycle,bouncetime=5)
+    GPIO.add_event_detect(mygpio_handler.GPIOMap["I_StartButton"],GPIO.RISING,callback=lambda x: threading.Thread(target=cycle).start(),bouncetime=5)
 
     GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor1LimitLeft"],GPIO.RISING,callback=motor.limitTouch,bouncetime=100)
 
