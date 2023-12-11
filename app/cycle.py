@@ -7,28 +7,19 @@ from dunebuggerlogging import logger
 import threading
 from utils import RPiwrite, waituntil
 from audio_handler import audioPlayer
+from dunebugger_settings import settings
 
-ArduinoConnected = False
-cyclelength = 372
-bouncingTreshold = 0.10
-eastereggEnabled = False
-cycleoffset = 0
-cycle_thread_lock = threading.Lock()
-#debug
-cyclespeed = 1#0.2
 testdunebuggger = False
 
 def cycle_trigger(channel):
     threading.Thread(name='_cycle_thread', target=cycle, args=(channel,)).start()
 
 def cycle(channel):
-    global cycleoffset
+    with settings.cycle_thread_lock:
 
-    with cycle_thread_lock:
-
-        time.sleep(bouncingTreshold)    # avoid catching a bouncing
+        time.sleep(settings.bouncingTreshold)    # avoid catching a bouncing
         if GPIO.input(channel) != 1:
-            logger.debug ("Warning! Below treshold of "+str(bouncingTreshold)+" on channel"+str(channel))
+            logger.debug ("Warning! Below treshold of "+str(bsettings.ouncingTreshold)+" on channel"+str(channel))
             return
         
         logger.info("Start button pressed on channel "+str(channel)) #if function is triggered from button then check three state mode
@@ -40,7 +31,7 @@ def cycle(channel):
         
         audioPlayer.initMusic()
         logger.debug("Starting music")
-        if eastereggEnabled:
+        if settings.eastereggEnabled:
             time.sleep(1)
             if GPIO.input(channel) == 1:
                 audioPlayer.vplaymusic(True)
@@ -69,7 +60,7 @@ def main():
     try:
         logger.info('DuneBugger started')        
         
-        if (ArduinoConnected):
+        if (settings.ArduinoConnected):
             if os.path.exists('/dev/ttyUSB0') :                 # Arduino communication over serial port
                 Arduino = serial.Serial('/dev/ttyUSB0',9600)
                 logger.info('Arduino  : found device on /dev/ttyUSB0 and connected')

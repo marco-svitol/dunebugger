@@ -4,7 +4,7 @@ from datetime import time as dtime
 from datetime import timedelta
 from socket import AF_INET, SOCK_DGRAM
 import socket, struct
- 
+
 def getNTPTime(host = "it.pool.ntp.org"):
     port = 123
     buf = 1024

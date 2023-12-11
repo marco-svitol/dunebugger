@@ -1,6 +1,7 @@
 from dunebuggerlogging import logger
 import os, random, vlc, time, InTime
 from datetime import datetime
+from dunebugger_settings import settings
 
 normalMusicVolume = 95
 normalSfxVolume = 90
@@ -70,8 +71,6 @@ def checkaudioext(filename):
     return False
 
 def vstopaudio():
-    global cyclelength
-
     try:
         if musicVolume >0 or sfxVolume > 0:
             if musicVolume > sfxVolume: # calculate pause interval. Takes higher volume
@@ -106,7 +105,7 @@ def initMusic():
             musicVolume = quietMusicVol
             sfxVolume = quietSfxVol
             logger.info("Orario non sincronizzato: vol musica="+str(musicVolume)+" vol sfx="+str(sfxVolume))
-        elif InTime.duranteCelebrazioni(datetime.now(),cyclelength):
+        elif InTime.duranteCelebrazioni(datetime.now(),settings.cyclelength):
             musicVolume = quietMusicVol
             sfxVolume = quietSfxVol
             logger.info("Siamo durante una celebrazione: vol music="+str(musicVolume)+" vol sfx="+str(sfxVolume))

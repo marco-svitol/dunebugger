@@ -1,6 +1,7 @@
 from dunebuggerlogging import logger
 import time, RPi.GPIO as GPIO
 from gpio_handler import mygpio_handler
+from dunebugger_settings import settings
 
 def ArduinoSend(command):
     global Arduino    
@@ -18,8 +19,6 @@ def RPiwrite(gpio,bit):
     logger.debug("RPi "+gpio+" write "+str(bit))
 
 def waituntil(sec):
-    global cyclespeed
-    global cycleoffset
-    logger.debug("Waiting: "+str(sec-cycleoffset))
-    time.sleep((sec-cycleoffset) * cyclespeed)
-    cycleoffset = sec
+    logger.debug("Waiting: "+str(sec-settings.cycleoffset))
+    time.sleep((sec-settings.cycleoffset) * settings.cyclespeed)
+    settings.cycleoffset = sec
