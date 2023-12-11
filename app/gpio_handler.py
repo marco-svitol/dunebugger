@@ -104,7 +104,7 @@ class GPIOHandler:
 
     def getGPIOLabel(self,GPIONum):
         for key, value in self.GPIOMap.items():
-            logger.debug(str(value)+" == "+str(self.GPIOMap))
+            logger.debug(str(value)+" == "+str(GPIONum))
             if value == GPIONum:
                 return key
             # Return None if the value is not found
