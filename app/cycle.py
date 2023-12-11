@@ -377,11 +377,9 @@ try:
 
     testdunebuggger = True
 
-    GPIO.add_event_detect(mygpio_handler.GPIOMap["I_StartButton"],GPIO.RISING,callback=lambda x: threading.Thread(target=cycle), args=(mygpio_handler.GPIOMap["I_StartButton"]),bouncetime=5)
+    GPIO.add_event_detect(mygpio_handler.GPIOMap["I_StartButton"],GPIO.RISING,callback=lambda x: threading.Thread(target=cycle, args=(x,)).start(),bouncetime=5)
+    GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor1LimitLeft"],GPIO.RISING,callback=motor.limitTouch,bouncetime=500)
 
-    GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor1LimitLeft"],GPIO.RISING,callback=motor.limitTouch,bouncetime=100)
-
-    #GPIO.add_event_detect(mygpio_handler["ThreeStateLoop"],GPIO.RISING,callback=cycle,bouncetime=5)
     logger.info ("GPIO     : Callback function 'cycle' binded to event detection on GPIO "+str(mygpio_handler.GPIOMap["I_StartButton"]))
         
     input("\nDunebugger listening. Press enter to quit\n")

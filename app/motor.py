@@ -1,6 +1,7 @@
 
 from gpio_handler import mygpio_handler
 import RPi.GPIO as GPIO
+import time
 from dunebuggerlogging import logger 
 from pwm_handler import pwm_motor1
 
@@ -23,8 +24,17 @@ def stop(motornum):
 
 def limitTouch(switch):
     logger.debug("Limit touched on switch "+str(switch))
+    motor = 0
     if switch == mygpio_handler.GPIOMap["Motor1LimitLeft"] or switch == mygpio_handler.GPIOMap["Motor1LimitRight"]:
-        stop(1)
+        motor = 1
+    else:
+        motor = 2
+    stop(motor)
+    if switch == mygpio_handler.GPIOMap["Motor1LimitLeft"] or switch == mygpio_handler.GPIOMap["Motor2LimitLeft"]:
+        time.sleep(0.2)
+        start(motor,"cw", speed=100)
+        
+
 
 
     
