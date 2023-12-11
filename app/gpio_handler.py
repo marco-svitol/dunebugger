@@ -1,5 +1,9 @@
 import RPi.GPIO as GPIO
 
+
+
+from dunebuggerlogging import logger 
+
 #PWM 13,19,12,18 # free : 19
 # 2,3 were used for Arduino serial (no rele). Two GPIOs were reserved for Arduino reset (14) relè and Dimmer board reset (15) relè
 
@@ -100,6 +104,7 @@ class GPIOHandler:
 
     def getGPIOLabel(self,GPIONum):
         for key, value in self.GPIOMap.items():
+            logger.debug(str(value)+" == "+str(self.GPIOMap))
             if value == GPIONum:
                 return key
             # Return None if the value is not found
