@@ -378,11 +378,23 @@ try:
 
     testdunebuggger = False
 
-    GPIO.add_event_detect(mygpio_handler.GPIOMap["I_StartButton"],GPIO.RISING,callback=lambda x: threading.Thread(target=cycle, args=(x,)).start(),bouncetime=5)
+    #stati motore:
+    # nessun limit switch premuto:
+    #   ruotare cw fino a limit
+    # limitleft premuto
+    #   ruotare cw fino a limit
+    # limitright:
+    #   ok
     GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor1LimitLeft"],GPIO.RISING,callback=motor.limitTouch,bouncetime=500)
     GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor1LimitRight"],GPIO.RISING,callback=motor.limitTouch,bouncetime=500)
     #GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor2LimitLeft"],GPIO.RISING,callback=motor.limitTouch,bouncetime=500)
     #GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor2LimitLeft"],GPIO.RISING,callback=motor.limitTouch,bouncetime=500)
+    motor.reset(1)
+    motor.reset(2)
+
+    
+
+    GPIO.add_event_detect(mygpio_handler.GPIOMap["I_StartButton"],GPIO.RISING,callback=lambda x: threading.Thread(target=cycle, args=(x,)).start(),bouncetime=5)
 
     logger.info ("GPIO     : Callback function 'cycle' binded to event detection on GPIO "+str(mygpio_handler.GPIOMap["I_StartButton"]))
         
