@@ -135,7 +135,7 @@ def cycle(channel):
 
     time.sleep(0.10)    # avoid catching a bouncing
     if GPIO.input(channel) != 1:
-        #logger.debug ("Bouncing: false interrupt on channel"+str(channel))
+        logger.debug ("Bouncing: false interrupt on channel"+str(channel))
         return
     
     logger.info("Start button pressed on channel "+str(channel)) #if function is triggered from button then check three state mode
@@ -372,10 +372,10 @@ try:
 
     GPIO.add_event_detect(mygpio_handler.GPIOMap["I_StartButton"],GPIO.RISING,callback=lambda x: threading.Thread(target=cycle, args=(x,)).start(),bouncetime=5)
 
-    GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor1LimitCCW"],GPIO.RISING,callback=motor.limitTouch,bouncetime=5)
-    GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor1LimitCW"],GPIO.RISING,callback=motor.limitTouch,bouncetime=5)
-    GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor2LimitCCW"],GPIO.RISING,callback=motor.limitTouch,bouncetime=5)
-    GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor2LimitCW"],GPIO.RISING,callback=motor.limitTouch,bouncetime=5)
+    # GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor1LimitCCW"],GPIO.RISING,callback=motor.limitTouch,bouncetime=5)
+    # GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor1LimitCW"],GPIO.RISING,callback=motor.limitTouch,bouncetime=5)
+    # GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor2LimitCCW"],GPIO.RISING,callback=motor.limitTouch,bouncetime=5)
+    # GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor2LimitCW"],GPIO.RISING,callback=motor.limitTouch,bouncetime=5)
     # motor.reset(1)
     #motor.reset(2)
 
