@@ -20,7 +20,7 @@ def switchon():
     global showoffsched
     cmd = ["tmux","send","-t",mainpaneid,"q","ENTER"]
     subprocess.Popen(cmd)
-    cmd = ["tmux","send","-t",mainpaneid,"python /home/pi/dunebugger/cycle.py","ENTER"]
+    cmd = ["tmux","send","-t",mainpaneid,"python "+installfolder+"/app/cycle.py","ENTER"]
     logger.info ("Switching on dunebugger")
     subprocess.Popen(cmd)
     showoffsched = True
@@ -37,7 +37,7 @@ def switchoff():
 
 def tmuxnewpane():
     pipepath = "paneid"
-    cmd = ["tmux","split-window","-h","-c","/home/pi/dunebugger"]
+    cmd = ["tmux","split-window","-h","-c",installfolder]
     subprocess.Popen(cmd)
     if not os.path.exists(pipepath):
         logger.debug("Creating named pipe")
@@ -119,7 +119,8 @@ def checktimeonandswitch():
         logger.info("Current time is after a switch off and before a switch on: switching off")
         switchoff()
 
-logging.config.fileConfig('/home/pi/dunebugger/supervisorlogging.conf') #load logging config file
+installfolder = '/home/marco/dunebugger'
+logging.config.fileConfig(installfolder+'/app/config/supervisorlogging.conf') #load logging config file
 logger = logging.getLogger('supervisorLog')
 logger.info('Dunebugger supervisor started')
 
@@ -150,7 +151,7 @@ if not isinstance(nettime,int):
     if not isinstance(nettime,int):
         logger.warning ("time not synced at startup: scheduling timesyncjob with random frequency between " + str(timesyncmin) + " secs and " + str(timesyncmax) + " secs")
         timesyncJob = schedule.every(timesyncmin).to(timesyncmax).seconds.do(checkTimeSync)
-        #fo = open("/home/pi/dunebugger/timenotsynced", "wb") #tells dunebugger that syncing is not working....
+        #fo = open(installfolder+"timenotsynced", "wb") #tells dunebugger that syncing is not working....
         #fo.close()
 if isinstance(nettime,int):
     logger.info("...time sync ok. Time is "+time.ctime(nettime))
