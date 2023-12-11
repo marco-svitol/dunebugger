@@ -34,7 +34,7 @@ def waituntil(sec):
     time.sleep((sec-cycleoffset) * cyclespeed)
     cycleoffset = sec
 
-def start(GPIO, motornum, rotation="cw",speed=100):
+def start(motornum, rotation="cw",speed=100):
     pwm = GPIO.PWM(GPIOMap["Motor"+str(motornum)+"PWM"],5000)
     pwm.start(25)
     logger.debug("motor "+str(motornum)+" start with rotation "+rotation+" and speed "+str(speed))
@@ -46,7 +46,7 @@ def start(GPIO, motornum, rotation="cw",speed=100):
         GPIO.output(GPIOMap["Motor"+str(motornum)+"In2"],GPIO.HIGH)
     pwm.ChangeDutyCycle(speed)
 
-def stop(GPIO,motornum):
+def stop(motornum):
     logger.debug("motor "+str(motornum)+" stopping")
     GPIO.output(GPIOMap["Motor"+str(motornum)+"In1"],GPIO.LOW)
     GPIO.output(GPIOMap["Motor"+str(motornum)+"In2"],GPIO.LOW)
@@ -164,13 +164,13 @@ def cycle(channel):
         #Test relè
         #RPiwrite("DimGiorno",1)
         waituntil(3)
-        start(GPIO, 1,"cw",25)
+        start(1,"cw",25)
         waituntil(10)
-        stop(GPIO, 1)
+        stop(1)
         waituntil(20)
-        start(GPIO, 1,"ccw",100)
+        start(1,"ccw",100)
         waituntil(30)
-        stop(GPIO, 1)
+        stop(1)
         cycleoffset = 0
         return
         t = 0
@@ -435,7 +435,7 @@ try:
     GPIO.setup(chan_ArduinoReset, GPIO.OUT,initial=GPIO.HIGH)
     GPIO.setup(chan_ResetDimmer, GPIO.OUT,initial=GPIO.HIGH)
     GPIO.setup(chan_contr, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-    GPIO.setup(chan_motor_1, GPIO.OUT,initial=GPIO.LOW)
+    GPIO.setup(chan_motor_1, GPIO.OUT)#,initial=GPIO.LOW)
     logger.info ("GPIO     : initilized")
     
     # set initial state
