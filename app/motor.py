@@ -22,7 +22,8 @@ def stop(motornum):
     GPIO.output(mygpio_handler.GPIOMap["Motor"+str(motornum)+"PWM"],GPIO.LOW)
 
 def limitTouch(switch):
-    logger.debug("Limit touched on switch "+str(switch))
+    GPIOLabel = mygpio_handler.getGPIOLabel(str(switch))
+    logger.debug("Limit touched on switch "+GPIOLabel)
     motornum = 0
     if switch == mygpio_handler.GPIOMap["Motor1LimitCCW"] or switch == mygpio_handler.GPIOMap["Motor1LimitCW"]:
         motornum = 1
@@ -37,15 +38,16 @@ def reset(motornum):
     pos = ""
     if GPIO.input(mygpio_handler.GPIOMap["Motor"+str(motornum)+"LimitCW"]) == GPIO.HIGH:
         pos = "CW limit touch"
+        logger.debug("Motor "+str(motornum)+" position is "+pos+". Short CCW and then CW.")
         start(motornum,"ccw",100)
         time.sleep(0.5)
     elif GPIO.input(mygpio_handler.GPIOMap["Motor"+str(motornum)+"LimitCCW"]) == GPIO.HIGH:
         pos = "CCW limit touch"
     else:
         pos = "floating"
-    logger.debug("Motor "+str(motornum)+" position is "+pos+". Resetting")
+    logger.debug("Motor "+str(motornum)+" position is "+pos+". Reaching CW limit.")
     start(motornum,"cw",100)
-        
+
 
 
 

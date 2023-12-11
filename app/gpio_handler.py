@@ -98,4 +98,11 @@ class GPIOHandler:
     def cleanup(self):
         GPIO.cleanup()
 
+    def getGPIOLabel(self,GPIONum):
+        for key, value in self.GPIOMap.items():
+            if value == GPIONum:
+                return key
+            # Return None if the value is not found
+            return None
+
 mygpio_handler = GPIOHandler()
