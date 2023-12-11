@@ -79,9 +79,11 @@ def main():
         GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor1LimitCW"],GPIO.RISING,callback=motor.limitTouch,bouncetime=200)
         GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor2LimitCCW"],GPIO.RISING,callback=motor.limitTouch,bouncetime=200)
         GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor2LimitCW"],GPIO.RISING,callback=motor.limitTouch,bouncetime=200)
-        motor_reset_thread = threading.Thread(target=motor.reset(1))
+        
+        motor_reset_event = threading.Event()
+        motor_reset_thread = threading.Thread(target=motor.reset_motor_and_set_event, args=(motor_reset_event,1))
         motor_reset_thread.start()
-        motor_reset_thread.join()
+        motor_reset_event.wait()
         #motor.reset(2)
         
         GPIO.add_event_detect(mygpio_handler.GPIOMap["I_StartButton"],GPIO.RISING,callback=cycle_trigger,bouncetime=5)

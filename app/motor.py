@@ -48,6 +48,10 @@ def reset(motornum):
     logger.debug("Motor "+str(motornum)+" position is "+pos+". Reaching CW limit.")
     start(motornum,"cw",100)
 
+def reset_motor_and_set_event(event, motornum):
+    reset(motornum)
+    event.set()
+
 
 
 
