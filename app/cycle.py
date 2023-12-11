@@ -143,6 +143,13 @@ def cycle(channel):
             return
 
     if testdunebuggger:
+        pwm = GPIO.PWM(GPIOMap["Motor1PWM"],5000)
+        pwm.start(25)
+        logger.debug("motor 1 start with rotation cw and speed 100")
+        GPIO.output(GPIOMap["Motor1In1"],GPIO.HIGH)
+        GPIO.output(GPIOMap["Motor1In2"],GPIO.LOW)
+        pwm.ChangeDutyCycle(100)
+        return
         #Test relè
         #RPiwrite("DimGiorno",1)
         waituntil(3)
