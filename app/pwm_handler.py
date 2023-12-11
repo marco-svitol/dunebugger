@@ -1,4 +1,5 @@
 import RPi.GPIO as GPIO
+from setupGPIOs import GPIOMap
 
 class PWMHandler:
     def __init__(self, GPIOnum, frequency=5000, duty_cycle=100):
