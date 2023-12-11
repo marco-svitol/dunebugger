@@ -129,12 +129,10 @@ def cycle(channel):
     global sfxVolume
     global cycleoffset
 
-    if cyclerunning:
-        logger.warning("Cycle is already running in thread"+threading.current_thread().name)
+    if cyclerunning :
+        logger.warning("Cycle is already running in thread "+threading.current_thread().name)
         return
 
-    cyclerunning = True
-    
     time.sleep(0.10)    # avoid catching a bouncing
     if GPIO.input(channel) != 1:
         #logger.debug ("Bouncing: false interrupt on channel"+str(channel))
@@ -148,6 +146,8 @@ def cycle(channel):
         else:
             logger.debug ("Three state switch on 'off' mode: not playing")
             return
+    
+    cyclerunning = True
 
     if testdunebuggger:
         #Test relè
