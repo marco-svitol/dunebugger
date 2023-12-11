@@ -24,6 +24,7 @@ def motortest(x):
     #x=input()
     print("motortest func in")
     p.ChangeDutyCycle(100)
+    global in1, in2, en, temp1
 
     if x=='r':
         print("run")
