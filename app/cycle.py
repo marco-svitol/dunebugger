@@ -24,7 +24,7 @@ def dimmer1(channel, level, speed):
 
 def RPiwrite(gpio,bit):
     bit = not bit
-    GPIO.output(mygpio_handler[gpio],bit)
+    GPIO.output(mygpio_handler.GPIOMap[gpio],bit)
     logger.debug("RPi "+gpio+" write "+str(bit))
 
 def waituntil(sec):
