@@ -380,6 +380,9 @@ try:
 
     GPIO.add_event_detect(mygpio_handler.GPIOMap["I_StartButton"],GPIO.RISING,callback=lambda x: threading.Thread(target=cycle, args=(x,)).start(),bouncetime=5)
     GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor1LimitLeft"],GPIO.RISING,callback=motor.limitTouch,bouncetime=500)
+    GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor1LimitRight"],GPIO.RISING,callback=motor.limitTouch,bouncetime=500)
+    #GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor2LimitLeft"],GPIO.RISING,callback=motor.limitTouch,bouncetime=500)
+    #GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor2LimitLeft"],GPIO.RISING,callback=motor.limitTouch,bouncetime=500)
 
     logger.info ("GPIO     : Callback function 'cycle' binded to event detection on GPIO "+str(mygpio_handler.GPIOMap["I_StartButton"]))
         
