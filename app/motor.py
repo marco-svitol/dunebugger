@@ -13,6 +13,7 @@ def start(motornum, rotation="cw",speed=100):
         GPIO.output(GPIOMap["Motor"+str(motornum)+"In1"],GPIO.LOW)
         GPIO.output(GPIOMap["Motor"+str(motornum)+"In2"],GPIO.HIGH)
     pwm.ChangeDutyCycle(speed)
+    input("k")
 
 def stop(motornum):
     logger.debug("motor "+str(motornum)+" stopping")
