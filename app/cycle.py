@@ -55,6 +55,13 @@ def cycle(channel):
         logger.debug("Starting SFX")
         audioPlayer.vplaysfx(audioPlayer.sfxfile)
 
+#---------------- cycle
+        RPiwrite("Fuochi",1)
+        motor.start(1,"ccw",30)
+        waituntil(15)
+        audioPlayer.vstopaudio()
+#--------------- end cycle
+
         cycleoffset = 0
         logger.info("\nDunebugger listening. Press enter to quit\n")
 
