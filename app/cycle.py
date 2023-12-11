@@ -367,7 +367,7 @@ try:
 
     GPIO.add_event_detect(mygpio_handler.GPIOMap["I_StartButton"],GPIO.RISING,callback=cycle,bouncetime=5)
 
-    GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor1LimitLeft"],GPIO.RISING,callback=motor.limitTouch(),bouncetime=100)
+    GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor1LimitLeft"],GPIO.RISING,callback=motor.limitTouch,bouncetime=100)
 
     #GPIO.add_event_detect(mygpio_handler["ThreeStateLoop"],GPIO.RISING,callback=cycle,bouncetime=5)
     logger.info ("GPIO     : Callback function 'cycle' binded to event detection on GPIO "+str(mygpio_handler.GPIOMap["I_StartButton"]))
