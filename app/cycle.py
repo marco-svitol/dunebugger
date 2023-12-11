@@ -363,7 +363,7 @@ try:
     sfxuccelli = "allodole.mp3"
 
     cyclespeed = 1#0.2
-    bouncingTreshold = 0.25
+    bouncingTreshold = 0.10
     ignoreThreeStateSingle = True
     ignoreQuietTime = True
     eastereggEnabled = False
