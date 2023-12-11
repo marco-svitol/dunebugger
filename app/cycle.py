@@ -363,8 +363,8 @@ try:
     cyclelength = 372
 	
     fadeoutsec = 8 #fade out seconds
-    musicpath = "./music/"
-    sfxpath = "./sfx/"
+    musicpath = "../music/"
+    sfxpath = "../sfx/"
     sfxfile = "2009.mp3"
     easteregg = "ohhche.mp3"
     entrysong = "fincosong2022.mp3"
