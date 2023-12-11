@@ -1,5 +1,6 @@
 import RPi.GPIO as GPIO
-from setupGPIOs import GPIOMap
+#from setupGPIOs import GPIOMap
+from gpio_handler import mygpio_handler
 
 class PWMHandler:
     def __init__(self, GPIOnum, frequency=5000, duty_cycle=100):
@@ -17,4 +18,4 @@ class PWMHandler:
     def cleanup(self):
         self.pwm.stop()
 
-pwm_motor1 = PWMHandler(GPIO.PWM(GPIOMap["Motor1PWM"],5000))
+pwm_motor1 = PWMHandler(GPIO.PWM(mygpio_handler.GPIOMap["Motor1PWM"],5000))

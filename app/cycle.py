@@ -2,7 +2,7 @@
 # coding: utf8
 import os, time, RPi.GPIO as GPIO, serial, random, vlc, subprocess, InTime
 from datetime import datetime
-from setupGPIOs import GPIOMap, initGPIOs
+from gpio_handler import mygpio_handler
 import motor
 from dunebuggerlogging import logger 
 
@@ -132,11 +132,11 @@ def cycle(channel):
     if GPIO.input(channel) != 1:
         #logger.debug ("Bouncing: false interrupt on channel"+str(channel))
         return
-    if channel==GPIOMap["I_ThreeStateLoop"]: #switching three state to 'loop' mode triggers this function
+    if channel==mygpio_handler.GPIOMap["I_ThreeStateLoop"]: #switching three state to 'loop' mode triggers this function
         logger.info("ThreeState switched to 'loop' mode on channel"+str(channel))
     else:
         logger.info("Start button pressed on channel "+str(channel)) #if function is triggered from button then check three state mode
-        if GPIO.input(GPIOMap["I_ThreeStateSingle"])==1 or ignoreThreeStateSingle :
+        if GPIO.input(mygpio_handler.GPIOMap["I_ThreeStateSingle"])==1 or ignoreThreeStateSingle :
             logger.debug ("Three state switch on 'single' mode")
         else:
             logger.debug ("Three state switch on 'off' mode: not playing")
@@ -162,7 +162,7 @@ def cycle(channel):
         musicplayer.audio_set_channel(2)
         vplaysfx(easteregg)
         musicplayer.audio_set_channel(3)
-        for k in GPIOMap.keys():
+        for k in mygpio_handler.GPIOMap.keys():
             if not k.startswith('Dim') and not k.startswith('I_'):
                 logger.info ("GPIO"+str(k))
                 waituntil(t)
@@ -175,7 +175,7 @@ def cycle(channel):
         vplaysfx(sfxuccelli)
         t+=5
         vplaymusic(False)
-        for k in GPIOMap.keys():
+        for k in mygpio_handler.GPIOMap.keys():
             if k.startswith('Dim') and not k.startswith('I_'):
                 logger.info ("GPIO"+str(k))
                 waituntil(t)
@@ -313,7 +313,7 @@ def cycle(channel):
         waituntil(409)
         RPiwrite("FarettoVolta",0)
         cycleoffset = 0
-        if GPIO.input(GPIOMap["I_ThreeStateLoop"])!=1 :
+        if GPIO.input(mygpio_handler.GPIOMap["I_ThreeStateLoop"])!=1 :
             break # only reason to stay in the loop is that gpio
         else:
             time.sleep(2) # pause between cycles in loop mode
@@ -330,10 +330,6 @@ try:
     else :
         Arduino = False
         logger.critical('Arduino  : serial port on /dev/ttyUSB0 not available: no com with Arduino')
-    
-    
-    initGPIOs()
-    logger.info ("GPIO     : initilized")
     
     # set initial state
     RPiwrite("LuceSopraNat",1)
@@ -370,10 +366,10 @@ try:
 
     testdunebuggger = True
 
-    GPIO.add_event_detect(GPIOMap["I_StartButton"],GPIO.RISING,callback=cycle,bouncetime=5)
+    GPIO.add_event_detect(mygpio_handler.GPIOMap["I_StartButton"],GPIO.RISING,callback=cycle,bouncetime=5)
 
     #GPIO.add_event_detect(GPIOMap["ThreeStateLoop"],GPIO.RISING,callback=cycle,bouncetime=5)
-    logger.info ("GPIO     : Callback function 'cycle' binded to event detection on GPIO "+str(GPIOMap["I_StartButton"]))
+    logger.info ("GPIO     : Callback function 'cycle' binded to event detection on GPIO "+str(mygpio_handler.GPIOMap["I_StartButton"]))
         
     input("\nDunebugger listening. Press enter to quit\n")
 
@@ -384,9 +380,9 @@ except Exception as exc:
     logger.critical ("Exception: "+str(exc)+". Exiting." )
 
 finally:
-    logger.info ("GPIO     : removing interrupt on GPIO "+str(GPIOMap["I_StartButton"])+" and cleaning up GPIOs")
-    GPIO.remove_event_detect(GPIOMap["I_StartButton"])
-    GPIO.cleanup()
+    logger.info ("GPIO     : removing interrupt on GPIO "+str(mygpio_handler.GPIOMap["I_StartButton"])+" and cleaning up GPIOs")
+    GPIO.remove_event_detect(mygpio_handler.GPIOMap["I_StartButton"])
+    mygpio_handler.cleanup()
     vstopaudio()
 
 #NICETOHAVE:
