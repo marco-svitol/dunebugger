@@ -119,7 +119,7 @@ def checktimeonandswitch():
         logger.info("Current time is after a switch off and before a switch on: switching off")
         switchoff()
 
-installfolder = '/home/marco/dunebugger'
+installfolder = '/home/pi/dunebugger'
 logging.config.fileConfig(installfolder+'/app/config/supervisorlogging.conf') #load logging config file
 logger = logging.getLogger('supervisorLog')
 logger.info('Dunebugger supervisor started')
