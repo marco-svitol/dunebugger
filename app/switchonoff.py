@@ -39,7 +39,7 @@ def switchoff():
 def tmuxnewpane():
     global installfolder
     pipepath = "paneid"
-    cmd = ["tmux","split-window","-h","-c","/home/pi/dunebugger"]
+    cmd = ["tmux","split-window","-h","-c","/home/pi/dunebugger/app"]
     subprocess.Popen(cmd)
     if not os.path.exists(pipepath):
         logger.debug("Creating named pipe")
