@@ -18,6 +18,7 @@ def tmuxsessioneexist(sessname):
 
 def switchon():
     global showoffsched
+    global installfolder
     cmd = ["tmux","send","-t",mainpaneid,"q","ENTER"]
     subprocess.Popen(cmd)
     cmd = ["tmux","send","-t",mainpaneid,"python "+installfolder+"/app/cycle.py","ENTER"]
@@ -36,6 +37,7 @@ def switchoff():
     showonsched = True
 
 def tmuxnewpane():
+    global installfolder
     pipepath = "paneid"
     cmd = ["tmux","split-window","-h","-c",installfolder]
     subprocess.Popen(cmd)
