@@ -49,7 +49,7 @@ def cycle(channel):
 #---------------- cycle
         RPiwrite("Fuochi",1)
         motor.start(1,"ccw",30)
-        waituntil(15)
+        waituntil(150)
         audioPlayer.vstopaudio()
 #--------------- end cycle
 
@@ -81,7 +81,6 @@ def main():
         motor_reset_event = threading.Event()
         GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor1LimitCCW"],GPIO.RISING,callback=motor.limitTouch,bouncetime=200)
         GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor1LimitCW"], GPIO.RISING, callback=callback_with_params, bouncetime=200)
-        #GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor1LimitCW"],GPIO.RISING,callback=motor.limitTouch(channel,motor_reset_event),bouncetime=200)
         GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor2LimitCCW"],GPIO.RISING,callback=motor.limitTouch,bouncetime=200)
         GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor2LimitCW"],GPIO.RISING,callback=motor.limitTouch,bouncetime=200)
         motor_reset_thread.start()
