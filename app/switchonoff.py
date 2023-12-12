@@ -21,7 +21,7 @@ def switchon():
     global installfolder
     cmd = ["tmux","send","-t",mainpaneid,"q","ENTER"]
     subprocess.Popen(cmd)
-    cmd = ["tmux","send","-t",mainpaneid,"python "+installfolder+"/app/cycle.py","ENTER"]
+    cmd = ["tmux","send","-t",mainpaneid,"python /home/pi/dunebugger/app/cycle.py","ENTER"]
     logger.info ("Switching on dunebugger")
     subprocess.Popen(cmd)
     showoffsched = True
@@ -39,7 +39,7 @@ def switchoff():
 def tmuxnewpane():
     global installfolder
     pipepath = "paneid"
-    cmd = ["tmux","split-window","-h","-c",installfolder]
+    cmd = ["tmux","split-window","-h","-c","/home/pi/dunebugger"]
     subprocess.Popen(cmd)
     if not os.path.exists(pipepath):
         logger.debug("Creating named pipe")
@@ -122,7 +122,7 @@ def checktimeonandswitch():
         switchoff()
 
 installfolder = '/home/pi/dunebugger'
-logging.config.fileConfig(installfolder+'/app/config/supervisorlogging.conf') #load logging config file
+logging.config.fileConfig('/home/pi/dunebugger/app/config/supervisorlogging.conf') #load logging config file
 logger = logging.getLogger('supervisorLog')
 logger.info('Dunebugger supervisor started')
 
