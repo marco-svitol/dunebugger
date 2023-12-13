@@ -69,8 +69,7 @@ def main():
                 logger.critical('Arduino  : serial port on /dev/ttyUSB0 not available: no com with Arduino')
         
         # set initial state
-        RPiwrite("LuceSopraNat",1)
-        RPiwrite("AmpliWood",1)
+        RPiwrite("SchedaMotori",1)
         RPiwrite("Fuochi",1)
         RPiwrite("Accensione",1)
 
