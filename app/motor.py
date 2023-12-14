@@ -53,6 +53,8 @@ def reset(motornum):
 
 def reset_motor_and_set_event(event, motornum):
     reset(motornum)
+    logger.debug("Event.set in reset_motor_and_set_event")
+    #can be removed?
     event.set()
 
 

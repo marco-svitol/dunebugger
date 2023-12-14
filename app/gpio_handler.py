@@ -1,4 +1,8 @@
 import RPi.GPIO as GPIO
+from utils import RPiwrite, waituntil
+import motor
+from audio_handler import audioPlayer
+
 #PWM 13,19,12,18 # free : 19
 # 2,3 were used for Arduino serial (no rele). Two GPIOs were reserved for Arduino reset (14) relè and Dimmer board reset (15) relè
 
@@ -14,6 +18,26 @@ import RPi.GPIO as GPIO
 #     Ch1FIn = "i\n"
 #     Ch1FOu = "o\n"
 
+# Dimmer su rele4 va fatto diventare relè 12V?
+# DimIngresso dimmerabili?
+# Natività alwayson very little led
+# Led Always on sotto le panche
+# 
+# Quindi alwayson:
+#   Stereo
+#   Insegna
+#   Luce Nat piccola
+#   Led sotto le panche
+#  
+# alternative: 
+#   insegna non sotto centralina
+#   dimingresso non dimmerabie, va sotto relè
+#   luce/i ombre non relè ma dimmer o 220 invece di 12/5 v...
+#
+# emergenze:
+#   non funziona questione piatti:
+#       luci ombre on/off senza rotazione, tieni spento circuito motori
+#  
 class GPIOHandler:
     chan_releA = [5, 11, 9, 10, 22, 27, 17, 4]
     chan_releB = [21, 20, 16, 12, 7, 8, 25, 24]
@@ -29,7 +53,7 @@ class GPIOHandler:
             "Dimmer5":chan_releA[1],
             "Dimmer4":chan_releA[2],
             "Dimmer3":chan_releA[3],
-            "Dimmer2":chan_releA[4],
+            "Rele5":chan_releA[4],
             "Rele6":chan_releA[5],
             "Rele7":chan_releA[6],
             "Rele8":chan_releA[7],
@@ -54,21 +78,22 @@ class GPIOHandler:
             "Motor2LimitB":chan_limitswitch_motor2[1],
             }
     GPIOMap={
-            "DimChiesa":GPIOMapPhysical["Dimmer3"],
-            "DimAlba":GPIOMapPhysical["Dimmer4"],
-            "DimTramonto":GPIOMapPhysical["Dimmer2"],
-            "DimGiorno":GPIOMapPhysical["Dimmer6"],
+            "DimIngresso":GPIOMapPhysical["Dimmer6"],
+            "DimStandby":GPIOMapPhysical["Dimmer5"],
+            "DimTramonto":GPIOMapPhysical["Dimmer4"],
+            "DimGiorno":GPIOMapPhysical["Dimmer3"],
+            "Ombra2":GPIOMapPhysical["Rele5"],
             "Accensione":GPIOMapPhysical["Rele6"],
             "SchedaMotori":GPIOMapPhysical["Rele7"],
-            "_not_used_":GPIOMapPhysical["Rele8"],
+            "Ombra1":GPIOMapPhysical["Rele8"],
             "Case1":GPIOMapPhysical["Rele9"],
             "Case2":GPIOMapPhysical["Rele10"],
-            "LuceBosco":GPIOMapPhysical["Rele11"],
-            "LuceSopraNat":GPIOMapPhysical["Rele12"],
-            "FarettoVolta":GPIOMapPhysical["Rele13"],
-            "LuciChiesa":GPIOMapPhysical["Rele14"],
-            "Fuochi":GPIOMapPhysical["Rele15"],
-            "LedFontana":GPIOMapPhysical["Rele16"],
+            "Case3":GPIOMapPhysical["Rele11"],
+            "Fuochi1":GPIOMapPhysical["Rele12"],
+            "LuceNativita":GPIOMapPhysical["Rele13"],
+            "PompaAcqua":GPIOMapPhysical["Rele14"],
+            "Fuochi2":GPIOMapPhysical["Rele15"],
+            "AlwaysOn":GPIOMapPhysical["Rele16"],
             "I_StartButton":GPIOMapPhysical["StartButton"],
             "Motor1PWM":GPIOMapPhysical["Motor1PWM"],
             "Motor1In1":GPIOMapPhysical["Motor1In1"],
@@ -103,5 +128,64 @@ class GPIOHandler:
                 return key
             # Return None if the value is not found
         return "_not_found_"
+
+    def setStandBy():
+        RPiwrite("SchedaMotori",1)
+        RPiwrite("LuceNativita",1)
+        RPiwrite("Accensione",1)
+        RPiwrite("AlwaysOn",1)
+        RPiwrite("DimIngresso",1)
+        RPiwrite("Case1",1)
+        RPiwrite("Case2",1)
+        RPiwrite("Case3",1)
+        RPiwrite("Fuochi1",1)
+        RPiwrite("Fuochi2",1)
+        RPiwrite("DimStandby",1)
+
+    def testCommands():
+        waituntil(3)
+        motor.start(1,"ccw",30)
+
+    def sequence():
+        waituntil(5)
+        RPiwrite("DimIngresso",0)
+        RPiwrite("PompaAcqua",1)
+        waituntil(12)
+        RPiwrite("Case1",0)
+        waituntil(13)
+        RPiwrite("Case2",0)
+        waituntil(15)
+        RPiwrite("Fuochi1",0)
+        RPiwrite("DimStandby",0)
+        waituntil(18)
+        RPiwrite("Case3",0)
+        waituntil(25)
+        RPiwrite("Fuochi2",0)
+        RPiwrite("LuceNativita",0)
+        motor.start(1,"ccw",85)
+        waituntil(26)
+        RPiwrite("Ombre1",1)
+        waituntil(47)
+        motor.start(2,"ccw",85)
+        waituntil(48)
+        RPiwrite("Ombre2",1)
+        waituntil(49)
+        RPiwrite("Ombre1",0)
+        waituntil(71)
+        RPiwrite("Ombre2",0)
+        RPiwrite("DimIngresso",1)
+        waituntil(73)
+        RPiwrite("LuceNativita",1)
+        waituntil(75)
+        RPiwrite("Fuochi1",1)
+        RPiwrite("Case1",1)
+        waituntil(78)
+        RPiwrite("Case2",1)
+        RPiwrite("Fuochi2",1)
+        waituntil(81)
+        RPiwrite("Case3",1)
+        waituntil(100)
+        RPiwrite("PompaAcqua",0)
+        audioPlayer.vstopaudio()
 
 mygpio_handler = GPIOHandler()

@@ -5,7 +5,6 @@ from gpio_handler import mygpio_handler
 import motor
 from dunebuggerlogging import logger
 import threading
-from utils import RPiwrite, waituntil
 from audio_handler import audioPlayer
 from dunebugger_settings import settings
 
@@ -25,8 +24,7 @@ def cycle(channel):
         logger.info("Start button pressed on channel "+str(channel)) #if function is triggered from button then check three state mode
 
         if testdunebuggger:
-            waituntil(3)
-            motor.start(1,"ccw",30)
+            mygpio_handler.testCommands()
             return
         
         audioPlayer.initMusic()
@@ -46,13 +44,9 @@ def cycle(channel):
         logger.debug("Starting SFX")
         audioPlayer.vplaysfx(audioPlayer.sfxfile)
 
-#---------------- cycle
-        RPiwrite("Fuochi",1)
-        motor.start(1,"ccw",30)
-        waituntil(150)
-        audioPlayer.vstopaudio()
-#--------------- end cycle
-
+        mygpio_handler.sequence()
+        mygpio_handler.setStandBy()
+        
         settings.cycleoffset = 0
         logger.info("\nDunebugger listening. Press enter to quit\n")
 
@@ -69,23 +63,32 @@ def main():
                 logger.critical('Arduino  : serial port on /dev/ttyUSB0 not available: no com with Arduino')
         
         # set initial state
-        RPiwrite("SchedaMotori",1)
-        RPiwrite("Fuochi",1)
-        RPiwrite("Accensione",1)
+        mygpio_handler.setStandBy()
 
-        motor_reset_event = threading.Event()
-        # Add event detection for motor limit touch with functools.partial
-        callback_with_params = lambda channel: motor.limitTouch(channel, motor_reset_event)
-        motor_reset_thread = threading.Thread(target=motor.reset_motor_and_set_event, args=(motor_reset_event,1))
-        motor_reset_event = threading.Event()
+        # To make the motor.reset syncronous and achieve the GPIO.add_event_detect on I_StartButton to run only after motor reset
+        # we are setting a motor_reset_event.wait before the add_event_detect of I_StartButton.
+        # The motor_reset_event.set is set by limitTouch only after 
+        motor1_reset_event = threading.Event()
+        motor1_callback_with_params = lambda channel: motor.limitTouch(channel, motor1_reset_event)
+        motor1_reset_thread = threading.Thread(target=motor.reset_motor_and_set_event, args=(motor1_reset_event,1))
+        # can be removed?:
+        motor1_reset_event = threading.Event()
         GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor1LimitCCW"],GPIO.RISING,callback=motor.limitTouch,bouncetime=200)
-        GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor1LimitCW"], GPIO.RISING, callback=callback_with_params, bouncetime=200)
+        GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor1LimitCW"], GPIO.RISING, callback=motor1_callback_with_params, bouncetime=200)
+
+        motor2_reset_event = threading.Event()
+        motor2_callback_with_params = lambda channel: motor.limitTouch(channel, motor2_reset_event)
+        motor2_reset_thread = threading.Thread(target=motor.reset_motor_and_set_event, args=(motor2_reset_event,1))
+        # can be removed?:
+        motor2_reset_event = threading.Event()
         GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor2LimitCCW"],GPIO.RISING,callback=motor.limitTouch,bouncetime=200)
-        GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor2LimitCW"],GPIO.RISING,callback=motor.limitTouch,bouncetime=200)
-        motor_reset_thread.start()
-        motor_reset_event.wait()
-        #motor.reset(2)
-        
+        GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor2LimitCW"],GPIO.RISING,callback=motor2_callback_with_params,bouncetime=200)
+
+        motor1_reset_thread.start()
+        motor2_reset_thread.start()
+        motor1_reset_event.wait()
+        motor2_reset_event.wait()
+
         GPIO.add_event_detect(mygpio_handler.GPIOMap["I_StartButton"],GPIO.RISING,callback=cycle_trigger,bouncetime=5)
         logger.info ("GPIO     : Callback function 'cycle_trigger' binded to event detection on GPIO "+str(mygpio_handler.GPIOMap["I_StartButton"]))
         input("\nDunebugger listening. Press enter to quit\n")
@@ -93,8 +96,8 @@ def main():
     except KeyboardInterrupt:
         logger.debug ("stopped through keyboard")
         
-    #except Exception as exc:
-    #    logger.critical ("Exception: "+str(exc)+". Exiting." )
+    except Exception as exc:
+        logger.critical ("Exception: "+str(exc)+". Exiting." )
 
     finally:
         logger.info ("GPIO     : removing interrupt on GPIO "+str(mygpio_handler.GPIOMap["I_StartButton"])+" and cleaning up GPIOs")
