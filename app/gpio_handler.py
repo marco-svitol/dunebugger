@@ -1,6 +1,4 @@
 import RPi.GPIO as GPIO
-from utils import RPiwrite, waituntil
-#import motor
 from audio_handler import audioPlayer
 
 #PWM 13,19,12,18 # free : 19
@@ -128,65 +126,5 @@ class GPIOHandler:
                 return key
             # Return None if the value is not found
         return "_not_found_"
-
-    def setStandBy(self):
-        RPiwrite("SchedaMotori",1)
-        RPiwrite("LuceNativita",1)
-        RPiwrite("Accensione",1)
-        RPiwrite("AlwaysOn",1)
-        RPiwrite("DimIngresso",1)
-        RPiwrite("Case1",1)
-        RPiwrite("Case2",1)
-        RPiwrite("Case3",1)
-        RPiwrite("Fuochi1",1)
-        RPiwrite("Fuochi2",1)
-        RPiwrite("DimStandby",1)
-
-    def testCommands(self):
-        waituntil(3)
-        RPiwrite("Ombra1",1)
-        #motor.start(1,"ccw",30)
-
-    def sequence(self):
-        waituntil(5)
-        RPiwrite("DimIngresso",0)
-        RPiwrite("PompaAcqua",1)
-        waituntil(12)
-        RPiwrite("Case1",0)
-        waituntil(13)
-        RPiwrite("Case2",0)
-        waituntil(15)
-        RPiwrite("Fuochi1",0)
-        RPiwrite("DimStandby",0)
-        waituntil(18)
-        RPiwrite("Case3",0)
-        waituntil(25)
-        RPiwrite("Fuochi2",0)
-        RPiwrite("LuceNativita",0)
-        #motor.start(1,"ccw",85)
-        waituntil(26)
-        RPiwrite("Ombre1",1)
-        waituntil(47)
-        #motor.start(2,"ccw",85)
-        waituntil(48)
-        RPiwrite("Ombre2",1)
-        waituntil(49)
-        RPiwrite("Ombre1",0)
-        waituntil(71)
-        RPiwrite("Ombre2",0)
-        RPiwrite("DimIngresso",1)
-        waituntil(73)
-        RPiwrite("LuceNativita",1)
-        waituntil(75)
-        RPiwrite("Fuochi1",1)
-        RPiwrite("Case1",1)
-        waituntil(78)
-        RPiwrite("Case2",1)
-        RPiwrite("Fuochi2",1)
-        waituntil(81)
-        RPiwrite("Case3",1)
-        waituntil(100)
-        RPiwrite("PompaAcqua",0)
-        audioPlayer.vstopaudio()
 
 mygpio_handler = GPIOHandler()

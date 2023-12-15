@@ -7,7 +7,7 @@ from dunebuggerlogging import logger
 import threading
 from audio_handler import audioPlayer
 from dunebugger_settings import settings
-from utils import RPiwrite
+import sequence
 
 testdunebuggger = True
 
@@ -25,7 +25,7 @@ def cycle(channel):
         logger.info("Start button pressed on channel "+str(channel)) #if function is triggered from button then check three state mode
 
         if testdunebuggger:
-            mygpio_handler.testCommands()
+            sequence.testCommands()
             return
         
         audioPlayer.initMusic()
@@ -45,8 +45,8 @@ def cycle(channel):
         logger.debug("Starting SFX")
         audioPlayer.vplaysfx(audioPlayer.sfxfile)
 
-        mygpio_handler.sequence()
-        mygpio_handler.setStandBy()
+        sequence.sequence()
+        sequence.setStandBy()
         
         settings.cycleoffset = 0
         logger.info("\nDunebugger listening. Press enter to quit\n")
@@ -65,7 +65,7 @@ def main():
         
         # set initial state
         logger.info('Setting standby state')
-        mygpio_handler.setStandBy()
+        sequence.setStandBy()
 
         # To make the motor.reset syncronous and achieve the GPIO.add_event_detect on I_StartButton to run only after motor reset
         # we are setting a motor_reset_event.wait before the add_event_detect of I_StartButton.
