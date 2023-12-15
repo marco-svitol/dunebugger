@@ -4,6 +4,7 @@ import RPi.GPIO as GPIO
 import time
 from dunebuggerlogging import logger 
 from pwm_handler import pwm_motor1
+from dunebugger_settings import settings
 
 def start(motornum, rotation="cw",speed=100):
     logger.debug("motor "+str(motornum)+" start with rotation "+rotation+" and speed "+str(speed))
@@ -21,16 +22,21 @@ def stop(motornum):
     GPIO.output(mygpio_handler.GPIOMap["Motor"+str(motornum)+"In2"],GPIO.LOW)
     GPIO.output(mygpio_handler.GPIOMap["Motor"+str(motornum)+"PWM"],GPIO.LOW)
 
-def limitTouch(switch, event = None):
-    GPIOLabel = mygpio_handler.getGPIOLabel(switch)
-    logger.debug("Limit touched on switch "+GPIOLabel)
+def limitTouch(channel, event = None):
+    time.sleep(settings.bouncingTreshold)    # avoid catching a bouncing
+    if GPIO.input(channel) != 1:
+        logger.debug ("Warning! Limit touch: below treshold of "+str(settings.bouncingTreshold)+" on channel"+str(channel))
+        return
+    
+    GPIOLabel = mygpio_handler.getGPIOLabel(channel)
+    logger.debug("Limit touched on channel "+GPIOLabel)
     motornum = 0
-    if switch == mygpio_handler.GPIOMap["Motor1LimitCCW"] or switch == mygpio_handler.GPIOMap["Motor1LimitCW"]:
+    if channel == mygpio_handler.GPIOMap["Motor1LimitCCW"] or channel == mygpio_handler.GPIOMap["Motor1LimitCW"]:
         motornum = 1
     else:
         motornum = 2
     stop(motornum)
-    if switch == mygpio_handler.GPIOMap["Motor1LimitCCW"] or switch == mygpio_handler.GPIOMap["Motor2LimitCCW"]:
+    if channel == mygpio_handler.GPIOMap["Motor1LimitCCW"] or channel == mygpio_handler.GPIOMap["Motor2LimitCCW"]:
         time.sleep(0.2)
         start(motornum,"cw", speed=100)
     elif event != None:
