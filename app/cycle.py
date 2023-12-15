@@ -13,6 +13,7 @@ import traceback
 def random_actions(event):
     while not event.is_set():
         sequence.random_sequence(event)
+    logger.debug("Random actions exiting")
 
 def cycle_trigger(channel, my_random_actions_event):
     threading.Thread(name='_cycle_thread', target=cycle, args=(channel,my_random_actions_event)).start()
