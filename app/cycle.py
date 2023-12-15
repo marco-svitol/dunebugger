@@ -9,7 +9,7 @@ from audio_handler import audioPlayer
 from dunebugger_settings import settings
 import sequence
 
-testdunebuggger = True
+testdunebuggger = False
 
 def cycle_trigger(channel):
     threading.Thread(name='_cycle_thread', target=cycle, args=(channel,)).start()

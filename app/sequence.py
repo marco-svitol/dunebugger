@@ -19,7 +19,7 @@ def setStandBy():
 
 def testCommands():
     waituntil(3)
-    RPiwrite("Ombra1",1)
+    RPiwrite("Ombre1",1)
     #motor.start(1,"ccw",30)
 
 def sequence():
