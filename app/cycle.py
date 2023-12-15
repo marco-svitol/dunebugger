@@ -22,7 +22,7 @@ def cycle(channel):
         
         logger.info("Start button pressed on channel "+str(channel)) #if function is triggered from button then check three state mode
 
-        if settings.testdunebuggger:
+        if settings.testdunebugger:
             sequence.testCommands()
             return
         
