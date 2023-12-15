@@ -72,7 +72,7 @@ def main():
         # The motor_reset_event.set is set by limitTouch only after 
         motor1_reset_event = threading.Event()
         motor1_callback_with_params = lambda channel: motor.limitTouch(channel, motor1_reset_event)
-        motor1_reset_thread = threading.Thread(target=motor.reset_motor_and_set_event, args=(motor1_reset_event,1))
+        motor1_reset_thread = threading.Thread(target=motor.reset, args=(1,))
         # can be removed?:
         motor1_reset_event = threading.Event()
         GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor1LimitCCW"],GPIO.RISING,callback=motor.limitTouch,bouncetime=200)
