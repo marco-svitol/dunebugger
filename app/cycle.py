@@ -70,13 +70,13 @@ def main():
         # To make the motor.reset syncronous and achieve the GPIO.add_event_detect on I_StartButton to run only after motor reset
         # we are setting a motor_reset_event.wait before the add_event_detect of I_StartButton.
         # The motor_reset_event.set is set by limitTouch only after 
-        # motor1_reset_event = threading.Event()
-        # motor1_callback_with_params = lambda channel: motor.limitTouch(channel, motor1_reset_event)
-        # motor1_reset_thread = threading.Thread(target=motor.reset_motor_and_set_event, args=(motor1_reset_event,1))
-        # # can be removed?:
-        # motor1_reset_event = threading.Event()
-        # GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor1LimitCCW"],GPIO.RISING,callback=motor.limitTouch,bouncetime=200)
-        # GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor1LimitCW"], GPIO.RISING, callback=motor1_callback_with_params, bouncetime=200)
+        motor1_reset_event = threading.Event()
+        motor1_callback_with_params = lambda channel: motor.limitTouch(channel, motor1_reset_event)
+        motor1_reset_thread = threading.Thread(target=motor.reset_motor_and_set_event, args=(motor1_reset_event,1))
+        # can be removed?:
+        motor1_reset_event = threading.Event()
+        GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor1LimitCCW"],GPIO.RISING,callback=motor.limitTouch,bouncetime=200)
+        GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor1LimitCW"], GPIO.RISING, callback=motor1_callback_with_params, bouncetime=200)
 
         # motor2_reset_event = threading.Event()
         # motor2_callback_with_params = lambda channel: motor.limitTouch(channel, motor2_reset_event)
@@ -86,9 +86,9 @@ def main():
         # GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor2LimitCCW"],GPIO.RISING,callback=motor.limitTouch,bouncetime=200)
         # GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor2LimitCW"],GPIO.RISING,callback=motor2_callback_with_params,bouncetime=200)
 
-        # motor1_reset_thread.start()
+        motor1_reset_thread.start()
         # motor2_reset_thread.start()
-        # motor1_reset_event.wait()
+        motor1_reset_event.wait()
         # motor2_reset_event.wait()
 
         GPIO.add_event_detect(mygpio_handler.GPIOMap["I_StartButton"],GPIO.RISING,callback=cycle_trigger,bouncetime=5)

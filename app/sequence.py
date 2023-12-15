@@ -32,7 +32,7 @@ def sequence():
     waituntil(13)
     RPiwrite("Case2",0)
     waituntil(15)
-    RPiwrite("Fuochi1",0)
+    RPiwrite("Fuochi1",0) 
     RPiwrite("DimStandby",0)
     waituntil(18)
     RPiwrite("Case3",0)
