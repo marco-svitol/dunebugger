@@ -65,18 +65,7 @@ def main():
         
         # set initial state
         logger.info('Setting standby state')
-        #mygpio_handler.setStandBy()
-        RPiwrite("SchedaMotori",1)
-        RPiwrite("LuceNativita",1)
-        RPiwrite("Accensione",1)
-        RPiwrite("AlwaysOn",1)
-        RPiwrite("DimIngresso",1)
-        RPiwrite("Case1",1)
-        RPiwrite("Case2",1)
-        RPiwrite("Case3",1)
-        RPiwrite("Fuochi1",1)
-        RPiwrite("Fuochi2",1)
-        RPiwrite("DimStandby",1)
+        mygpio_handler.setStandBy()
 
         # To make the motor.reset syncronous and achieve the GPIO.add_event_detect on I_StartButton to run only after motor reset
         # we are setting a motor_reset_event.wait before the add_event_detect of I_StartButton.

@@ -13,9 +13,9 @@ def ArduinoSend(command):
         logger.warning("ignoring command "+ccommand+" to Arduino")
 
 def RPiwrite(gpio,bit):
+    logger.debug("RPi "+gpio+" write "+str(bit))
     bit = not bit
     GPIO.output(gpio,bit)
-    logger.debug("RPi "+gpio+" write "+str(bit))
 
 def waituntil(sec):
     logger.debug("Waiting: "+str(sec-settings.cycleoffset))
