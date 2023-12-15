@@ -1,6 +1,6 @@
 import RPi.GPIO as GPIO
 from utils import RPiwrite, waituntil
-import motor
+#import motor
 from audio_handler import audioPlayer
 
 #PWM 13,19,12,18 # free : 19
@@ -163,11 +163,11 @@ class GPIOHandler:
         waituntil(25)
         RPiwrite("Fuochi2",0)
         RPiwrite("LuceNativita",0)
-        motor.start(1,"ccw",85)
+        #motor.start(1,"ccw",85)
         waituntil(26)
         RPiwrite("Ombre1",1)
         waituntil(47)
-        motor.start(2,"ccw",85)
+        #motor.start(2,"ccw",85)
         waituntil(48)
         RPiwrite("Ombre2",1)
         waituntil(49)
