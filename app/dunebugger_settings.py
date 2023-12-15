@@ -5,7 +5,7 @@ class DunebuggerSettings:
         self.ArduinoConnected = False
         self.cyclelength = 372
         self.bouncingTreshold = 0.10
-        self.eastereggEnabled = False
+        self.eastereggEnabled = True
         self.cycleoffset = 0
         self.cycle_thread_lock = threading.Lock()
         self.randomActionsMinSecs = 5

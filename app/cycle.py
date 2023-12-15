@@ -54,7 +54,7 @@ def cycle(channel, my_random_actions_event):
 
         my_random_actions_event.set()
         sequence.sequence()
-        sequence.setStandBy()
+
         my_random_actions_event.clear()
 
         settings.cycleoffset = 0
