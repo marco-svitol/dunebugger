@@ -1,8 +1,10 @@
 from utils import RPiwrite, waituntil
 from audio_handler import audioPlayer
+from gpio_handler import RPiwrite
+
 import motor
 
-def setStandBy(self):
+def setStandBy():
     RPiwrite("SchedaMotori",1)
     RPiwrite("LuceNativita",1)
     RPiwrite("Accensione",1)
@@ -15,12 +17,12 @@ def setStandBy(self):
     RPiwrite("Fuochi2",1)
     RPiwrite("DimStandby",1)
 
-def testCommands(self):
+def testCommands():
     waituntil(3)
     RPiwrite("Ombra1",1)
     #motor.start(1,"ccw",30)
 
-def sequence(self):
+def sequence():
     waituntil(5)
     RPiwrite("DimIngresso",0)
     RPiwrite("PompaAcqua",1)

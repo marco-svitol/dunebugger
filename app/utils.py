@@ -13,11 +13,6 @@ def ArduinoSend(command):
         ccommand = command.replace("\n","")
         logger.warning("ignoring command "+ccommand+" to Arduino")
 
-def RPiwrite(gpio,bit):
-    logger.debug("RPi "+gpio+" write "+str(bit))
-    bit = not bit
-    GPIO.output(mygpio_handler.GPIOMap[gpio],bit)
-
 def waituntil(sec):
     logger.debug("Waiting: "+str(sec-settings.cycleoffset))
     time.sleep((sec-settings.cycleoffset) * settings.cyclespeed)
