@@ -68,6 +68,6 @@ def sequence():
 
 def random_sequence(event):
     randomizable = ["Case1","Case2","Case3","Fuochi1","Fuochi2"]
-    random.choice(randomizable)
-    RPiToggle(randomizable)
+    rand_elem = random.choice(randomizable)
+    RPiToggle(rand_elem)
     event.wait(timeout=random.uniform(1,5))
