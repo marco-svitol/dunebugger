@@ -8,6 +8,7 @@ import threading
 from audio_handler import audioPlayer
 from dunebugger_settings import settings
 import sequence
+import traceback
 
 def random_actions(event):
     while not event.is_set():
@@ -110,6 +111,7 @@ def main():
         logger.debug ("stopped through keyboard")
         
     except Exception as exc:
+        traceback.print_exc()
         logger.critical ("Exception: "+str(exc)+". Exiting." )
 
     finally:
