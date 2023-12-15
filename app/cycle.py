@@ -63,6 +63,7 @@ def main():
                 logger.critical('Arduino  : serial port on /dev/ttyUSB0 not available: no com with Arduino')
         
         # set initial state
+        logger.info('Setting standby state')
         mygpio_handler.setStandBy()
 
         # To make the motor.reset syncronous and achieve the GPIO.add_event_detect on I_StartButton to run only after motor reset
