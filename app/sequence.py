@@ -1,4 +1,4 @@
-from utils import RPiwrite, waituntil
+from utils import waituntil
 from audio_handler import audioPlayer
 from gpio_handler import RPiwrite
 
