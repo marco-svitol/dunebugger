@@ -8,7 +8,7 @@ import threading
 from audio_handler import audioPlayer
 from dunebugger_settings import settings
 
-testdunebuggger = False
+testdunebuggger = True
 
 def cycle_trigger(channel):
     threading.Thread(name='_cycle_thread', target=cycle, args=(channel,)).start()

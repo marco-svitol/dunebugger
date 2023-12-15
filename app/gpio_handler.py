@@ -144,7 +144,8 @@ class GPIOHandler:
 
     def testCommands():
         waituntil(3)
-        motor.start(1,"ccw",30)
+        RPiwrite("Ombra1",1)
+        #motor.start(1,"ccw",30)
 
     def sequence():
         waituntil(5)
