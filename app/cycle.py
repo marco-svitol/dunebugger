@@ -11,7 +11,7 @@ import sequence
 
 def random_actions(event):
     while not event.is_set():
-        mygpio_handler.random_sequence(event)
+        sequence.random_sequence(event)
 
 def cycle_trigger(channel, my_random_actions_event):
     threading.Thread(name='_cycle_thread', target=cycle, args=(channel,my_random_actions_event)).start()
