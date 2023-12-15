@@ -70,4 +70,3 @@ def random_sequence(event):
     randomizable = ["Case1","Case2","Case3","Fuochi1","Fuochi2"]
     rand_elem = random.choice(randomizable)
     RPiToggle(rand_elem)
-    event.wait(timeout=random.uniform(1,5))

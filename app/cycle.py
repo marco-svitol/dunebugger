@@ -9,10 +9,13 @@ from audio_handler import audioPlayer
 from dunebugger_settings import settings
 import sequence
 import traceback
+import random
 
 def random_actions(event):
-    while not event.is_set():
-        sequence.random_sequence(event)
+    while (1):
+        event.wait(timeout=random.uniform(settings.randomActionsMinSecs,settings.randomActionsMaxSecs))
+        if not event.is_set():
+            sequence.random_sequence(event)
     logger.debug("Random actions exiting")
 
 def cycle_trigger(channel, my_random_actions_event):
