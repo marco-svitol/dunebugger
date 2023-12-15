@@ -1,5 +1,4 @@
 import RPi.GPIO as GPIO
-from audio_handler import audioPlayer
 from dunebuggerlogging import logger
 #PWM 13,19,12,18 # free : 19
 # 2,3 were used for Arduino serial (no rele). Two GPIOs were reserved for Arduino reset (14) relè and Dimmer board reset (15) relè
@@ -20,7 +19,9 @@ from dunebuggerlogging import logger
 # DimIngresso dimmerabili?
 # Natività alwayson very little led
 # Led Always on sotto le panche
-# 
+# StellaCometa: vuole un alimentazionee e un relè per comando inserito/disinserito. Nel 2019 avviavamo a 1 e dopo 20 sec a 0
+# Musica sempre soft all'avvio?, poi random?
+#
 # Quindi alwayson:
 #   Stereo
 #   Insegna
@@ -126,10 +127,14 @@ class GPIOHandler:
                 return key
             # Return None if the value is not found
         return "_not_found_"
-
+        
 def RPiwrite(gpio,bit):
     logger.debug("RPi "+gpio+" write "+str(bit))
     bit = not bit
     GPIO.output(mygpio_handler.GPIOMap[gpio],bit)
+
+def RPiToggle(gpio):
+    GPIO.output(mygpio_handler.GPIOMap[gpio], not GPIO.input(mygpio_handler.GPIOMap[gpio]))
+    logger.debug("Toggled RPi "+gpio+" to "+str(GPIO.input(mygpio_handler.GPIOMap[gpio])))
 
 mygpio_handler = GPIOHandler()

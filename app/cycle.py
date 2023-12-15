@@ -9,10 +9,14 @@ from audio_handler import audioPlayer
 from dunebugger_settings import settings
 import sequence
 
-def cycle_trigger(channel):
-    threading.Thread(name='_cycle_thread', target=cycle, args=(channel,)).start()
+def random_actions(event):
+    while not event.is_set():
+        mygpio_handler.random_sequence(event)
 
-def cycle(channel):
+def cycle_trigger(channel, my_random_actions_event):
+    threading.Thread(name='_cycle_thread', target=cycle, args=(channel,my_random_actions_event)).start()
+
+def cycle(channel, my_random_actions_event):
     with settings.cycle_thread_lock:
 
         time.sleep(settings.bouncingTreshold)    # avoid catching a bouncing
@@ -43,9 +47,11 @@ def cycle(channel):
         logger.debug("Starting SFX")
         audioPlayer.vplaysfx(audioPlayer.sfxfile)
 
+        my_random_actions_event.set()
         sequence.sequence()
         sequence.setStandBy()
-        
+        my_random_actions_event.clear()
+
         settings.cycleoffset = 0
         logger.info("\nDunebugger listening. Press enter to quit\n")
 
@@ -89,8 +95,15 @@ def main():
         if (settings.motor2Enabled):
             motor2_reset_event.wait()
 
-        GPIO.add_event_detect(mygpio_handler.GPIOMap["I_StartButton"],GPIO.RISING,callback=cycle_trigger,bouncetime=5)
+        random_actions_event = threading.Event()
+        random_actions_thread = threading.Thread(target=random_actions(random_actions_event))
+        random_actions_thread.daemon = True
+
+        GPIO.add_event_detect(mygpio_handler.GPIOMap["I_StartButton"],GPIO.RISING,callback=lambda x: cycle_trigger(x, random_actions_event),bouncetime=5)
         logger.info ("GPIO     : Callback function 'cycle_trigger' binded to event detection on GPIO "+str(mygpio_handler.GPIOMap["I_StartButton"]))
+        
+        random_actions_thread.start()
+
         input("\nDunebugger listening. Press enter to quit\n")
 
     except KeyboardInterrupt:

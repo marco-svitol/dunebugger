@@ -1,7 +1,6 @@
 from dunebuggerlogging import logger
 import time, RPi.GPIO as GPIO
 from dunebugger_settings import settings
-from gpio_handler import mygpio_handler
 
 def ArduinoSend(command):
     global Arduino    

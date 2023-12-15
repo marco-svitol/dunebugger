@@ -1,6 +1,7 @@
 from utils import waituntil
 from audio_handler import audioPlayer
-from gpio_handler import RPiwrite
+from gpio_handler import RPiwrite, RPiToggle
+import random
 
 import motor
 
@@ -20,7 +21,7 @@ def setStandBy():
 def testCommands():
     waituntil(3)
     RPiwrite("Ombre1",1)
-    #motor.start(1,"ccw",30)
+    motor.start(1,"ccw",30)
 
 def sequence():
     RPiwrite("Accensione",0)
@@ -39,11 +40,11 @@ def sequence():
     waituntil(25)
     RPiwrite("Fuochi2",0)
     RPiwrite("LuceNativita",0)
-    #motor.start(1,"ccw",85)
+    motor.start(1,"ccw",85)
     waituntil(26)
     RPiwrite("Ombre1",1)
     waituntil(47)
-    #motor.start(2,"ccw",85)
+    motor.start(2,"ccw",85)
     waituntil(48)
     RPiwrite("Ombre2",1)
     waituntil(49)
@@ -64,3 +65,9 @@ def sequence():
     waituntil(100)
     RPiwrite("PompaAcqua",0)
     audioPlayer.vstopaudio()
+
+def random_sequence(self, event):
+    randomizable = [self.GPIOMap["Case1"],self.GPIOMap["Case2"],self.GPIOMap["Case3"],self.GPIOMap["Fuochi1"],self.GPIOMap["Fuochi2"]]
+    random.choice(randomizable)
+    RPiToggle(randomizable)
+    event.wait(timeout=random.uniform(1,5))
