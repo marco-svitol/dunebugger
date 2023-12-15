@@ -129,7 +129,7 @@ class GPIOHandler:
             # Return None if the value is not found
         return "_not_found_"
 
-    def setStandBy():
+    def setStandBy(self):
         RPiwrite("SchedaMotori",1)
         RPiwrite("LuceNativita",1)
         RPiwrite("Accensione",1)
@@ -142,12 +142,12 @@ class GPIOHandler:
         RPiwrite("Fuochi2",1)
         RPiwrite("DimStandby",1)
 
-    def testCommands():
+    def testCommands(self):
         waituntil(3)
         RPiwrite("Ombra1",1)
         #motor.start(1,"ccw",30)
 
-    def sequence():
+    def sequence(self):
         waituntil(5)
         RPiwrite("DimIngresso",0)
         RPiwrite("PompaAcqua",1)

@@ -24,7 +24,7 @@ def cycle(channel):
         logger.info("Start button pressed on channel "+str(channel)) #if function is triggered from button then check three state mode
 
         if testdunebuggger:
-            mygpio_handler.testCommands
+            mygpio_handler.testCommands()
             return
         
         audioPlayer.initMusic()
@@ -45,7 +45,7 @@ def cycle(channel):
         audioPlayer.vplaysfx(audioPlayer.sfxfile)
 
         mygpio_handler.sequence()
-        mygpio_handler.setStandBy
+        mygpio_handler.setStandBy()
         
         settings.cycleoffset = 0
         logger.info("\nDunebugger listening. Press enter to quit\n")
