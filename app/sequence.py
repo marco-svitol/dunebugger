@@ -66,8 +66,8 @@ def sequence():
     RPiwrite("PompaAcqua",0)
     audioPlayer.vstopaudio()
 
-def random_sequence(self, event):
-    randomizable = [self.GPIOMap["Case1"],self.GPIOMap["Case2"],self.GPIOMap["Case3"],self.GPIOMap["Fuochi1"],self.GPIOMap["Fuochi2"]]
+def random_sequence(event):
+    randomizable = ["Case1","Case2","Case3","Fuochi1","Fuochi2"]
     random.choice(randomizable)
     RPiToggle(randomizable)
     event.wait(timeout=random.uniform(1,5))
