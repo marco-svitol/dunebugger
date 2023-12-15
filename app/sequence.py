@@ -23,6 +23,7 @@ def testCommands():
     #motor.start(1,"ccw",30)
 
 def sequence():
+    RPiwrite("Accensione",0)
     waituntil(5)
     RPiwrite("DimIngresso",0)
     RPiwrite("PompaAcqua",1)
