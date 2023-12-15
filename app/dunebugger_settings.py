@@ -8,8 +8,13 @@ class DunebuggerSettings:
         self.eastereggEnabled = False
         self.cycleoffset = 0
         self.cycle_thread_lock = threading.Lock()
+        #Motors
+        self.motor1Enabled = False
+        self.motor2Enabled = False
         # debug
         self.cyclespeed = 1  # 0.2
+        self.testdunebugger = False
+
 
 settings = DunebuggerSettings()
 

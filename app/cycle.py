@@ -9,8 +9,6 @@ from audio_handler import audioPlayer
 from dunebugger_settings import settings
 import sequence
 
-testdunebuggger = False
-
 def cycle_trigger(channel):
     threading.Thread(name='_cycle_thread', target=cycle, args=(channel,)).start()
 
@@ -24,7 +22,7 @@ def cycle(channel):
         
         logger.info("Start button pressed on channel "+str(channel)) #if function is triggered from button then check three state mode
 
-        if testdunebuggger:
+        if settings.testdunebuggger:
             sequence.testCommands()
             return
         
@@ -82,10 +80,14 @@ def main():
         GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor2LimitCCW"],GPIO.RISING,callback=motor.limitTouch,bouncetime=200)
         GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor2LimitCW"],GPIO.RISING,callback=motor2_callback_with_params,bouncetime=200)
 
-        motor.reset(1)
-        motor.reset(2)
-        motor1_reset_event.wait()
-        motor2_reset_event.wait()
+        if (settings.motor1Enabled):
+            motor.reset(1)
+        if (settings.motor2Enabled):
+            motor.reset(2)
+        if (settings.motor1Enabled):
+            motor1_reset_event.wait()
+        if (settings.motor2Enabled):
+            motor2_reset_event.wait()
 
         GPIO.add_event_detect(mygpio_handler.GPIOMap["I_StartButton"],GPIO.RISING,callback=cycle_trigger,bouncetime=5)
         logger.info ("GPIO     : Callback function 'cycle_trigger' binded to event detection on GPIO "+str(mygpio_handler.GPIOMap["I_StartButton"]))
