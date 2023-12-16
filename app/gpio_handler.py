@@ -77,8 +77,8 @@ class GPIOHandler:
             "Motor2LimitB":chan_limitswitch_motor2[1],
             }
     GPIOMap={
-            "DimIngressoEst":GPIOMapPhysical["Dimmer6"],
-            "DimIngressoOvest":GPIOMapPhysical["Dimmer5"],
+            "DimIngressoOvest":GPIOMapPhysical["Dimmer6"],
+            "DimIngressoEst":GPIOMapPhysical["Dimmer5"],
             "DimTramonto":GPIOMapPhysical["Dimmer4"],
             "DimGiorno":GPIOMapPhysical["Dimmer3"],
             "Ombre2":GPIOMapPhysical["Rele5"],
