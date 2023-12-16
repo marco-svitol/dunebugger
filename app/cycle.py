@@ -105,7 +105,7 @@ def main():
         GPIO.add_event_detect(mygpio_handler.GPIOMap["I_StartButton"],GPIO.RISING,callback=lambda x: cycle_trigger(x, random_actions_event),bouncetime=5)
         logger.info ("GPIO     : Callback function 'cycle_trigger' binded to event detection on GPIO "+str(mygpio_handler.GPIOMap["I_StartButton"]))
         random_actions_thread = threading.Thread(target=random_actions(random_actions_event))
-        random_actions_thread.daemon = True
+        #random_actions_thread.daemon = True
         random_actions_thread.start()
 
         input("\nDunebugger listening. Press enter to quit\n")
