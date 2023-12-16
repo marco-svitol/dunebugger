@@ -10,14 +10,14 @@ def setStandBy():
     RPiwrite("LuceNativita",1)
     RPiwrite("Accensione",1)
     RPiwrite("AlwaysOn",1)
-    RPiwrite("DimIngresso",1)
+    RPiwrite("DimIngressoEst",1)
+    RPiwrite("DimIngressoOvest",1)
     RPiwrite("Case1",1)
     RPiwrite("Case2",1)
     RPiwrite("Case3",1)
     RPiwrite("Fuochi1",1)
     RPiwrite("Fuochi2",1)
-    RPiwrite("DimStandby",1)
-
+    
 def testCommands():
     waituntil(3)
     RPiwrite("Ombre1",1)
@@ -26,7 +26,7 @@ def testCommands():
 def sequence():
     RPiwrite("Accensione",0)
     waituntil(5)
-    RPiwrite("DimIngresso",0)
+    RPiwrite("DimIngressoEst",0)
     RPiwrite("PompaAcqua",1)
     waituntil(12)
     RPiwrite("Case1",0)
@@ -34,7 +34,6 @@ def sequence():
     RPiwrite("Case2",0)
     waituntil(15)
     RPiwrite("Fuochi1",0) 
-    RPiwrite("DimStandby",0)
     waituntil(18)
     RPiwrite("Case3",0)
     waituntil(25)
@@ -51,7 +50,7 @@ def sequence():
     RPiwrite("Ombre1",0)
     waituntil(71)
     RPiwrite("Ombre2",0)
-    RPiwrite("DimIngresso",1)
+    RPiwrite("DimIngressoEst",1)
     waituntil(73)
     RPiwrite("LuceNativita",1)
     waituntil(75)
