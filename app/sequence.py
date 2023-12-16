@@ -62,9 +62,10 @@ def sequence():
     RPiwrite("Fuochi2",1)
     waituntil(81)
     RPiwrite("Case3",1)
-    waituntil(100)
+    waituntil(400)
     RPiwrite("PompaAcqua",0)
     audioPlayer.vstopaudio()
+    RPiwrite("Accensione",1)
 
 def random_sequence(event):
     randomizable = ["Case1","Case2","Case3","Fuochi1","Fuochi2"]
