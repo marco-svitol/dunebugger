@@ -65,7 +65,7 @@ def sequence():
     RPiwrite("Fuochi2",1)
     waituntil(81)
     RPiwrite("Case3",1)
-    waituntil(400)
+    waituntil(20)
     RPiwrite("PompaAcqua",0)
     audioPlayer.vstopaudio()
     RPiwrite("Accensione",1)
