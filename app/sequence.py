@@ -20,8 +20,12 @@ def setStandBy():
     
 def testCommands():
     waituntil(3)
-    RPiwrite("Ombre1",1)
-    motor.start(1,"ccw",30)
+    RPiwrite("DimIngressoEst",1)
+    waituntil(20)
+    RPiwrite("DimIngressoEst",0)
+    RPiwrite("DimIngressoOvest",1)
+    waituntil(10)
+    RPiwrite("DimIngressoOvest",0)
 
 def sequence():
     RPiwrite("Accensione",0)
