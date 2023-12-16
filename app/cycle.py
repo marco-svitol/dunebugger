@@ -26,7 +26,7 @@ def cycle(channel, my_random_actions_event):
 
         time.sleep(settings.bouncingTreshold)    # avoid catching a bouncing
         if GPIO.input(channel) != 1:
-            logger.debug ("Warning! Cycle: below treshold of "+str(settings.bouncingTreshold)+" on channel"+str(channel))
+            logger.verbose ("Warning! Cycle: below treshold of "+str(settings.bouncingTreshold)+" on channel"+str(channel))
             return
         
         logger.info("Start button pressed on channel "+str(channel)) #if function is triggered from button then check three state mode
@@ -106,7 +106,6 @@ def main():
         logger.info ("GPIO     : Callback function 'cycle_trigger' binded to event detection on GPIO "+str(mygpio_handler.GPIOMap["I_StartButton"]))
         random_actions_thread = threading.Thread(target=random_actions(random_actions_event))
         random_actions_thread.daemon = True
-        #if settings.randomActionsEnabled:
         random_actions_thread.start()
 
         input("\nDunebugger listening. Press enter to quit\n")
