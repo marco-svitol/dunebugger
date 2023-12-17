@@ -18,3 +18,4 @@ class PWMHandler:
         self.pwm.stop()
 
 pwm_motor1 = PWMHandler(mygpio_handler.GPIOMap["Motor1PWM"],5000)
+pwm_motor2 = PWMHandler(mygpio_handler.GPIOMap["Motor2PWM"],5000)

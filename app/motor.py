@@ -3,7 +3,7 @@ from gpio_handler import mygpio_handler
 import RPi.GPIO as GPIO
 import time
 from dunebuggerlogging import logger 
-from pwm_handler import pwm_motor1
+from pwm_handler import pwm_motor1, pwm_motor2
 from dunebugger_settings import settings
 
 def start(motornum, rotation="cw",speed=100):
@@ -14,8 +14,11 @@ def start(motornum, rotation="cw",speed=100):
     else:
         GPIO.output(mygpio_handler.GPIOMap["Motor"+str(motornum)+"In1"],GPIO.LOW)
         GPIO.output(mygpio_handler.GPIOMap["Motor"+str(motornum)+"In2"],GPIO.HIGH)
-    pwm_motor1.set_duty_cycle(speed)
-
+    if motornum == 1:
+        pwm_motor1.set_duty_cycle(speed)
+    if motornum == 2:
+        pwm_motor2.set_duty_cycle(speed)
+        
 def stop(motornum):
     logger.debug("motor "+str(motornum)+" stopping")
     GPIO.output(mygpio_handler.GPIOMap["Motor"+str(motornum)+"In1"],GPIO.LOW)

@@ -135,6 +135,6 @@ def RPiwrite(gpio,bit):
 
 def RPiToggle(gpio):
     GPIO.output(mygpio_handler.GPIOMap[gpio], not GPIO.input(mygpio_handler.GPIOMap[gpio]))
-    logger.debug("Toggled RPi "+gpio+" to "+str(GPIO.input(mygpio_handler.GPIOMap[gpio])))
+    #logger.debug("Toggled RPi "+gpio+" to "+str(GPIO.input(mygpio_handler.GPIOMap[gpio])))
 
 mygpio_handler = GPIOHandler()
