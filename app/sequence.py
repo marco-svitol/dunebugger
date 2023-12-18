@@ -31,7 +31,7 @@ def testCommands():
     RPiwrite("Ombre1",0)
     waituntil(71)
     RPiwrite("Ombre2",0)
-    waituntil(3)
+    waituntil(74)
     audioPlayer.vstopaudio()
 
 
