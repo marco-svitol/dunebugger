@@ -30,10 +30,6 @@ def cycle(channel, my_random_actions_event):
             return
         
         logger.info("Start button pressed on channel "+str(channel)) #if function is triggered from button then check three state mode
-
-        if settings.testdunebugger:
-            sequence.testCommands()
-            return
         
         audioPlayer.initMusic()
         logger.debug("Starting music")
@@ -53,7 +49,10 @@ def cycle(channel, my_random_actions_event):
         audioPlayer.vplaysfx(audioPlayer.sfxfile)
 
         my_random_actions_event.set()
-        sequence.sequence()
+        if settings.testdunebugger:
+            sequence.testCommands()
+        else:
+            sequence.sequence()
 
         my_random_actions_event.clear()
 

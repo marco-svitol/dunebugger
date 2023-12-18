@@ -19,6 +19,7 @@ def setStandBy():
     RPiwrite("Fuochi2",1)
     
 def testCommands():
+    RPiwrite("Accensione",0)
     waituntil(6)
     motor.start(1,"ccw",85)
     waituntil(11)
@@ -32,6 +33,7 @@ def testCommands():
     waituntil(53)
     RPiwrite("Ombre2",0)
     audioPlayer.vstopaudio()
+    RPiwrite("Accensione",1)
 
 
 def sequence():
