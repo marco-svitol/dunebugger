@@ -21,17 +21,16 @@ def setStandBy():
 def testCommands():
     waituntil(6)
     motor.start(1,"ccw",85)
-    waituntil(26)
+    waituntil(11)
     RPiwrite("Ombre1",1)
-    waituntil(47)
+    waituntil(18)
     motor.start(2,"ccw",85)
-    waituntil(48)
+    waituntil(23)
     RPiwrite("Ombre2",1)
-    waituntil(49)
+    waituntil(48)
     RPiwrite("Ombre1",0)
-    waituntil(71)
+    waituntil(53)
     RPiwrite("Ombre2",0)
-    waituntil(74)
     audioPlayer.vstopaudio()
 
 
