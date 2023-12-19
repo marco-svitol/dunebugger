@@ -8,6 +8,14 @@ from dunebugger_settings import settings
 
 def start(motornum, rotation="cw",speed=100):
     logger.debug("motor "+str(motornum)+" start with rotation "+rotation+" and speed "+str(speed))
+    
+    # Crashprevention
+    if rotation == "cw" and mygpio_handler.GPIOMap["Motor"+str(motornum)+"LimitCW"] == GPIO.HIGH \
+    or rotation == "ccw" and mygpio_handler.GPIOMap["Motor"+str(motornum)+"LimitCCW"] == GPIO.HIGH:
+        logger.warning("Start command aborted to prevent motor crash")
+        return
+    ######
+
     if rotation == "cw":
         GPIO.output(mygpio_handler.GPIOMap["Motor"+str(motornum)+"In1"],GPIO.HIGH)
         GPIO.output(mygpio_handler.GPIOMap["Motor"+str(motornum)+"In2"],GPIO.LOW)
@@ -39,10 +47,14 @@ def limitTouch(channel, event = None):
     else:
         motornum = 2
     stop(motornum)
-    if channel == mygpio_handler.GPIOMap["Motor1LimitCCW"] or channel == mygpio_handler.GPIOMap["Motor2LimitCCW"]:
+
+    if channel == mygpio_handler.GPIOMap["Motor"+str(motornum)+"LimitCCW"]:
         time.sleep(0.2)
         start(motornum,"cw", speed=100)
     elif event != None:
+        start(motornum, "ccw", speed=85)
+        time.sleep(0.5)
+        stop(motornum)   
         logger.debug("Event set")
         event.set()
 
