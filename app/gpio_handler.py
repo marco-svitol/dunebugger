@@ -155,6 +155,7 @@ class DebouncedButton:
         self.callback_function = callback_function
         self.callback_event = callback_event
 
+        logger.debug("DebounceInit: "+self.name+" "+str(self.button_state)+" "+str(self.debounce_interval))
         # Set up event detection on the button pin
         GPIO.add_event_detect(channel, GPIO.RISING , callback=self.button_callback)
 
