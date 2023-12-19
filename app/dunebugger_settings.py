@@ -14,8 +14,8 @@ class DunebuggerSettings:
         #Motors
         self.motor1Enabled = True
         self.motor2Enabled = True
-        self.motor1Freq = 500
-        self.motor2Freq = 500
+        self.motor1Freq = 5000
+        self.motor2Freq = 5000
         # debug
         self.cyclespeed = 1  # 0.2
         self.testdunebugger = True
