@@ -24,15 +24,16 @@ def cycle_trigger(channel, my_random_actions_event):
 def cycle(channel, my_random_actions_event):
     with settings.cycle_thread_lock:
 
-        now = time.time
-        while (time.time < now+settings.bouncingTreshold):
+        start_time = time.time()
+        while time.time() < start_time + settings.bouncingThreshold:
             #time.sleep(settings.bouncingTreshold)    # avoid catching a bouncing
             if GPIO.input(channel) != 1:
                 logger.debug ("Warning! Cycle: below treshold of "+str(settings.bouncingTreshold)+" on channel"+str(channel))
-            return
+                return
+            time.sleep(0.01)
         
         logger.info("Start button pressed on channel "+str(channel)) #if function is triggered from button then check three state mode
-        
+    
         audioPlayer.initMusic()
         logger.debug("Starting music")
         if settings.eastereggEnabled:
