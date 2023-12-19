@@ -2,7 +2,7 @@ from utils import waituntil
 from audio_handler import audioPlayer
 from gpio_handler import RPiwrite, RPiToggle
 import random
-
+from dunebugger_settings import settings
 import motor
 
 def setStandBy():
@@ -20,20 +20,28 @@ def setStandBy():
     
 def testCommands():
     RPiwrite("Accensione",0)
+    RPiwrite("Calice",0)
+    RPiwrite("LuceNativita",0)
     RPiwrite("DimIngressoEst",0)
     waituntil(12)
-    motor.start(1,"ccw",85)
+    if settings.motor1Enabled:
+        motor.start(1,"ccw",85)
     waituntil(13)
     RPiwrite("Ombre1",1)
     waituntil(39)
-    motor.start(2,"ccw",85)
+    if settings.motor2Enabled:
+        motor.start(2,"ccw",85)
     waituntil(41)
     RPiwrite("Ombre2",1)
     waituntil(42)
     RPiwrite("Ombre1",0)
     waituntil(70)
     RPiwrite("Ombre2",0)
-    waituntil(92)
+    waituntil(73)
+    RPiwrite("LuceNativita",1)
+    waituntil(75)
+    RPiwrite("Calice",1)
+    waituntil(100)
     #RPiwrite("DimIngressoEst",1)
     audioPlayer.vstopaudio()
     RPiwrite("Accensione",1)
