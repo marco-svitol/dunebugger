@@ -81,11 +81,11 @@ def main():
         motor1_reset_event = threading.Event()
         
         Motor1LimitCCW = DebouncedButton("Motor1LimitCCW",mygpio_handler.GPIOMap["Motor1LimitCCW"], settings.bouncingTreshold, motor.limitTouch)
-        Motor1LimitCW = DebouncedButton("Motor1LimitCW",mygpio_handler.GPIOMap["Motor1LimitCW"], settings.bouncingTreshold, motor.limitTouch, motor1_reset_event)
+        #Motor1LimitCW = DebouncedButton("Motor1LimitCW",mygpio_handler.GPIOMap["Motor1LimitCW"], settings.bouncingTreshold, motor.limitTouch, motor1_reset_event)
 
         motor2_reset_event = threading.Event()
-        Motor2LimitCCW = DebouncedButton("Motor2LimitCCW",mygpio_handler.GPIOMap["Motor2LimitCCW"], settings.bouncingTreshold, motor.limitTouch)
-        Motor2LimitCW = DebouncedButton("Motor2LimitCW",mygpio_handler.GPIOMap["Motor2LimitCW"], settings.bouncingTreshold, motor.limitTouch,motor2_reset_event)
+        #Motor2LimitCCW = DebouncedButton("Motor2LimitCCW",mygpio_handler.GPIOMap["Motor2LimitCCW"], settings.bouncingTreshold, motor.limitTouch)
+        #Motor2LimitCW = DebouncedButton("Motor2LimitCW",mygpio_handler.GPIOMap["Motor2LimitCW"], settings.bouncingTreshold, motor.limitTouch,motor2_reset_event)
 
         I_StartButton = None
 
