@@ -4,7 +4,7 @@ class DunebuggerSettings:
     def __init__(self):
         self.ArduinoConnected = False
         self.cyclelength = 372
-        self.bouncingTreshold = 0.3
+        self.bouncingTreshold = 0.15
         self.eastereggEnabled = False
         self.cycleoffset = 0
         self.cycle_thread_lock = threading.Lock()

@@ -24,9 +24,11 @@ def cycle_trigger(channel, my_random_actions_event):
 def cycle(channel, my_random_actions_event):
     with settings.cycle_thread_lock:
 
-        time.sleep(settings.bouncingTreshold)    # avoid catching a bouncing
-        if GPIO.input(channel) != 1:
-            logger.debug ("Warning! Cycle: below treshold of "+str(settings.bouncingTreshold)+" on channel"+str(channel))
+        now = time.time
+        while (time.time < now+settings.bouncingTreshold):
+            #time.sleep(settings.bouncingTreshold)    # avoid catching a bouncing
+            if GPIO.input(channel) != 1:
+                logger.debug ("Warning! Cycle: below treshold of "+str(settings.bouncingTreshold)+" on channel"+str(channel))
             return
         
         logger.info("Start button pressed on channel "+str(channel)) #if function is triggered from button then check three state mode
