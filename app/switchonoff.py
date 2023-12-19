@@ -126,7 +126,7 @@ logging.config.fileConfig('/home/pi/dunebugger/app/config/supervisorlogging.conf
 logger = logging.getLogger('supervisorLog')
 logger.info('Dunebugger supervisor started')
 
-onseq = [dtime(5,30)]#,dtime(15,00)]
+onseq = [dtime(7,00)]#,dtime(15,00)]
 offseq = [dtime(23,55)]#,dtime(23,00)]
 onoffsorted = []
 
