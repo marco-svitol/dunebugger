@@ -87,6 +87,8 @@ def main():
         Motor2LimitCCW = DebouncedButton("Motor2LimitCCW",mygpio_handler.GPIOMap["Motor2LimitCCW"], settings.bouncingTreshold, motor.limitTouch)
         Motor2LimitCW = DebouncedButton("Motor2LimitCW",mygpio_handler.GPIOMap["Motor2LimitCW"], settings.bouncingTreshold, motor.limitTouch,motor2_reset_event)
 
+        I_StartButton = None
+
         if (settings.motor1Enabled):
             motor.reset(1)
         if (settings.motor2Enabled):
@@ -119,7 +121,7 @@ def main():
         Motor1LimitCW.cleanup()
         Motor2LimitCCW.cleanup()
         Motor2LimitCW.cleanup()
-        if I_StartButton:
+        if I_StartButton is not None:
             I_StartButton.cleanup()
         mygpio_handler.cleanup()
         audioPlayer.vstopaudio()
