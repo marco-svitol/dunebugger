@@ -52,7 +52,8 @@ def reset(motornum):
         pos = "CW limit touch"
         logger.debug("Motor "+str(motornum)+" position is "+pos+". Short CCW and then CW.")
         start(motornum,"ccw",100)
-        time.sleep(1.5)
+        time.sleep(0.5)
+        return
     elif GPIO.input(mygpio_handler.GPIOMap["Motor"+str(motornum)+"LimitCCW"]) == GPIO.HIGH:
         pos = "CCW limit touch"
     else:
