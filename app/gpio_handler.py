@@ -162,7 +162,7 @@ class DebouncedButton:
     def button_callback(self, channel):
         # Read the current state of the button
         self.button_state = GPIO.input(self.channel)
-
+        logger.debug("DebounceBtnCallback: "+self.name+" "+str(self.button_state)+" "+str(self.last_button_state)
         # Check if the button state has changed
         if self.button_state != self.last_button_state:
             self.last_change_time = time.time()
