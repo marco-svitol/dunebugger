@@ -1,5 +1,6 @@
 import RPi.GPIO as GPIO
 from dunebuggerlogging import logger
+import time
 #PWM 13,19,12,18 # free : 19
 # 2,3 were used for Arduino serial (no rele). Two GPIOs were reserved for Arduino reset (14) relè and Dimmer board reset (15) relè
 
@@ -138,3 +139,45 @@ def RPiToggle(gpio):
     #logger.debug("Toggled RPi "+gpio+" to "+str(GPIO.input(mygpio_handler.GPIOMap[gpio])))
 
 mygpio_handler = GPIOHandler()
+
+class DebouncedButton:
+    def __init__(self, name, channel, debounce_interval=0.2, callback_function=None, callback_event=None):
+        
+        # Set the GPIO mode and pin
+        GPIO.setup(channel, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+        # Initialize variables
+        self.name = name
+        self.channel = channel
+        self.button_state = GPIO.input(channel)
+        self.last_button_state = self.button_state
+        self.last_change_time = time.time()
+        self.debounce_interval = debounce_interval
+        self.callback_function = callback_function
+        self.callback_event = callback_event
+
+        # Set up event detection on the button pin
+        GPIO.add_event_detect(channel, GPIO.RISING , callback=self.button_callback)
+
+    def button_callback(self, channel):
+        # Read the current state of the button
+        self.button_state = GPIO.input(self.channel)
+
+        # Check if the button state has changed
+        if self.button_state != self.last_button_state:
+            self.last_change_time = time.time()
+
+        # Check if the button state has been stable for the debounce interval
+        if time.time() - self.last_change_time > self.debounce_interval:
+            # Call the provided callback function or perform a default action
+            logger.debug("Button "+self.name+" state changed to "+self.button_state)
+            if self.callback_function:
+                self.callback_function(self.channel, self.callback_event)
+            else:
+                logger.error("No callback_function provided to button "+self.name)
+
+        # Update the last button state
+        self.last_button_state = self.button_state
+
+    def cleanup(self):
+        # Clean up GPIO when done
+        GPIO.cleanup()

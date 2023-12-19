@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # coding: utf8
 import os, time, RPi.GPIO as GPIO, serial
-from gpio_handler import mygpio_handler
+from gpio_handler import mygpio_handler, DebouncedButton
 import motor
 from dunebuggerlogging import logger
 import threading
@@ -79,16 +79,13 @@ def main():
         #  we put an event in the motor.limitTouch callback of MotorXLimitCCW
         #  so that execution continues only when event is set on both motors
         motor1_reset_event = threading.Event()
-        motor1_callback_with_params = lambda channel: motor.limitTouch(channel, motor1_reset_event)
         
-        GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor1LimitCCW"],GPIO.RISING,callback=motor.limitTouch,bouncetime=200)
-        GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor1LimitCW"], GPIO.RISING, callback=motor1_callback_with_params, bouncetime=200)
+        Motor1LimitCCW = DebouncedButton("Motor1LimitCCW",mygpio_handler.GPIOMap["Motor1LimitCCW"], settings.bouncingTreshold, motor.limitTouch)
+        Motor1LimitCW = DebouncedButton("Motor1LimitCW",mygpio_handler.GPIOMap["Motor1LimitCW"], settings.bouncingTreshold, motor.limitTouch, motor1_reset_event)
 
         motor2_reset_event = threading.Event()
-        motor2_callback_with_params = lambda channel: motor.limitTouch(channel, motor2_reset_event)
-
-        GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor2LimitCCW"],GPIO.RISING,callback=motor.limitTouch,bouncetime=200)
-        GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor2LimitCW"],GPIO.RISING,callback=motor2_callback_with_params,bouncetime=200)
+        Motor2LimitCCW = DebouncedButton("Motor2LimitCCW",mygpio_handler.GPIOMap["Motor2LimitCCW"], settings.bouncingTreshold, motor.limitTouch)
+        Motor2LimitCW = DebouncedButton("Motor2LimitCW",mygpio_handler.GPIOMap["Motor2LimitCW"], settings.bouncingTreshold, motor.limitTouch,motor2_reset_event)
 
         if (settings.motor1Enabled):
             motor.reset(1)
@@ -100,8 +97,7 @@ def main():
             motor2_reset_event.wait()
 
         random_actions_event = threading.Event()
-
-        GPIO.add_event_detect(mygpio_handler.GPIOMap["I_StartButton"],GPIO.RISING,callback=lambda x: cycle_trigger(x, random_actions_event),bouncetime=5)
+        I_StartButton = DebouncedButton("I_StartButton",mygpio_handler.GPIOMap["I_StartButton"], settings.bouncingTreshold, cycle_trigger, random_actions_event)
         logger.info ("GPIO     : Callback function 'cycle_trigger' binded to event detection on GPIO "+str(mygpio_handler.GPIOMap["I_StartButton"]))
         random_actions_thread = threading.Thread(target=random_actions(random_actions_event))
         #random_actions_thread.daemon = True
@@ -119,6 +115,11 @@ def main():
     finally:
         logger.info ("GPIO     : removing interrupt on GPIO "+str(mygpio_handler.GPIOMap["I_StartButton"])+" and cleaning up GPIOs")
         GPIO.remove_event_detect(mygpio_handler.GPIOMap["I_StartButton"])
+        Motor1LimitCCW.cleanup()
+        Motor1LimitCW.cleanup()
+        Motor2LimitCCW.cleanup()
+        Motor2LimitCW.cleanup()
+        I_StartButton.cleanup()
         mygpio_handler.cleanup()
         audioPlayer.vstopaudio()
 
