@@ -53,7 +53,7 @@ def limitTouch(channel, event = None):
         start(motornum,"cw", speed=100)
     elif event != None:
         start(motornum, "ccw", speed=85)
-        time.sleep(2)
+        time.sleep(3)
         stop(motornum)   
         logger.debug("Event set")
         event.set()
