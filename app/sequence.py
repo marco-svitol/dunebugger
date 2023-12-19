@@ -31,7 +31,7 @@ def testCommands():
     RPiwrite("Ombre2",1)
     waituntil(42)
     RPiwrite("Ombre1",0)
-    waituntil(67)
+    waituntil(70)
     RPiwrite("Ombre2",0)
     waituntil(92)
     #RPiwrite("DimIngressoEst",1)
