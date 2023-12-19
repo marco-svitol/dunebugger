@@ -169,7 +169,7 @@ class DebouncedButton:
         # Check if the button state has been stable for the debounce interval
         if time.time() - self.last_change_time > self.debounce_interval:
             # Call the provided callback function or perform a default action
-            logger.debug("Button "+self.name+" state changed to "+self.button_state)
+            logger.debug("Button "+self.name+" state changed to "+str(self.button_state))
             if self.callback_function:
                 self.callback_function(self.channel, self.callback_event)
             else:
