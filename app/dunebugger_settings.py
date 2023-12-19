@@ -13,10 +13,10 @@ class DunebuggerSettings:
         self.randomActionsMaxSecs = 12
         #Motors
         self.motor1Enabled = True
-        self.motor2Enabled = True
+        self.motor2Enabled = False
         # debug
         self.cyclespeed = 1  # 0.2
-        self.testdunebugger = False
+        self.testdunebugger = True
 
 
 settings = DunebuggerSettings()
