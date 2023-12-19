@@ -20,6 +20,7 @@ def setStandBy():
     
 def testCommands():
     RPiwrite("Accensione",0)
+    RPiwrite("DimIngressoEst",0)
     waituntil(2)
     motor.start(1,"ccw",85)
     waituntil(3)
@@ -27,11 +28,11 @@ def testCommands():
     waituntil(33)
     motor.start(2,"ccw",85)
     waituntil(35)
-    RPiwrite("Ombre2",1)
+    RPiwrite("Ombre1",1)
     waituntil(58)
-    RPiwrite("Ombre1",0)
-    waituntil(62)
     RPiwrite("Ombre2",0)
+    waituntil(62)
+    RPiwrite("DimIngressoEst",1)
     audioPlayer.vstopaudio()
     RPiwrite("Accensione",1)
 
