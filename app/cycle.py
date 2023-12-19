@@ -119,7 +119,8 @@ def main():
         Motor1LimitCW.cleanup()
         Motor2LimitCCW.cleanup()
         Motor2LimitCW.cleanup()
-        I_StartButton.cleanup()
+        if I_StartButton:
+            I_StartButton.cleanup()
         mygpio_handler.cleanup()
         audioPlayer.vstopaudio()
 
