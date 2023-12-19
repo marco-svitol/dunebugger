@@ -14,9 +14,9 @@ def setStandBy():
     RPiwrite("DimIngressoOvest",1)
     RPiwrite("Case1",1)
     RPiwrite("Case2",1)
-    RPiwrite("Case3",1)
     RPiwrite("Fuochi1",1)
     RPiwrite("Fuochi2",1)
+    RPiwrite("Calice",1)
     
 def testCommands():
     RPiwrite("Accensione",0)
@@ -83,6 +83,6 @@ def sequence():
     RPiwrite("Accensione",1)
 
 def random_sequence(event):
-    randomizable = ["Case1","Case2","Case3","Fuochi1","Fuochi2"]
+    randomizable = ["Case1","Case2","Fuochi1","Fuochi2"]
     rand_elem = random.choice(randomizable)
     RPiToggle(rand_elem)
