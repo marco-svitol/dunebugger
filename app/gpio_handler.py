@@ -157,7 +157,7 @@ class DebouncedButton:
 
         logger.debug("DebounceInit: "+self.name+" "+str(self.button_state)+" "+str(self.debounce_interval))
         # Set up event detection on the button pin
-        GPIO.add_event_detect(channel, GPIO.RISING , callback=self.button_callback, bouncetime=500)
+        GPIO.add_event_detect(channel, GPIO.RISING , callback=self.button_callback, bouncetime=5)
 
     def button_callback(self, channel):
         # Read the current state of the button
