@@ -4,8 +4,8 @@ class DunebuggerSettings:
     def __init__(self):
         self.ArduinoConnected = False
         self.cyclelength = 372
-        self.bouncingTreshold = 0.10
-        self.eastereggEnabled = True
+        self.bouncingTreshold = 0.3
+        self.eastereggEnabled = False
         self.cycleoffset = 0
         self.cycle_thread_lock = threading.Lock()
         self.randomActionsEnabled = False
@@ -14,6 +14,8 @@ class DunebuggerSettings:
         #Motors
         self.motor1Enabled = True
         self.motor2Enabled = True
+        self.motor1Freq = 500
+        self.motor2Freq = 500
         # debug
         self.cyclespeed = 1  # 0.2
         self.testdunebugger = True
