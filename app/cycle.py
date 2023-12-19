@@ -92,10 +92,10 @@ def main():
 
         if (settings.motor1Enabled):
             motor.reset(1)
-        if (settings.motor2Enabled):
-            motor.reset(2)
         if (settings.motor1Enabled):
             motor1_reset_event.wait()
+        if (settings.motor2Enabled):
+            motor.reset(2)
         if (settings.motor2Enabled):
             motor2_reset_event.wait()
 
