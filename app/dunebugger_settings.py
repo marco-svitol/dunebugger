@@ -18,7 +18,7 @@ class DunebuggerSettings:
         self.motor2Freq = 5000
         # debug
         self.cyclespeed = 1  # 0.2
-        self.testdunebugger = True
+        self.testdunebugger = False
 
 
 settings = DunebuggerSettings()

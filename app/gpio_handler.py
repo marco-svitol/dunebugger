@@ -19,7 +19,7 @@ from dunebuggerlogging import logger
 # DimIngresso dimmerabili?
 # Natività alwayson very little led
 # Led Always on sotto le panche
-# StellaCometa: vuole un alimentazionee e un relè per comando inserito/disinserito. Nel 2019 avviavamo a 1 e dopo 20 sec a 0
+# StellaCometa: vuole un alimentazionee e un relè per comando inserito/disinserito. Nel 2019 avviavamo a 1 e dopo   20 sec a 0
 # Musica sempre soft all'avvio?, poi random?
 #
 # Quindi alwayson:
@@ -82,7 +82,7 @@ class GPIOHandler:
             "DimTramonto":GPIOMapPhysical["Dimmer4"],
             "DimGiorno":GPIOMapPhysical["Dimmer3"],
             "Ombre2":GPIOMapPhysical["Rele5"],
-            "Accensione":GPIOMapPhysical["Rele6"],
+            "LuceStartButton":GPIOMapPhysical["Rele6"],
             "SchedaMotori":GPIOMapPhysical["Rele7"],
             "Ombre1":GPIOMapPhysical["Rele8"],
             "Calice":GPIOMapPhysical["Rele9"],
@@ -91,8 +91,8 @@ class GPIOHandler:
             "Fuochi1":GPIOMapPhysical["Rele12"],
             "LuceNativita":GPIOMapPhysical["Rele13"],
             "PompaAcqua":GPIOMapPhysical["Rele14"],
-            "Fuochi2":GPIOMapPhysical["Rele15"],
-            "AlwaysOn":GPIOMapPhysical["Rele16"],
+            "Cometa":GPIOMapPhysical["Rele15"],
+            "AlwaysOnNativita":GPIOMapPhysical["Rele16"],
             "I_StartButton":GPIOMapPhysical["StartButton"],
             "Motor1PWM":GPIOMapPhysical["Motor1PWM"],
             "Motor1In1":GPIOMapPhysical["Motor1In1"],
