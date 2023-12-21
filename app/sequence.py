@@ -79,7 +79,7 @@ def sequence():
     RPiwrite("LuceNativita",1)
     waituntil(207)
     RPiwrite("Case2",1)
-    RPiwrite(215)
+    waituntil(215)
     RPiwrite("DimIngressoEst",1)
     RPiwrite("Case2",0)
     RPiwrite("DimTramonto",0)
@@ -95,7 +95,7 @@ def sequence():
     RPiwrite("Accensione",1)
 
 def shadows(starttime, caliceoff = False):
-    motor.start(1,"ccw",90)
+    motor.start(1,"ccw",92)
     waituntil(starttime+1)
     RPiwrite("Ombre1",1)
     waituntil(starttime+4)
