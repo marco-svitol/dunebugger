@@ -28,7 +28,7 @@ def cycle(channel, my_random_actions_event):
         #while time.time() < start_time + settings.bouncingTreshold:
         time.sleep(0.05)    # avoid catching a bouncing
         if GPIO.input(channel) != 1:
-            logger.debug ("Warning! Cycle: below treshold of "+str(settings.bouncingTreshold)+" on channel"+str(channel))
+            #logger.debug ("Warning! Cycle: below treshold of "+str(settings.bouncingTreshold)+" on channel"+str(channel))
             return
         
         logger.info("Start button pressed on channel "+str(channel)) #if function is triggered from button then check three state mode
@@ -83,14 +83,14 @@ def main():
         motor1_reset_event = threading.Event()
         motor1_callback_with_params = lambda channel: motor.limitTouch(channel, motor1_reset_event)
         
-        GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor1LimitCCW"],GPIO.RISING,callback=motor.limitTouch,bouncetime=200)
-        GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor1LimitCW"], GPIO.RISING, callback=motor1_callback_with_params, bouncetime=200)
+        GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor1LimitCCW"],GPIO.RISING,callback=motor.limitTouch,bouncetime=5)
+        GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor1LimitCW"], GPIO.RISING, callback=motor1_callback_with_params, bouncetime=5)
 
         motor2_reset_event = threading.Event()
         motor2_callback_with_params = lambda channel: motor.limitTouch(channel, motor2_reset_event)
 
-        GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor2LimitCCW"],GPIO.RISING,callback=motor.limitTouch,bouncetime=200)
-        GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor2LimitCW"],GPIO.RISING,callback=motor2_callback_with_params,bouncetime=200)
+        GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor2LimitCCW"],GPIO.RISING,callback=motor.limitTouch,bouncetime=5)
+        GPIO.add_event_detect(mygpio_handler.GPIOMap["Motor2LimitCW"],GPIO.RISING,callback=motor2_callback_with_params,bouncetime=5)
 
         if (settings.motor1Enabled):
             motor.reset(1)

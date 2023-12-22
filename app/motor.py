@@ -34,7 +34,7 @@ def stop(motornum):
     GPIO.output(mygpio_handler.GPIOMap["Motor"+str(motornum)+"PWM"],GPIO.LOW)
 
 def limitTouch(channel, event = None):
-    time.sleep(settings.bouncingTreshold)    # avoid catching a bouncing
+    time.sleep(settings.bouncingTreshold+0.15)    # avoid catching a bouncing
     if GPIO.input(channel) != 1:
         #logger.debug ("Warning! Limit touch: below treshold of "+str(settings.bouncingTreshold)+" on channel"+str(channel))
         return
