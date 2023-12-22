@@ -105,7 +105,7 @@ def sequence():
     waituntil(243)
     RPiwrite("LuceNativita",0)
     audioPlayer.vstopaudio()
-    RPiwrite("Accensione",1)
+    RPiwrite("LuceStartButton",1)
 
 def shadows(starttime, caliceoff = False):
     motor.start(1,"ccw",92)
