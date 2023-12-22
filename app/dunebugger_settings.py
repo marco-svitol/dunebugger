@@ -8,7 +8,7 @@ class DunebuggerSettings:
         self.eastereggEnabled = False
         self.cycleoffset = 0
         self.cycle_thread_lock = threading.Lock()
-        self.randomActionsEnabled = False
+        self.randomActionsEnabled = True
         self.randomActionsMinSecs = 5
         self.randomActionsMaxSecs = 12
         #Motors
