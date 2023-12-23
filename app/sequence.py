@@ -101,10 +101,9 @@ def sequence():
     waituntil(256)
     RPiwrite("Case2",0)
     audioPlayer.vstopaudio()
-    waituntil(268)
+    waituntil(262)
     RPiwrite("Fuochi1",0)
     RPiwrite("LuceNativita",0)
-    audioPlayer.vstopaudio()
     RPiwrite("LuceStartButton",1)
 
 def shadows(starttime, caliceoff = False):
@@ -120,7 +119,7 @@ def shadows(starttime, caliceoff = False):
     RPiwrite("Ombre2",1)
     #waituntil(starttime+23)
     RPiwrite("Ombre1",0)
-    waituntil(starttime+51)
+    waituntil(starttime+50)
     RPiwrite("Ombre2",0)
 
 def random_sequence(event):
