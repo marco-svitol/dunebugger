@@ -120,7 +120,7 @@ def shadows(starttime, caliceoff = False):
     RPiwrite("Ombre2",1)
     #waituntil(starttime+23)
     RPiwrite("Ombre1",0)
-    waituntil(starttime+48)
+    waituntil(starttime+51)
     RPiwrite("Ombre2",0)
 
 def random_sequence(event):
