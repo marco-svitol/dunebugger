@@ -79,7 +79,7 @@ def sequence():
     waituntil(178)
     RPiwrite("Cometa",1)
     RPiwrite("Calice",1)
-    waituntil(203)
+    waituntil(218)
     RPiwrite("Calice",0)
     waituntil(238)
     RPiwrite("Cometa",0)
