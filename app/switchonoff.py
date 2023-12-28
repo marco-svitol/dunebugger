@@ -127,7 +127,7 @@ logger = logging.getLogger('supervisorLog')
 logger.info('Dunebugger supervisor started')
 
 onseq = [dtime(7,00)]#,dtime(15,00)]
-offseq = [dtime(23,55)]#,dtime(23,00)]
+offseq = [dtime(22,45)]#,dtime(23,00)]
 onoffsorted = []
 
 timesyncsleep = 10
