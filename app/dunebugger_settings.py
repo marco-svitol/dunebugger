@@ -12,7 +12,7 @@ class DunebuggerSettings:
         self.randomActionsMinSecs = 5
         self.randomActionsMaxSecs = 12
         #Motors
-        self.motor1Enabled = False
+        self.motor1Enabled = True
         self.motor2Enabled = True
         self.motor1Freq = 5000
         self.motor2Freq = 5000
