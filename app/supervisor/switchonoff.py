@@ -1,9 +1,9 @@
 #!/usr/bin/python3
-import os,schedule,time,subprocess, pipes, logging, logging.config
+import os,schedule,time,subprocess, logging, logging.config
 from datetime import time as dtime
 from datetime import datetime
 from itertools import tee, islice, chain
-from InTime import getNTPTime
+from app.supervisor.InTime import getNTPTime
 
 #TODO verific timesync su orologio hw
 #TODO forza switch on tramite tree state
@@ -18,9 +18,10 @@ def tmuxsessioneexist(sessname):
 
 def switchon():
     global showoffsched
+    global installfolder
     cmd = ["tmux","send","-t",mainpaneid,"q","ENTER"]
     subprocess.Popen(cmd)
-    cmd = ["tmux","send","-t",mainpaneid,"python /home/pi/dunebugger/cycle.py","ENTER"]
+    cmd = ["tmux","send","-t",mainpaneid,"python /home/pi/dunebugger/app/cycle.py","ENTER"]
     logger.info ("Switching on dunebugger")
     subprocess.Popen(cmd)
     showoffsched = True
@@ -36,8 +37,9 @@ def switchoff():
     showonsched = True
 
 def tmuxnewpane():
+    global installfolder
     pipepath = "paneid"
-    cmd = ["tmux","split-window","-h","-c","/home/pi/dunebugger"]
+    cmd = ["tmux","split-window","-h","-c","/home/pi/dunebugger/app"]
     subprocess.Popen(cmd)
     if not os.path.exists(pipepath):
         logger.debug("Creating named pipe")
@@ -119,12 +121,13 @@ def checktimeonandswitch():
         logger.info("Current time is after a switch off and before a switch on: switching off")
         switchoff()
 
-logging.config.fileConfig('/home/pi/dunebugger/supervisorlogging.conf') #load logging config file
+installfolder = '/home/pi/dunebugger'
+logging.config.fileConfig('/home/pi/dunebugger/app/config/supervisorlogging.conf') #load logging config file
 logger = logging.getLogger('supervisorLog')
 logger.info('Dunebugger supervisor started')
 
-onseq = [dtime(7,30),dtime(15,00)]
-offseq = [dtime(12,35),dtime(23,00)]
+onseq = [dtime(7,00)]#,dtime(15,00)]
+offseq = [dtime(22,45)]#,dtime(23,00)]
 onoffsorted = []
 
 timesyncsleep = 10
@@ -150,7 +153,7 @@ if not isinstance(nettime,int):
     if not isinstance(nettime,int):
         logger.warning ("time not synced at startup: scheduling timesyncjob with random frequency between " + str(timesyncmin) + " secs and " + str(timesyncmax) + " secs")
         timesyncJob = schedule.every(timesyncmin).to(timesyncmax).seconds.do(checkTimeSync)
-        #fo = open("/home/pi/dunebugger/timenotsynced", "wb") #tells dunebugger that syncing is not working....
+        #fo = open(installfolder+"timenotsynced", "wb") #tells dunebugger that syncing is not working....
         #fo.close()
 if isinstance(nettime,int):
     logger.info("...time sync ok. Time is "+time.ctime(nettime))

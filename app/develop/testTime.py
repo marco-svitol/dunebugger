@@ -1,7 +1,7 @@
 import sys
-sys.path.insert(0,'/home/pi/dunebugger')
+sys.path.insert(0,installfolder)
 
-import InTime
+import app.supervisor.InTime as InTime
 from datetime import datetime, timedelta
 
 d = datetime(2020,1,4,18,31,0)
