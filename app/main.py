@@ -15,7 +15,7 @@ def random_actions(event):
     while (settings.randomActionsEnabled):
         event.wait(timeout=random.uniform(settings.randomActionsMinSecs,settings.randomActionsMaxSecs))
         if not event.is_set():
-            sequence.random_sequence(event)
+            sequence.random_action(event)
     logger.debug("Random actions exiting")
 
 def cycle_trigger(channel, my_random_actions_event):

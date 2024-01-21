@@ -1,44 +1,97 @@
 import threading, os
 from os import path
 import configparser
+from dotenv import load_dotenv
+from dunebuggerlogging import logger
 
 class DunebuggerSettings:
     def __init__(self):
         # Load configuration from dunebugger.conf
+        load_dotenv()
+        self.config = configparser.ConfigParser()
+        # Set optionxform to lambda x: x to preserve case
+        self.config.optionxform = lambda x: x
         self.load_configuration()
+        
 
-        # Rest of your __init__ method
+    # def load_configuration(self):
+    #     config = configparser.ConfigParser()
+
+    #     try:
+    #         dunebuggerConfig = path.join(path.dirname(path.abspath(__file__)), 'config/dunebugger.conf')
+    #         config.read(dunebuggerConfig)
+
+    #         self.ArduinoConnected = config.getboolean('General', 'ArduinoConnected')
+    #         self.cyclelength = config.getint('General', 'cyclelength')
+    #         self.bouncingTreshold = config.getfloat('General', 'bouncingTreshold')
+    #         self.eastereggEnabled = config.getboolean('General', 'eastereggEnabled')
+    #         self.cycleoffset = config.getint('General', 'cycleoffset')
+    #         self.randomActionsEnabled = config.getboolean('General', 'randomActionsEnabled')
+    #         self.randomActionsMinSecs = config.getint('General', 'randomActionsMinSecs')
+    #         self.randomActionsMaxSecs = config.getint('General', 'randomActionsMaxSecs')
+
+    #         # Motors
+    #         self.motor1Enabled = config.getboolean('Motors', 'motor1Enabled')
+    #         self.motor2Enabled = config.getboolean('Motors', 'motor2Enabled')
+    #         self.motor1Freq = config.getint('Motors', 'motor1Freq')
+    #         self.motor2Freq = config.getint('Motors', 'motor2Freq')
+
+    #         # Debug
+    #         self.cyclespeed = config.getfloat('Debug', 'cyclespeed')
+    #         self.testdunebugger = config.getboolean('Debug', 'testdunebugger')
+    #         self.ON_RASPBERRY_PI  = os.getenv("ON_RASPBERRY_PI")
 
     def load_configuration(self):
-        config = configparser.ConfigParser()
+        
 
         try:
             dunebuggerConfig = path.join(path.dirname(path.abspath(__file__)), 'config/dunebugger.conf')
-            config.read(dunebuggerConfig)
+            self.config.read(dunebuggerConfig)
 
-            # Example of how to read values from the configuration file
-            self.ArduinoConnected = config.getboolean('General', 'ArduinoConnected')
-            self.cyclelength = config.getint('General', 'cyclelength')
-            self.bouncingTreshold = config.getfloat('General', 'bouncingTreshold')
-            self.eastereggEnabled = config.getboolean('General', 'eastereggEnabled')
-            self.cycleoffset = config.getint('General', 'cycleoffset')
-            self.randomActionsEnabled = config.getboolean('General', 'randomActionsEnabled')
-            self.randomActionsMinSecs = config.getint('General', 'randomActionsMinSecs')
-            self.randomActionsMaxSecs = config.getint('General', 'randomActionsMaxSecs')
+            for section in ['General', 'Motors', 'Debug']:
+                for option in self.config.options(section):
+                    value = self.config.get(section, option)
+                    setattr(self, option, self.validate_option(section, option, value))
+                    logger.info(f"{option}: {value}")
 
-            # Motors
-            self.motor1Enabled = config.getboolean('Motors', 'motor1Enabled')
-            self.motor2Enabled = config.getboolean('Motors', 'motor2Enabled')
-            self.motor1Freq = config.getint('Motors', 'motor1Freq')
-            self.motor2Freq = config.getint('Motors', 'motor2Freq')
-
-            # Debug
-            self.cyclespeed = config.getfloat('Debug', 'cyclespeed')
-            self.testdunebugger = config.getboolean('Debug', 'testdunebugger')
-            self.ON_RASPBERRY_PI  = os.getenv("DEBUG", False)
+            self.ON_RASPBERRY_PI = os.getenv("ON_RASPBERRY_PI")
+            logger.info(f"ON_RASPBERRY_PI: {self.ON_RASPBERRY_PI}")
 
         except configparser.Error as e:
-            print(f"Error reading configuration: {e}")
+            logger.error(f"Error reading configuration: {e}")
+
+
+    def validate_option(self, section, option, value):
+        # Validation for specific options
+        try:
+            if section == 'General':
+                if option in ['cyclelength', 'cycleoffset', 'randomActionsMinSecs', 'randomActionsMaxSecs']:
+                    return int(value)
+                elif option == 'bouncingTreshold':
+                    return float(value)
+                elif option in ['ArduinoConnected', 'eastereggEnabled', 'randomActionsEnabled']:
+                    return self.config.getboolean(section, option)
+                elif option in ['sequenceFolder']:
+                    return str(value)
+            elif section == 'Motors':
+                if option in ['motor1Freq', 'motor2Freq']:
+                    return int(value)
+                elif option in ['motor1Enabled', 'motor2Enabled']:
+                    return self.config.getboolean(section, option)
+            elif section == 'Debug':
+                if option == 'cyclespeed':
+                    return float(value)
+                elif option == 'testdunebugger':
+                    return self.config.getboolean(section, option)
+        except (configparser.NoOptionError, ValueError):
+            raise ValueError(f"Invalid configuration: Section={section}, Option={option}, Value={value}")
+
+        # If no specific validation is required, return the original value
+        return value
+    
+
+        # except configparser.Error as e:
+        #     print(f"Error reading configuration: {e}")
 
 settings = DunebuggerSettings()
 

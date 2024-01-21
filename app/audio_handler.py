@@ -3,7 +3,7 @@ import os
 import random
 import vlc
 import time
-import app.supervisor.InTime as InTime
+import supervisor.InTime as InTime
 from datetime import datetime
 
 class AudioPlayer:

@@ -4,9 +4,11 @@ from ast import literal_eval
 from dunebugger_settings import settings
 from os import path
 import re
-
-if settings.ON_RASPBERRY_PI:
+if settings.ON_RASPBERRY_PI == True:
     import RPi.GPIO as GPIO
+else:
+    from mock_gpio import GPIO
+
 #PWM 13,19,12,18 # free : 19
 # 2,3 were used for Arduino serial (no rele). Two GPIOs were reserved for Arduino reset (14) relè and Dimmer board reset (15) relè
 
@@ -26,32 +28,43 @@ class GPIOHandler:
     def __init__(self):
         # Load GPIO configuration from gpio_config.conf
         self.GPIOMap = {}
-        
+        self.channelsSetup = {}
+        self.channels = {}
+        self.logicalChannels = {}
         self.load_gpio_configuration()
+        self.GPIO = GPIO
+
         if settings.ON_RASPBERRY_PI:
             # Initialize GPIO
             GPIO.setwarnings(False)
             GPIO.setmode(GPIO.BCM)
-            GPIO.setup(self.chan_releA, GPIO.OUT, initial=GPIO.HIGH)
-            GPIO.setup(self.chan_releB, GPIO.OUT, initial=GPIO.HIGH)
-            GPIO.setup(self.chan_contr, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-            GPIO.setup(self.chan_motor_1, GPIO.OUT, initial=GPIO.LOW)
-            GPIO.setup(self.chan_limitswitch_motor1, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-            GPIO.setup(self.chan_motor_2, GPIO.OUT, initial=GPIO.LOW)
-            GPIO.setup(self.chan_limitswitch_motor2, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 
-        self.GPIO = GPIO
+            for channel, config in self.channelsSetup.items():
+                pin_setup, initial_state = config
+                if (pin_setup == 'OUT' and (initial_state == 'HIGH' or initial_state == 'LOW')):
+                    GPIO.setup(self.channels[channel], GPIO.OUT, initial=GPIO.HIGH if initial_state == 'HIGH' else GPIO.LOW)
+                elif (pin_setup == 'IN' and (initial_state == 'DOWN' or initial_state == 'UP')):
+                    pull_up_down = GPIO.PUD_UP if initial_state == 'UP' else GPIO.PUD_DOWN
+                    GPIO.setup(self.channels[channel], GPIO.IN, pull_up_down)
+
+        
         
     def load_gpio_configuration(self):
         config = configparser.ConfigParser()
         # Set optionxform to lambda x: x to preserve case
         config.optionxform = lambda x: x
-        channels = {}
-        logicalChannels = {}
-
         try:
             gpioConfig = path.join(path.dirname(path.abspath(__file__)), 'config/gpio.conf')
             config.read(gpioConfig)
+
+            # Load Channels Setup
+            try:
+                for channelSetup, values in config.items('ChannelsSetup'):
+                    channelSetupValues = values.split(', ')
+                    self.channelsSetup[channelSetup] = channelSetupValues
+            except (configparser.Error, ValueError) as e:
+                logger.error(f"Error reading channel setup configuration: {e}")
+                # Handle the error as needed
 
             # Load Channels
             try:
@@ -59,37 +72,37 @@ class GPIOHandler:
                     # Convert the values to tuple if there is more than one element
                     channel_values = literal_eval(values)
                     if isinstance(channel_values, tuple):
-                        channels[physicalChannel] = channel_values
+                        self.channels[physicalChannel] = channel_values
                     else:
-                        channels[physicalChannel] = (channel_values,)
+                        self.channels[physicalChannel] = (channel_values,)
             except (configparser.Error, ValueError) as e:
-                logger.error("Error reading channel configuration: "+ {e})
+                logger.error(f"Error reading channel configuration: {e}")
                 # Handle the error as needed
 
             # Load GPIOMapPhysical
             try:
                 for logicalChannel, values in config.items('LogicalChannels'):
                     channel, index = self.__extract_variable_info(values)
-                    logicalChannels[logicalChannel] = channels[channel][index]
+                    self.logicalChannels[logicalChannel] = self.channels[channel][index]
             except (configparser.Error, ValueError) as e:
-                logger.error("Error reading LogicalChannels configuration: "+ {e})
+                logger.error(f"Error reading LogicalChannels configuration: {e}")
                 # Handle the error as needed
         
             # Load GPIOMap
             try:
                 for GPIOMap, values in config.items('GPIOMaps'):
                     logicalChannel, index = self.__extract_variable_info(values)
-                    self.GPIOMap[GPIOMap] = logicalChannels[index]
+                    self.GPIOMap[GPIOMap] = self.logicalChannels[index]
             except (configparser.Error, ValueError) as e:
-                logger.error("Error reading LogicalChannels configuration: "+ {e})
+                logger.error(f"Error reading LogicalChannels configuration: {e}")
                 # Handle the error as needed
 
             # Check if "I_StartButton" entry exists in GPIOMap
-            if 'I_StartButton' not in self.GPIOMap:
+            if 'In_StartButton' not in self.GPIOMap:
                 raise ValueError('GPIOMap must have an entry for "I_StartButton"')
 
         except (configparser.Error, ValueError) as e:
-            print(f"Error reading GPIO configuration: {e}")
+            logger.error(f"Error reading GPIO configuration: {e}")
             # You might want to handle the error in an appropriate way, e.g., logging or quitting the program
 
 
@@ -136,31 +149,5 @@ def RPiwrite(gpio,bit):
 def RPiToggle(gpio):
     GPIO.output(mygpio_handler.GPIOMap[gpio], not GPIO.input(mygpio_handler.GPIOMap[gpio]))
     #logger.verbose("Toggled RPi "+gpio+" to "+str(GPIO.input(mygpio_handler.GPIOMap[gpio])))
-
-if not settings.ON_RASPBERRY_PI:
-    # Mock GPIO class for non-Raspberry Pi platforms
-    class MockGPIO:
-        BCM = "MockBCM"
-        OUT = "MockOUT"
-        HIGH = "MockHIGH"
-        LOW = "MockLOW"
-        PUD_DOWN = "MockPUD_DOWN"
-
-        def setmode(self, mode):
-            pass
-
-        def setup(self, channel, direction, initial):
-            pass
-
-        def input(self, channel):
-            return False
-
-        def output(self, channel, value):
-            pass
-
-        def cleanup(self):
-            pass
-
-    GPIO = MockGPIO()
 
 mygpio_handler = GPIOHandler()

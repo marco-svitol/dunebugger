@@ -1,82 +1,128 @@
 from utils import waituntil
 from audio_handler import audioPlayer
 from gpio_handler import RPiwrite, RPiToggle
-import random
+import random, os
+from os import path
 from dunebugger_settings import settings
 import motor
+from dunebuggerlogging import logger
 
-def execute_command(command):
-    # Ignore comments (commands starting with #)
-    if command.startswith("#"):
-        return
+class sequencesHandler:
 
-    parts = command.split()
-    if len(parts) < 3:
-        print("Invalid command:", command)
-        return
+    def __init__(self):
+        self.sequenceFolder = path.join(path.dirname(path.abspath(__file__)), f"../sequences/{settings.sequenceFolder}")
+        self.random_elements = {}
+        if (settings.randomActionsEnabled == True):
+            self.random_sequence_from_file("randomelements")
+        self.sequences = self.validate_all_sequence_files(self.sequenceFolder)
+    
+    def validate_all_sequence_files(self, directory):
+        try:
+            for filename in os.listdir(directory):
+                if filename.endswith(".seq"):
+                    file_path = os.path.join(directory, filename)
+                    logger.info(f"Validating sequence {file_path}")
+                    self.read_sequence_file(file_path, testcommand=True)
+                    
+        except OSError as e:
+            logger.error(f"Error validating sequence files in {directory}: {e}")
 
-    verb = parts[0].lower()
-    if verb == "motor" and parts[1].lower() == "start":
-        motor_number = int(parts[2])
-        direction = parts[3].lower()
-        speed = int(parts[4])
+    def process_sequence_file(self, sequenceFile):
+        try:
+            file_path = os.path.join(self.sequenceFolder, sequenceFile)
+            self.read_sequence_file(file_path)
+            logger.info(f"Processing sequence {file_path}")
+        except OSError as e:
+            logger.error(f"Error processing sequence file {file_path}: {e}")
 
-        # Check motor enabled settings before starting the motor
+    def execute_motor_command(self, motor_number, direction, speed):
         motor_enabled = getattr(settings, f"motor{motor_number}Enabled", False)
         if motor_enabled:
             motor.start(motor_number, direction, speed)
-    else:
-        # Handle other commands
-        device_name = parts[1]
-        action = parts[2]
 
-        if verb == "switch":
-            if action.lower() == "on":
-                RPiwrite(device_name, 1)
-            elif action.lower() == "off":
-                RPiwrite(device_name, 0)
-            else:
-                print("Unknown action:", action)
-        elif verb == "waituntil":
-            if len(parts) < 4:
-                print("Invalid waituntil command:", command)
-                return
-            duration = int(parts[3])
-            waituntil(duration)
-        elif verb == "audio" and len(parts) >= 4 and action.lower() == "fadeout":
-            fadeout_duration = int(parts[3])
-            audioPlayer.vstopaudio(fadeout_duration)
+    def execute_switch_command(self, device_name, action):
+        if action.lower() == "on":
+            RPiwrite(device_name, 1)
+        elif action.lower() == "off":
+            RPiwrite(device_name, 0)
         else:
-            print("Unknown command:", command)
+            logger.error("Unknown action:", action)
 
-def read_sequence_file(file_path):
-    """
-    Reads commands from the specified file and executes them.
+    def execute_waituntil_command(self, duration):
+        waituntil(duration)
 
-    Args:
-        file_path (str): The path to the sequence file.
-    """
-    with open(file_path, "r") as file:
-        for line in file:
-            command = line.strip()
-            if command:
-                execute_command(command)
+    def execute_audio_fadeout_command(self, fadeout_duration):
+        audioPlayer.vstopaudio(fadeout_duration)
 
-def random_sequence_from_file(file_path):
-    try:
-        with open(file_path, "r") as file:
-            randomizable = [line.strip() for line in file if line.strip()]
-    except FileNotFoundError:
-        print(f"File not found: {file_path}")
-        return
+    def execute_command(self, command, testmode = False):
+        if command.startswith("#"):
+            return True
 
-    if not randomizable:
-        print("No randomizable elements found in the file.")
-        return
+        parts = command.split()
+        if len(parts) < 3:
+            logger.error("Invalid command:", command)
+            return False
 
-    rand_elem = random.choice(randomizable)
-    RPiToggle(rand_elem)
+        verb = parts[0].lower()
+        # TODO: motor stop
+        if verb == "motor" and parts[1].lower() == "start":
+            motor_number = int(parts[2])
+            direction = parts[3].lower()
+            speed = int(parts[4])
+            if not testmode:
+                self.execute_motor_command(motor_number, direction, speed)
+        else:
+            device_name = parts[1]
+            action = parts[2]
 
-# Example usage
-read_sequence_file("presepe.seq")
-random_sequence_from_file("random.seq")
+            if verb == "switch":
+                if not testmode:
+                    self.execute_switch_command(device_name, action)
+
+            elif verb == "waituntil":
+                if len(parts) < 4:
+                    logger.error("Invalid waituntil command:", command)
+                    return False
+                duration = int(parts[3])
+                if not testmode:
+                    self.execute_waituntil_command(duration)
+
+            elif verb == "audio" and len(parts) >= 4 and action.lower() == "fadeout":
+                fadeout_duration = int(parts[3])
+                if not testmode:
+                    self.execute_audio_fadeout_command(fadeout_duration)
+
+            else:
+                logger.error("Unknown command:", command)
+                return False
+        
+        return True
+
+    def read_sequence_file(self, file_path, testcommand = False):
+        try:
+            with open(file_path, "r") as file:
+                for line_num, line in enumerate(file, start=1):
+                    command = line.strip()
+                    if command:
+                        commandResult = self.execute_command(command, testcommand)
+                        if testcommand and not commandResult:
+                            logger.error(f"Error validating sequence: {file_path} (line {line_num}). Fix sequence")
+        except FileNotFoundError:
+            logger.error(f"File not found: {file_path}")
+
+    def random_sequence_from_file(self, file_name):
+        try:
+            file_path = path.join(self.sequenceFolder, file_name)
+            with open(file_path, "r") as file:
+                self.random_elements = [line.strip() for line in file if line.strip()]
+        except FileNotFoundError:
+            logger.error(f"File not found: {file_path}")
+            return
+
+    def random_action(self, event):
+        rand_elem = random.choice(self.random_elements)
+        RPiToggle(rand_elem)
+
+executor = sequencesHandler()
+
+
