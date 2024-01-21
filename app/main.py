@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # coding: utf8
-import os, time, RPi.GPIO as GPIO, serial
-from gpio_handler import mygpio_handler
+import os, time, serial
+from gpio_handler import mygpio_handler, GPIO
 import motor
 from dunebuggerlogging import logger
 import threading

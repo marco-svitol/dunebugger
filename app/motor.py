@@ -1,6 +1,5 @@
 
-from gpio_handler import mygpio_handler
-import RPi.GPIO as GPIO
+from gpio_handler import mygpio_handler, GPIO
 import time
 from dunebuggerlogging import logger 
 from pwm_handler import pwm_motor1, pwm_motor2

@@ -1,5 +1,5 @@
 from dunebuggerlogging import logger
-import time, RPi.GPIO as GPIO
+import time
 from dunebugger_settings import settings
 
 def ArduinoSend(command):

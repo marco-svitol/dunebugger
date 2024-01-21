@@ -4,6 +4,10 @@ from datetime import time as dtime
 from datetime import datetime
 from itertools import tee, islice, chain
 from app.supervisor.InTime import getNTPTime
+from os import path
+
+appPath = path.join(path.dirname(path.abspath(__file__)), '..')
+mainModule = "main.py"
 
 #TODO verific timesync su orologio hw
 #TODO forza switch on tramite tree state
@@ -21,7 +25,8 @@ def switchon():
     global installfolder
     cmd = ["tmux","send","-t",mainpaneid,"q","ENTER"]
     subprocess.Popen(cmd)
-    cmd = ["tmux","send","-t",mainpaneid,"python /home/pi/dunebugger/app/cycle.py","ENTER"]
+    mainModulePath = path.join(appPath, mainModule)
+    cmd = ["tmux","send","-t",mainpaneid,"python "+mainModulePath,"ENTER"]
     logger.info ("Switching on dunebugger")
     subprocess.Popen(cmd)
     showoffsched = True
@@ -39,7 +44,7 @@ def switchoff():
 def tmuxnewpane():
     global installfolder
     pipepath = "paneid"
-    cmd = ["tmux","split-window","-h","-c","/home/pi/dunebugger/app"]
+    cmd = ["tmux","split-window","-h","-c",appPath]
     subprocess.Popen(cmd)
     if not os.path.exists(pipepath):
         logger.debug("Creating named pipe")
@@ -121,8 +126,9 @@ def checktimeonandswitch():
         logger.info("Current time is after a switch off and before a switch on: switching off")
         switchoff()
 
-installfolder = '/home/pi/dunebugger'
-logging.config.fileConfig('/home/pi/dunebugger/app/config/supervisorlogging.conf') #load logging config file
+supervisorloggingConfig = path.join(appPath, 'config/supervisorlogging.conf')
+
+logging.config.fileConfig(supervisorloggingConfig) #load logging config file
 logger = logging.getLogger('supervisorLog')
 logger.info('Dunebugger supervisor started')
 

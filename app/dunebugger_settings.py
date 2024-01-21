@@ -1,4 +1,6 @@
-import threading
+import threading, os
+from os import path
+import configparser
 
 class DunebuggerSettings:
     def __init__(self):
@@ -11,7 +13,8 @@ class DunebuggerSettings:
         config = configparser.ConfigParser()
 
         try:
-            config.read('./config/dunebugger.conf')
+            dunebuggerConfig = path.join(path.dirname(path.abspath(__file__)), 'config/dunebugger.conf')
+            config.read(dunebuggerConfig)
 
             # Example of how to read values from the configuration file
             self.ArduinoConnected = config.getboolean('General', 'ArduinoConnected')
@@ -32,13 +35,14 @@ class DunebuggerSettings:
             # Debug
             self.cyclespeed = config.getfloat('Debug', 'cyclespeed')
             self.testdunebugger = config.getboolean('Debug', 'testdunebugger')
+            self.ON_RASPBERRY_PI  = os.getenv("DEBUG", False)
 
         except configparser.Error as e:
             print(f"Error reading configuration: {e}")
 
 settings = DunebuggerSettings()
 
-import configparser
+
 
 
 

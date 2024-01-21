@@ -1,4 +1,5 @@
 import logging, logging.config
-
-logging.config.fileConfig('./config/dunebuggerlogging.conf') #load logging config file
+from os import path
+logConfig = path.join(path.dirname(path.abspath(__file__)), 'config/dunebuggerlogging.conf')
+logging.config.fileConfig(logConfig) #load logging config file
 logger = logging.getLogger('dunebuggerLog')

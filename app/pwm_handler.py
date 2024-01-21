@@ -1,5 +1,4 @@
-import RPi.GPIO as GPIO
-from gpio_handler import mygpio_handler
+from gpio_handler import mygpio_handler, GPIO
 from dunebugger_settings import settings
 
 class PWMHandler:

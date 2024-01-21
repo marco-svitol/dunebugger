@@ -1,4 +1,4 @@
-import RPi.GPIO as GPIO          
+from gpio_handler import  GPIO         
 from time import sleep
 
 in1 = 1
