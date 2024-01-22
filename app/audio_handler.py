@@ -81,7 +81,7 @@ class AudioPlayer:
         self.musicSetVolume(self.musicVolume)
         
 
-    def vplaysfx(self, filename):
+    def vplaysfx(self):
         sfxfile = path.join(self.sfxpath, self.sfxfile)
         media = self.vlcinstance.media_new(sfxfile)
 
@@ -89,7 +89,7 @@ class AudioPlayer:
         self.sfxSetVolume(self.sfxVolume)
 
         self.sfxplayer.play()
-        logger.info("Playing sfx :" + self.sfxpath + filename)
+        logger.info(f"Playing sfx : {sfxfile}")
 
     def vstopaudio(self):
         try:

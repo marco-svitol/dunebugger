@@ -3,23 +3,23 @@ switch PompaAcqua On
 switch DimTramonto On
 switch DimIngressoEst Off
 switch DimGiorno Off
-switch waituntil 10
+waituntil 10
 switch Case1 Off
-switch waituntil 17
+waituntil 17
 switch Case2 Off
 switch Fuochi1 Off
 switch DimTramonto Off
-switch waituntil 30
+waituntil 30
 #switch shadows {cycleoffset}  # duration 48
 switch Fuochi1 On
-switch waituntil 83
+waituntil 83
 switch Case1 On
-switch waituntil 85
+waituntil 85
 switch Case2 On
-switch waituntil 90
+waituntil 90
 switch LuceNativita On
 switch DimIngressoOvest Off
-switch waituntil 120
+waituntil 120
 switch Case2 Off
 waituntil 127
 switch Case1 Off

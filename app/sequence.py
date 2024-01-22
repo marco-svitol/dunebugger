@@ -76,6 +76,7 @@ class SequencesHandler:
                 self.execute_motor_command(motor_number, direction, speed)
         else:
 
+            # TODO verify switch works
             if verb == "switch":
                 device_name = parts[1]
                 action = parts[2]
