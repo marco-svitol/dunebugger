@@ -18,8 +18,8 @@ class AudioPlayer:
         self.quietSfxVol = settings.quietSfxVol
         self.ignoreQuietTime = settings.ignoreQuietTime
         self.fadeoutsec = settings.fadeoutsec
-        self.musicpath = settings.musicpath
-        self.sfxpath = settings.sfxpath
+        self.musicpath = path.join(path.dirname(path.abspath(__file__)), settings.musicpath)
+        self.sfxpath = path.join(path.dirname(path.abspath(__file__)), settings.sfxpath)
         self.sfxfile = settings.sfxfile
         self.easteregg = settings.easteregg
         self.entrysong = settings.entrysong
@@ -38,8 +38,8 @@ class AudioPlayer:
         return False
 
     def startAudio(self, easterEggOn = False):
-        audioPlayer.vplaymusic(self, easterEggOn)
-        audioPlayer.vplaysfx(self)
+        audioPlayer.vplaymusic(easterEggOn)
+        audioPlayer.vplaysfx()
 
     def vplaymusic(self, easterEggOn):
 

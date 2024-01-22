@@ -24,6 +24,8 @@ class MockGPIO:
 
     def input(self, channel):
         logger.debug(f"MockGPIO.input mode={channel}")
+        if channel == 6:
+            return True
         return False
 
     def output(self, channel, value):

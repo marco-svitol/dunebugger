@@ -12,7 +12,7 @@ class DunebuggerSettings:
         # Set optionxform to lambda x: x to preserve case
         self.config.optionxform = lambda x: x
         self.load_configuration()
-        
+        self.cycle_thread_lock = threading.Lock()
 
     # def load_configuration(self):
     #     config = configparser.ConfigParser()
