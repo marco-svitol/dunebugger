@@ -5,23 +5,24 @@ import vlc
 import time
 import supervisor.InTime as InTime
 from datetime import datetime
+from dunebugger_settings import settings
+from os import path
 
 class AudioPlayer:
     def __init__(self):
-        self.normalMusicVolume = 95
-        self.normalSfxVolume = 90
+        self.normalMusicVolume = settings.normalMusicVolume
+        self.normalSfxVolume = settings.normalSfxVolume
         self.musicVolume = self.normalMusicVolume
         self.sfxVolume = self.normalSfxVolume
-        self.quietMusicVol = 95
-        self.quietSfxVol = 90
-        self.ignoreQuietTime = True
-        self.fadeoutsec = 8  # fade out seconds
-        self.musicpath = "../music/"
-        self.sfxpath = "../sfx/"
-        self.sfxfile = "2009.mp3"
-        self.easteregg = "ohhche.mp3"
-        self.entrysong = "fincosong2022.mp3"
-        self.sfxuccelli = "allodole.mp3"
+        self.quietMusicVol = settings.quietMusicVol
+        self.quietSfxVol = settings.quietSfxVol
+        self.ignoreQuietTime = settings.ignoreQuietTime
+        self.fadeoutsec = settings.fadeoutsec
+        self.musicpath = settings.musicpath
+        self.sfxpath = settings.sfxpath
+        self.sfxfile = settings.sfxfile
+        self.easteregg = settings.easteregg
+        self.entrysong = settings.entrysong
 
         self.vlcinstance = vlc.Instance('--aout=alsa')
         self.musiclistplayer = self.vlcinstance.media_list_player_new()
@@ -36,7 +37,14 @@ class AudioPlayer:
             return True
         return False
 
-    def vplaymusic(self, customsong):
+    def startAudio(self, easterEggOn = False):
+        audioPlayer.vplaymusic(self, easterEggOn)
+        audioPlayer.vplaysfx(self)
+
+    def vplaymusic(self, easterEggOn):
+
+        self.setVolumeBasedOntime()
+
         playlist = self.vlcinstance.media_list_new()
 
         fileplaylist = os.listdir(self.musicpath)  # get filenames
@@ -51,10 +59,9 @@ class AudioPlayer:
         if len(fileplaylist) > 20:
             fileplaylist = fileplaylist[:19]  # get only the first 20 songs
 
-        if customsong:  # easteregg
+        if easterEggOn:  # easteregg
             logger.info("EasterEgg enabled!!")
             playlist.add_media(self.vlcinstance.media_new(self.sfxpath + self.easteregg))
-            playlist.add_media(self.vlcinstance.media_new(self.sfxpath + "A.mp3"))
 
         for song in range(len(fileplaylist)):  # add path to songname
             playlist.add_media(self.vlcinstance.media_new(self.musicpath + fileplaylist[song]))
@@ -67,17 +74,19 @@ class AudioPlayer:
         self.musicplayer = self.musiclistplayer.get_media_player()
         time.sleep(0.1)
         logger.info("Setting music volume at " + str(self.musicVolume))
-        self.musicplayer.audio_set_volume(self.musicVolume)
 
         logger.info("Playing music (first three songs): " + fileplaylist[0] + " " + fileplaylist[1] + " " +
                     fileplaylist[2])
+        
+        self.musicSetVolume(self.musicVolume)
+        
 
     def vplaysfx(self, filename):
-        media = self.vlcinstance.media_new(self.sfxpath + filename)
+        sfxfile = path.join(self.sfxpath, self.sfxfile)
+        media = self.vlcinstance.media_new(sfxfile)
 
         self.sfxplayer.set_media(media)
-        logger.info("Setting sfx volume at " + str(self.sfxVolume))
-        self.sfxplayer.audio_set_volume(self.sfxVolume)
+        self.sfxSetVolume(self.sfxVolume)
 
         self.sfxplayer.play()
         logger.info("Playing sfx :" + self.sfxpath + filename)
@@ -113,11 +122,13 @@ class AudioPlayer:
 
     def musicSetVolume(self, vol):
         self.musicplayer.audio_set_volume(vol)
+        logger.info("Setting music volume at " + str(vol))
     
     def sfxSetVolume(self, vol):
         self.sfxplayer.audio_set_volume(vol)
+        logger.debug("Setting sfx volume at " + str(vol))
 
-    def initMusic(self):
+    def setVolumeBasedOntime(self):
         # check current date against calendar delle messe per impostare volume
         self.musicVolume = self.normalMusicVolume
         self.sfxVolume = self.normalSfxVolume

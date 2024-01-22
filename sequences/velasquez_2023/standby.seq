@@ -1,4 +1,5 @@
-switch SchedaMotori On
+switch SchedaMotori On #test comment
+#remove
 switch DimGiorno On
 switch LuceStartButton On
 switch AlwaysOnNativita On

@@ -34,6 +34,7 @@ class GPIOHandler:
         self.load_gpio_configuration()
         self.GPIO = GPIO
 
+
         if settings.ON_RASPBERRY_PI:
             # Initialize GPIO
             GPIO.setwarnings(False)
@@ -140,6 +141,13 @@ class GPIOHandler:
         else:
             return None, None
 
+    def setupStartButton(self, callback):
+         startButton = self.GPIOMap[settings.startButton]
+         GPIO.add_event_detect(startButton,GPIO.RISING,callback=callback,bouncetime=200)
+
+    def removeStartButton(self):
+        startButton = self.GPIOMap[settings.startButton]
+        GPIO.remove_event_detect(startButton)
 
 def RPiwrite(gpio,bit):
     logger.debug("RPi "+gpio+" write "+str(bit))

@@ -48,7 +48,7 @@ class DunebuggerSettings:
             dunebuggerConfig = path.join(path.dirname(path.abspath(__file__)), 'config/dunebugger.conf')
             self.config.read(dunebuggerConfig)
 
-            for section in ['General', 'Motors', 'Debug']:
+            for section in ['General', 'Audio', 'Motors', 'Debug']:
                 for option in self.config.options(section):
                     value = self.config.get(section, option)
                     setattr(self, option, self.validate_option(section, option, value))
@@ -69,9 +69,15 @@ class DunebuggerSettings:
                     return int(value)
                 elif option == 'bouncingTreshold':
                     return float(value)
-                elif option in ['ArduinoConnected', 'eastereggEnabled', 'randomActionsEnabled']:
+                elif option in ['arduinoConnected', 'eastereggEnabled', 'randomActionsEnabled']:
                     return self.config.getboolean(section, option)
-                elif option in ['sequenceFolder']:
+                elif option in ['sequenceFolder', 'arduinoSerialPort', 'startButton']:
+                    return str(value)
+            elif section == 'Audio':
+                if option in ['normalMusicVolume', 'normalSfxVolume', 'quietMusicVol', 'quietSfxVol',
+                              'fadeoutsec', 'ignoreQuietTime']:
+                    return int(value) if option != 'ignoreQuietTime' else self.config.getboolean(section, option)
+                elif option in ['musicpath', 'sfxpath', 'sfxfile', 'easteregg', 'entrysong']:
                     return str(value)
             elif section == 'Motors':
                 if option in ['motor1Freq', 'motor2Freq']:

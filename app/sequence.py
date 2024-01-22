@@ -7,7 +7,9 @@ from dunebugger_settings import settings
 import motor
 from dunebuggerlogging import logger
 
-class sequencesHandler:
+class SequencesHandler:
+    
+    lastTimeMark = 0
 
     def __init__(self):
         self.sequenceFolder = path.join(path.dirname(path.abspath(__file__)), f"../sequences/{settings.sequenceFolder}")
@@ -55,13 +57,14 @@ class sequencesHandler:
         audioPlayer.vstopaudio(fadeout_duration)
 
     def execute_command(self, command, testmode = False):
-        if command.startswith("#"):
-            return True
+        # Remove everything after #, treating it as a comment
+        command = command.split('#', 1)[0].strip()
 
+        if not command:
+            # If the line is empty after removing the comment, skip it
+            return True
+        
         parts = command.split()
-        if len(parts) < 3:
-            logger.error("Invalid command:", command)
-            return False
 
         verb = parts[0].lower()
         # TODO: motor stop
@@ -72,20 +75,21 @@ class sequencesHandler:
             if not testmode:
                 self.execute_motor_command(motor_number, direction, speed)
         else:
-            device_name = parts[1]
-            action = parts[2]
 
             if verb == "switch":
+                device_name = parts[1]
+                action = parts[2]
                 if not testmode:
                     self.execute_switch_command(device_name, action)
 
             elif verb == "waituntil":
-                if len(parts) < 4:
-                    logger.error("Invalid waituntil command:", command)
-                    return False
-                duration = int(parts[3])
+                timeMark = int(parts[1])
                 if not testmode:
-                    self.execute_waituntil_command(duration)
+                    self.execute_waituntil_command(timeMark)
+                else:
+                    if timeMark <= self.lastTimeMark:
+                        logger.error(f"TimeMark {timeMark} is lower or equal previous one: {self.lastTimeMark}")
+                        return False
 
             elif verb == "audio" and len(parts) >= 4 and action.lower() == "fadeout":
                 fadeout_duration = int(parts[3])
@@ -101,12 +105,14 @@ class sequencesHandler:
     def read_sequence_file(self, file_path, testcommand = False):
         try:
             with open(file_path, "r") as file:
+                self.lastTimeMark = 0
                 for line_num, line in enumerate(file, start=1):
                     command = line.strip()
                     if command:
                         commandResult = self.execute_command(command, testcommand)
                         if testcommand and not commandResult:
-                            logger.error(f"Error validating sequence: {file_path} (line {line_num}). Fix sequence")
+                            logger.critical(f"Error validating sequence: {file_path} (line {line_num}). Fix sequence")
+                            raise ValueError(f"Error validating sequence: {file_path} (line {line_num}). Fix sequence")
         except FileNotFoundError:
             logger.error(f"File not found: {file_path}")
 
@@ -119,10 +125,21 @@ class sequencesHandler:
             logger.error(f"File not found: {file_path}")
             return
 
-    def random_action(self, event):
+    def random_action(self):
         rand_elem = random.choice(self.random_elements)
         RPiToggle(rand_elem)
 
-executor = sequencesHandler()
+    def setStandBy(self):
+        file_path = os.path.join(self.sequenceFolder, 'standby.seq')
+        self.read_sequence_file(file_path)
+    
+    def start(self):
+        sequence = 'main.seq'
+        if settings.testdunebugger:
+            sequence = 'test.seq'
+        file_path = os.path.join(self.sequenceFolder, sequence)
+        self.read_sequence_file(file_path)
+
+sequencesHandler = SequencesHandler()
 
 

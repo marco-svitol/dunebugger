@@ -1,57 +1,57 @@
-LuceStartButton Off
-PompaAcqua On
-DimTramonto On
-DimIngressoEst Off
-DimGiorno Off
-waituntil 10
-Case1 Off
-waituntil 17
-Case2 Off
-Fuochi1 Off
-DimTramonto Off
-waituntil 30
-#shadows {cycleoffset}  # duration 48
-Fuochi1 On
-waituntil 83
-Case1 On
-waituntil 85
-Case2 On
-waituntil 90
-LuceNativita On
-DimIngressoOvest Off
-waituntil 120
-Case2 Off
+switch LuceStartButton Off
+switch PompaAcqua On
+switch DimTramonto On
+switch DimIngressoEst Off
+switch DimGiorno Off
+switch waituntil 10
+switch Case1 Off
+switch waituntil 17
+switch Case2 Off
+switch Fuochi1 Off
+switch DimTramonto Off
+switch waituntil 30
+#switch shadows {cycleoffset}  # duration 48
+switch Fuochi1 On
+switch waituntil 83
+switch Case1 On
+switch waituntil 85
+switch Case2 On
+switch waituntil 90
+switch LuceNativita On
+switch DimIngressoOvest Off
+switch waituntil 120
+switch Case2 Off
 waituntil 127
-Case1 Off
-LuceNativita Off
-#shadows {cycleoffset}  # duration 48
-LuceNativita On
+switch Case1 Off
+switch LuceNativita Off
+#switch shadows {cycleoffset}  # duration 48
+switch LuceNativita On
 waituntil 178
-Cometa On
-Calice On
+switch Cometa On
+switch Calice On
 waituntil 218
-Calice Off
+switch Calice Off
 waituntil 238
-Cometa Off
-LuceNativita Off
+switch Cometa Off
+switch LuceNativita Off
 waituntil 240
-DimGiorno On
-DimTramonto On
-Case1 On
-LuceNativita On
+switch DimGiorno On
+switch DimTramonto On
+switch Case1 On
+switch LuceNativita On
 waituntil 242
-Case2 On
+switch Case2 On
 waituntil 246
-DimIngressoEst On
-DimIngressoOvest On
-DimTramonto Off
+switch DimIngressoEst On
+switch DimIngressoOvest On
+switch DimTramonto Off
 waituntil 251
-PompaAcqua Off
-Case1 Off
+switch PompaAcqua Off
+switch Case1 Off
 waituntil 256
-Case2 Off
-audio fadeout 10
+switch Case2 Off
+switch audio fadeout 10
 waituntil 262
-Fuochi1 Off
-LuceNativita Off
-LuceStartButton On
+switch Fuochi1 Off
+switch LuceNativita Off
+switch LuceStartButton On

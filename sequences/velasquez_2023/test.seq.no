@@ -8,8 +8,7 @@ waituntil 12
 waituntil 13
 switch Ombre1 On
 waituntil 39
-if settings.motor2Enabled:
-    motor.start(2, "ccw", 85)
+motor.start(2, "ccw", 85)
 waituntil 41
 switch Ombre2 On
 waituntil 42

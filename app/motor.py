@@ -9,8 +9,8 @@ def start(motornum, rotation="cw",speed=100):
     logger.debug("motor "+str(motornum)+" start with rotation "+rotation+" and speed "+str(speed))
     
     # Crashprevention
-    if rotation == "cw" and mygpio_handler.GPIOMap["Motor"+str(motornum)+"LimitCW"] == GPIO.HIGH \
-    or rotation == "ccw" and mygpio_handler.GPIOMap["Motor"+str(motornum)+"LimitCCW"] == GPIO.HIGH:
+    if rotation == "cw" and mygpio_handler.GPIOMap["In_Motor"+str(motornum)+"LimitCW"] == GPIO.HIGH \
+    or rotation == "ccw" and mygpio_handler.GPIOMap["In_Motor"+str(motornum)+"LimitCCW"] == GPIO.HIGH:
         logger.warning("Start command aborted to prevent motor crash")
         return
     ######
@@ -41,13 +41,13 @@ def limitTouch(channel, event = None):
     GPIOLabel = mygpio_handler.getGPIOLabel(channel)
     logger.debug("Limit touched on channel "+GPIOLabel)
     motornum = 0
-    if channel == mygpio_handler.GPIOMap["Motor1LimitCCW"] or channel == mygpio_handler.GPIOMap["Motor1LimitCW"]:
+    if channel == mygpio_handler.GPIOMap["In_Motor1LimitCCW"] or channel == mygpio_handler.GPIOMap["In_Motor1LimitCW"]:
         motornum = 1
     else:
         motornum = 2
     stop(motornum)
 
-    if channel == mygpio_handler.GPIOMap["Motor"+str(motornum)+"LimitCCW"]:
+    if channel == mygpio_handler.GPIOMap["In_Motor"+str(motornum)+"LimitCCW"]:
         time.sleep(0.2)
         start(motornum,"cw", speed=100)
     elif event != None:
@@ -59,13 +59,13 @@ def limitTouch(channel, event = None):
 
 def reset(motornum):
     pos = ""
-    if GPIO.input(mygpio_handler.GPIOMap["Motor"+str(motornum)+"LimitCW"]) == GPIO.HIGH:
+    if GPIO.input(mygpio_handler.GPIOMap["In_Motor"+str(motornum)+"LimitCW"]) == GPIO.HIGH:
         pos = "CW limit touch"
         logger.debug("Motor "+str(motornum)+" position is "+pos+". Short CCW and then CW.")
         start(motornum,"ccw",100)
         time.sleep(0.5)
         return
-    elif GPIO.input(mygpio_handler.GPIOMap["Motor"+str(motornum)+"LimitCCW"]) == GPIO.HIGH:
+    elif GPIO.input(mygpio_handler.GPIOMap["In_Motor"+str(motornum)+"LimitCCW"]) == GPIO.HIGH:
         pos = "CCW limit touch"
     else:
         pos = "floating"

@@ -11,6 +11,7 @@ class MockGPIO:
         self.LOW = "MockLOW"
         self.PUD_DOWN = "MockPUD_DOWN"
         self.PUD_UP = "MockPUD_UP"
+        self.RISING = "MockRISING"
         self.myPWM = PWM()
 
     def setmode(self, mode):
@@ -41,10 +42,21 @@ class MockGPIO:
         logger.debug(f"MockGPIO.PWM channel={channel}, freq={freq}")
         return self.myPWM
 
+    def remove_event_detect(self, gpio):
+        logger.debug(f"MockGPIO.remove_event_detect gpio={gpio}")
+        pass
+
+    def add_event_detect(self, gpio, mode, callback, bouncetime):
+        logger.debug(f"MockGPIO.add_event_detect gpio={gpio}, mode={mode}, callback={callback}, bouncetime={bouncetime}")
+        pass
 
 class PWM:
     def start(self, duty_cycle):
         logger.debug(f"MockGPIO.PWM.start duty_cycle={duty_cycle}")
+        pass
+
+    def ChangeDutyCycle(self, duty_cycle):
+        logger.debug(f"MockGPIO.PWM.start ChangeDutyCycle={duty_cycle}")
         pass
 
 GPIO = MockGPIO()
