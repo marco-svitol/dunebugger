@@ -52,6 +52,12 @@ def cycle(channel, my_random_actions_event):
         settings.cycleoffset = 0
         logger.info("\nDunebugger listening. Press enter to quit\n")
 
+def keyboard_input_listener(random_actions_event):
+    while True:
+        key_input = input("Press Enter to trigger the function: ")
+        if key_input == "":
+            cycle(6, random_actions_event)  
+
 def main():
     try:
         logger.info('Setting standby state')
@@ -86,11 +92,17 @@ def main():
         mygpio_handler.setupStartButton(lambda x: cycle_trigger(x, random_actions_event))
         logger.info ("Start button ready")
 
+        # Start the keyboard input thread
+        keyboard_thread = threading.Thread(target=keyboard_input_listener(random_actions_event))
+        keyboard_thread.start()
+
         random_actions_thread = threading.Thread(target=random_actions(random_actions_event))
         #random_actions_thread.daemon = True
         random_actions_thread.start()
 
-        input("\nDunebugger listening. Press enter to quit\n")
+        #input("\nDunebugger listening. Press enter to quit\n")
+        while True:
+            pass
 
     except KeyboardInterrupt:
         logger.debug ("stopped through keyboard")
