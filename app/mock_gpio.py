@@ -1,6 +1,4 @@
-
 from dunebuggerlogging import logger
-
 class MockGPIO:
 
     def __init__(self):
@@ -23,8 +21,6 @@ class MockGPIO:
         logger.debug("Current GPIO Status:")
         for gpio, value in sorted(self.gpio_states.items()):
             logger.debug(f"Pin {gpio} label: {'HIGH' if value['state'] else 'LOW'}, Direction: {value['direction']}")
-
-
 
     def setmode(self, mode):
         logger.debug(f"MockGPIO.setmode mode={mode}")
