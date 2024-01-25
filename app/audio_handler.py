@@ -24,7 +24,7 @@ class AudioPlayer:
         self.easteregg = settings.easteregg
         self.entrysong = settings.entrysong
 
-        self.vlcinstance = vlc.Instance('--aout=alsa')
+        self.vlcinstance = vlc.Instance()#'--aout=alsa')
         self.musiclistplayer = self.vlcinstance.media_list_player_new()
         self.sfxplayer = self.vlcinstance.media_player_new()
         self.musicplayer = self.vlcinstance.media_player_new()

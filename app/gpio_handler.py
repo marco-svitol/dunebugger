@@ -34,22 +34,18 @@ class GPIOHandler:
         self.load_gpio_configuration()
         self.GPIO = GPIO
 
+        # Initialize GPIO
+        GPIO.setwarnings(False)
+        GPIO.setmode(GPIO.BCM)
 
-        if settings.ON_RASPBERRY_PI:
-            # Initialize GPIO
-            GPIO.setwarnings(False)
-            GPIO.setmode(GPIO.BCM)
+        for channel, config in self.channelsSetup.items():
+            pin_setup, initial_state = config
+            if (pin_setup == 'OUT' and (initial_state == 'HIGH' or initial_state == 'LOW')):
+                GPIO.setup(self.channels[channel], GPIO.OUT, initial=GPIO.HIGH if initial_state == 'HIGH' else GPIO.LOW)
+            elif (pin_setup == 'IN' and (initial_state == 'DOWN' or initial_state == 'UP')):
+                pull_up_down = GPIO.PUD_UP if initial_state == 'UP' else GPIO.PUD_DOWN
+                GPIO.setup(self.channels[channel], GPIO.IN, pull_up_down)
 
-            for channel, config in self.channelsSetup.items():
-                pin_setup, initial_state = config
-                if (pin_setup == 'OUT' and (initial_state == 'HIGH' or initial_state == 'LOW')):
-                    GPIO.setup(self.channels[channel], GPIO.OUT, initial=GPIO.HIGH if initial_state == 'HIGH' else GPIO.LOW)
-                elif (pin_setup == 'IN' and (initial_state == 'DOWN' or initial_state == 'UP')):
-                    pull_up_down = GPIO.PUD_UP if initial_state == 'UP' else GPIO.PUD_DOWN
-                    GPIO.setup(self.channels[channel], GPIO.IN, pull_up_down)
-
-        
-        
     def load_gpio_configuration(self):
         config = configparser.ConfigParser()
         # Set optionxform to lambda x: x to preserve case

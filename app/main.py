@@ -52,17 +52,21 @@ def cycle(channel, my_random_actions_event):
         settings.cycleoffset = 0
         logger.info("\nDunebugger listening. Press enter to quit\n")
 
-def keyboard_input_listener(random_actions_event):
+def terminal_input_thread(gpio_instance):
     while True:
-        key_input = input("Press Enter to trigger the function: ")
-        if key_input == "":
-            cycle(6, random_actions_event)  
+        # Wait for user input and process commands
+        user_input = input("Enter GPIO command (e.g., '7 UP', '5 DN'): ")
+        gpio_instance.process_terminal_input(user_input)
 
 def main():
     try:
         logger.info('Setting standby state')
         sequencesHandler.setStandBy()
 
+        # Start a separate thread for processing terminal input
+        terminal_thread = threading.Thread(target=terminal_input_thread, args=(GPIO,), daemon=True)
+        terminal_thread.start()
+        
         # Start button available only after motor reset:
         #  we put an event in the motor.limitTouch callback of MotorXLimitCCW
         #  so that execution continues only when event is set on both motors
@@ -91,10 +95,6 @@ def main():
 
         mygpio_handler.setupStartButton(lambda x: cycle_trigger(x, random_actions_event))
         logger.info ("Start button ready")
-
-        # Start the keyboard input thread
-        keyboard_thread = threading.Thread(target=keyboard_input_listener(random_actions_event))
-        keyboard_thread.start()
 
         random_actions_thread = threading.Thread(target=random_actions(random_actions_event))
         #random_actions_thread.daemon = True

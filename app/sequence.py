@@ -48,13 +48,13 @@ class SequencesHandler:
         elif action.lower() == "off":
             RPiwrite(device_name, 0)
         else:
-            logger.error("Unknown action:", action)
+            logger.error(f"Unknown action: {action}")
 
     def execute_waituntil_command(self, duration):
         waituntil(duration)
 
-    def execute_audio_fadeout_command(self, fadeout_duration):
-        audioPlayer.vstopaudio(fadeout_duration)
+    def execute_audio_fadeout_command(self):
+        audioPlayer.vstopaudio()
 
     def execute_command(self, command, testmode = False):
         # Remove everything after #, treating it as a comment
@@ -92,13 +92,14 @@ class SequencesHandler:
                         logger.error(f"TimeMark {timeMark} is lower or equal previous one: {self.lastTimeMark}")
                         return False
 
-            elif verb == "audio" and len(parts) >= 4 and action.lower() == "fadeout":
-                fadeout_duration = int(parts[3])
+            elif verb == "audio" and len(parts) >= 2 and parts[1] == "fadeout": 
+                action = parts[1]
                 if not testmode:
-                    self.execute_audio_fadeout_command(fadeout_duration)
+                    if action == "fadeout":
+                        self.execute_audio_fadeout_command()
 
             else:
-                logger.error("Unknown command:", command)
+                logger.error(f"Unknown command: {command}")
                 return False
         
         return True
@@ -112,7 +113,6 @@ class SequencesHandler:
                     if command:
                         commandResult = self.execute_command(command, testcommand)
                         if testcommand and not commandResult:
-                            logger.critical(f"Error validating sequence: {file_path} (line {line_num}). Fix sequence")
                             raise ValueError(f"Error validating sequence: {file_path} (line {line_num}). Fix sequence")
         except FileNotFoundError:
             logger.error(f"File not found: {file_path}")
@@ -140,7 +140,10 @@ class SequencesHandler:
             sequence = 'test.seq'
         file_path = os.path.join(self.sequenceFolder, sequence)
         self.read_sequence_file(file_path)
-
-sequencesHandler = SequencesHandler()
+try:
+    sequencesHandler = SequencesHandler()
+except Exception as exc:
+    logger.error(f"Error while creating SequenceHandler: {exc}")
+    exit()
 
 
