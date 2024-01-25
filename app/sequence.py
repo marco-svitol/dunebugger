@@ -104,18 +104,33 @@ class SequencesHandler:
         
         return True
 
-    def read_sequence_file(self, file_path, testcommand = False):
+    def read_sequence_file(self, file_path, testcommand=False):
         try:
             with open(file_path, "r") as file:
-                self.lastTimeMark = 0
                 for line_num, line in enumerate(file, start=1):
                     command = line.strip()
                     if command:
-                        commandResult = self.execute_command(command, testcommand)
-                        if testcommand and not commandResult:
-                            raise ValueError(f"Error validating sequence: {file_path} (line {line_num}). Fix sequence")
+                        if command.startswith('#') or command.startswith('//'):
+                            continue  # Skip comments
+                        time_mark, rest_of_command = self.extract_time_mark(command)
+                        if time_mark is not None:
+                            if not testcommand:
+                                self.execute_waituntil_command(time_mark)
+                            command_result = self.execute_command(rest_of_command, testcommand)
+                            if testcommand and not command_result:
+                                raise ValueError(f"Error validating sequence: {file_path} (line {line_num}). Review the command there.")
+                        else:
+                            raise ValueError(f"Error validating sequence: {file_path} (line {line_num}). Time mark needs a fix")
+
         except FileNotFoundError:
             logger.error(f"File not found: {file_path}")
+
+    def extract_time_mark(self, command):
+        # Extracts time mark from the command if present
+        parts = command.split(':')
+        if len(parts) > 1 and parts[0].isdigit():
+            return int(parts[0]), ':'.join(parts[1:]).strip()
+        return None, command
 
     def random_sequence_from_file(self, file_name):
         try:
