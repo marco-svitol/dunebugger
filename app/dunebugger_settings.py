@@ -14,36 +14,7 @@ class DunebuggerSettings:
         self.load_configuration()
         self.cycle_thread_lock = threading.Lock()
 
-    # def load_configuration(self):
-    #     config = configparser.ConfigParser()
-
-    #     try:
-    #         dunebuggerConfig = path.join(path.dirname(path.abspath(__file__)), 'config/dunebugger.conf')
-    #         config.read(dunebuggerConfig)
-
-    #         self.ArduinoConnected = config.getboolean('General', 'ArduinoConnected')
-    #         self.cyclelength = config.getint('General', 'cyclelength')
-    #         self.bouncingTreshold = config.getfloat('General', 'bouncingTreshold')
-    #         self.eastereggEnabled = config.getboolean('General', 'eastereggEnabled')
-    #         self.cycleoffset = config.getint('General', 'cycleoffset')
-    #         self.randomActionsEnabled = config.getboolean('General', 'randomActionsEnabled')
-    #         self.randomActionsMinSecs = config.getint('General', 'randomActionsMinSecs')
-    #         self.randomActionsMaxSecs = config.getint('General', 'randomActionsMaxSecs')
-
-    #         # Motors
-    #         self.motor1Enabled = config.getboolean('Motors', 'motor1Enabled')
-    #         self.motor2Enabled = config.getboolean('Motors', 'motor2Enabled')
-    #         self.motor1Freq = config.getint('Motors', 'motor1Freq')
-    #         self.motor2Freq = config.getint('Motors', 'motor2Freq')
-
-    #         # Debug
-    #         self.cyclespeed = config.getfloat('Debug', 'cyclespeed')
-    #         self.testdunebugger = config.getboolean('Debug', 'testdunebugger')
-    #         self.ON_RASPBERRY_PI  = os.getenv("ON_RASPBERRY_PI")
-
     def load_configuration(self):
-        
-
         try:
             dunebuggerConfig = path.join(path.dirname(path.abspath(__file__)), 'config/dunebugger.conf')
             self.config.read(dunebuggerConfig)
@@ -59,7 +30,6 @@ class DunebuggerSettings:
 
         except configparser.Error as e:
             logger.error(f"Error reading configuration: {e}")
-
 
     def validate_option(self, section, option, value):
         # Validation for specific options
@@ -94,10 +64,6 @@ class DunebuggerSettings:
 
         # If no specific validation is required, return the original value
         return value
-    
-
-        # except configparser.Error as e:
-        #     print(f"Error reading configuration: {e}")
 
 settings = DunebuggerSettings()
 

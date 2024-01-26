@@ -1,4 +1,6 @@
 from dunebuggerlogging import logger
+from utils import dunequit
+
 class MockGPIO:
 
     def __init__(self):
@@ -16,11 +18,6 @@ class MockGPIO:
         # Dictionary to store GPIO states and associated callbacks
         self.gpio_states = {}
         self.events_detect = {}
-
-    def show_gpio_status(self):
-        logger.debug("Current GPIO Status:")
-        for gpio, value in sorted(self.gpio_states.items()):
-            logger.debug(f"Pin {gpio} label: {'HIGH' if value['state'] else 'LOW'}, Direction: {value['direction']}")
 
     def setmode(self, mode):
         logger.debug(f"MockGPIO.setmode mode={mode}")
@@ -83,31 +80,10 @@ class MockGPIO:
     def get_gpio_state(self, gpio):
         return self.gpio_states.get(gpio)['state']
 
-    def process_terminal_input(self, input_str):
-        # Process commands received through the terminal
-        tokens = input_str.lower().split()
-
-    def process_terminal_input(self, input_str):
-        # Process commands received through the terminal
-        command_strs = input_str.lower().split(',')
-
-        for command_str in command_strs:
-            if command_str == "s":
-                self.show_gpio_status()
-            else:
-                # Extract numeric part and direction from each command string
-                tokens = command_str.strip().split('u' if 'u' in command_str else 'd')
-                if len(tokens) == 2 and tokens[0].isdigit():
-                    channel = int(tokens[0])
-                    pull_up = 'u' in command_str
-
-                    if pull_up:
-                        self.set_gpio_state(channel, 1)
-                    else:
-                        self.set_gpio_state(channel, 0)
-
-                    logger.debug(f"Simulated GPIO input: Pin {channel} {'UP' if pull_up else 'DOWN'}")
-
+    def show_gpio_status(self, gpio_handler):
+        logger.debug("Current GPIO Status:")
+        for gpio, value in sorted(self.gpio_states.items()):
+            logger.debug(f"Pin {gpio} label: {gpio_handler.getGPIOLabel(gpio)} state: {'HIGH' if value['state'] else 'LOW'}, Direction: {value['direction']}")
 
 class PWM:
     def start(self, duty_cycle):
@@ -118,4 +94,51 @@ class PWM:
         logger.debug(f"MockGPIO.PWM.start ChangeDutyCycle={duty_cycle}")
         pass
 
+class TerminalInterpreter:
+    def __init__(self, gpio_handler):
+        self.gpio_handler = gpio_handler
+
+    def process_terminal_input(self, input_str):
+        # Process commands received through the terminal
+        command_strs = input_str.lower().split(',')
+
+        for command_str in command_strs:
+            if command_str == "":
+                continue
+
+            elif command_str == "h":
+                print(f"I am not a Raspberry. You can ask me to:\n\
+                s: show gpio status\n\
+                <gpionum>u: set gpio status High\n\
+                <gpionum>d: set gpio status Low\n\
+                q: quit\n\
+                ")
+                continue
+
+            elif command_str == "s":
+                self.gpio_handler.GPIO.show_gpio_status(self.gpio_handler)
+                continue
+
+            elif command_str == "q":
+                dunequit()
+                continue
+
+            else:
+                # Extract numeric part and direction from each command string
+                tokens = command_str.strip().split('u' if 'u' in command_str else 'd')
+                if len(tokens) == 2 and tokens[0].isdigit():
+                    channel = int(tokens[0])
+                    pull_up = 'u' in command_str
+
+                    if pull_up:
+                        self.gpio_handler.GPIO.set_gpio_state(channel, 1)
+                    else:
+                        self.gpio_handler.GPIO.set_gpio_state(channel, 0)
+
+                    logger.debug(f"Simulated GPIO input: Pin {channel} {'UP' if pull_up else 'DOWN'}")
+                    continue
+
+            logger.info(f"Unkown command {command_str}")
+            
 GPIO = MockGPIO()
+terminalInterpreter = TerminalInterpreter(GPIO)

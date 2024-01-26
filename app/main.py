@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # coding: utf8
 import os, time, serial
-from gpio_handler import mygpio_handler, GPIO
+from gpio_handler import mygpio_handler, GPIO, terminalInterpreter
 import motor
 from dunebuggerlogging import logger
 import threading
@@ -50,13 +50,13 @@ def cycle(channel, my_random_actions_event):
         my_random_actions_event.clear()
 
         settings.cycleoffset = 0
-        logger.info("\nDunebugger listening. Press enter to quit\n")
+        logger.info("\nDunebugger listening.\n")
 
-def terminal_input_thread(gpio_instance):
+def terminal_input_thread(terminalInterpreter):
     while True:
         # Wait for user input and process commands
-        user_input = input("Enter GPIO command (e.g., '7 UP', '5 DN'): ")
-        gpio_instance.process_terminal_input(user_input)
+        user_input = input("Enter command:")
+        terminalInterpreter.process_terminal_input(user_input)
 
 def main():
     try:
@@ -64,7 +64,7 @@ def main():
         sequencesHandler.setStandBy()
 
         # Start a separate thread for processing terminal input
-        terminal_thread = threading.Thread(target=terminal_input_thread, args=(GPIO,), daemon=True)
+        terminal_thread = threading.Thread(target=terminal_input_thread, args=(terminalInterpreter,), daemon=True)
         terminal_thread.start()
         
         # Start button available only after motor reset:
@@ -100,7 +100,6 @@ def main():
         #random_actions_thread.daemon = True
         random_actions_thread.start()
 
-        #input("\nDunebugger listening. Press enter to quit\n")
         while True:
             pass
 

@@ -6,6 +6,7 @@ from os import path
 from dunebugger_settings import settings
 import motor
 from dunebuggerlogging import logger
+from datetime import datetime, timedelta
 
 class SequencesHandler:
     
@@ -112,10 +113,10 @@ class SequencesHandler:
                     if command:
                         if command.startswith('#') or command.startswith('//'):
                             continue  # Skip comments
-                        time_mark, rest_of_command = self.extract_time_mark(command)
-                        if time_mark is not None:
+                        time_mark_seconds, rest_of_command = self.extract_time_mark(command)
+                        if time_mark_seconds is not None:
                             if not testcommand:
-                                self.execute_waituntil_command(time_mark)
+                                self.execute_waituntil_command(int(time_mark_seconds))
                             command_result = self.execute_command(rest_of_command, testcommand)
                             if testcommand and not command_result:
                                 raise ValueError(f"Error validating sequence: {file_path} (line {line_num}). Review the command there.")
@@ -126,10 +127,27 @@ class SequencesHandler:
             logger.error(f"File not found: {file_path}")
 
     def extract_time_mark(self, command):
-        # Extracts time mark from the command if present
-        parts = command.split(':')
-        if len(parts) > 1 and parts[0].isdigit():
-            return int(parts[0]), ':'.join(parts[1:]).strip()
+        parts = command.split(' ', 1)
+        if len(parts) == 2:
+            time_mark = parts[0].strip()
+            rest_of_command = parts[1].strip()
+            if ':' in time_mark:
+                # Check if the time mark contains hours, minutes, and seconds
+                time_components = time_mark.split(':')
+                if len(time_components) == 3:
+                    # Convert HH:MM:SS format to seconds
+                    hours, minutes, seconds = map(int, time_components)
+                    time_mark_seconds = hours * 3600 + minutes * 60 + seconds
+                elif len(time_components) == 2:
+                    # Convert MM:SS format to seconds
+                    minutes, seconds = map(int, time_components)
+                    time_mark_seconds = minutes * 60 + seconds
+                else:
+                    raise ValueError("Invalid time format")
+                return time_mark_seconds, rest_of_command
+            else:
+                return time_mark, rest_of_command
+
         return None, command
 
     def random_sequence_from_file(self, file_name):
