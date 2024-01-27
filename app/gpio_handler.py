@@ -5,7 +5,7 @@ from dunebugger_settings import settings
 from os import path
 import re
 from utils import dunequit
-if settings.ON_RASPBERRY_PI == True:
+if settings.ON_RASPBERRY_PI:
     import RPi.GPIO as GPIO
 else:
     from dunemock import GPIO
@@ -184,7 +184,7 @@ class TerminalInterpreter:
             logger.info(f"Unkown command {command_str}")
 
 mygpio_handler = GPIOHandler()
-if settings.ON_RASPBERRY_PI == True:
+if settings.ON_RASPBERRY_PI:
     terminalInterpreter = TerminalInterpreter(mygpio_handler)
 else:
     from dunemock import TerminalInterpreter
