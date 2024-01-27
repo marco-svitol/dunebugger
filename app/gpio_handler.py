@@ -4,10 +4,11 @@ from ast import literal_eval
 from dunebugger_settings import settings
 from os import path
 import re
+from utils import dunequit
 if settings.ON_RASPBERRY_PI == True:
     import RPi.GPIO as GPIO
 else:
-    from mock_gpio import GPIO
+    from dunemock import GPIO
 
 #PWM 13,19,12,18 # free : 19
 # 2,3 were used for Arduino serial (no rele). Two GPIOs were reserved for Arduino reset (14) relè and Dimmer board reset (15) relè
@@ -102,7 +103,6 @@ class GPIOHandler:
             logger.error(f"Error reading GPIO configuration: {e}")
             # You might want to handle the error in an appropriate way, e.g., logging or quitting the program
 
-
     def cleanup(self):
         GPIO.cleanup()
 
@@ -154,4 +154,38 @@ def RPiToggle(gpio):
     GPIO.output(mygpio_handler.GPIOMap[gpio], not GPIO.input(mygpio_handler.GPIOMap[gpio]))
     #logger.verbose("Toggled RPi "+gpio+" to "+str(GPIO.input(mygpio_handler.GPIOMap[gpio])))
 
+class TerminalInterpreter:
+    def __init__(self, gpio_handler):
+        self.gpio_handler = gpio_handler
+
+    def process_terminal_input(self, input_str):
+        # Process commands received through the terminal
+        command_strs = input_str.lower().split(',')
+
+        for command_str in command_strs:
+            if command_str == "":
+                continue
+
+            elif command_str == "h":
+                print(f"I am a Raspberry. You can ask me to:\n\
+                s: show gpio status\n\
+                q: quit\n\
+                ")
+                continue
+
+            elif command_str == "s":
+                print("Show GPIO status")
+                continue
+
+            elif command_str == "q":
+                dunequit()
+                continue
+
+            logger.info(f"Unkown command {command_str}")
+
 mygpio_handler = GPIOHandler()
+if settings.ON_RASPBERRY_PI == True:
+    terminalInterpreter = TerminalInterpreter(mygpio_handler)
+else:
+    from dunemock import TerminalInterpreter
+    terminalInterpreter = TerminalInterpreter(mygpio_handler)

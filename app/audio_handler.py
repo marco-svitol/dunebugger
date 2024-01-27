@@ -113,7 +113,6 @@ class AudioPlayer:
                         self.sfxplayer.audio_set_volume(svol)
                     print('.', end="", flush=True)
                     time.sleep(fadeoutpause)
-                logger.info('Stopping music and sfx player')
                 self.musiclistplayer.stop()
                 self.sfxplayer.stop()
         except:

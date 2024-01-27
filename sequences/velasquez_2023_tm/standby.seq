@@ -1,10 +1,10 @@
-0: switch SchedaMotori On #test comment
+0 switch SchedaMotori On #test comment
 #remove
-0: switch DimGiorno On
-0: switch LuceStartButton On
-0: switch AlwaysOnNativita On
-0: switch DimIngressoEst On
-0: switch DimIngressoOvest On
-0: switch Case1 On
-0: switch Case2 On
-0: switch Fuochi1 On
+0 switch DimGiorno On
+0 switch LuceStartButton On
+0 switch AlwaysOnNativita On
+0 switch DimIngressoEst On
+0 switch DimIngressoOvest On
+0 switch Case1 On
+0 switch Case2 On
+0 switch Fuochi1 On
