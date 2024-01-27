@@ -1,4 +1,3 @@
-from utils import waituntil
 from audio_handler import audioPlayer
 from gpio_handler import RPiwrite, RPiToggle
 import random, os
@@ -6,7 +5,7 @@ from os import path
 from dunebugger_settings import settings
 import motor
 from dunebuggerlogging import logger
-from datetime import datetime, timedelta
+import time
 
 class SequencesHandler:
     
@@ -52,7 +51,7 @@ class SequencesHandler:
             logger.error(f"Unknown action: {action}")
 
     def execute_waituntil_command(self, duration):
-        waituntil(duration)
+        self.waituntil(duration)
 
     def execute_audio_fadeout_command(self):
         audioPlayer.vstopaudio()
@@ -173,6 +172,12 @@ class SequencesHandler:
             sequence = 'test.seq'
         file_path = os.path.join(self.sequenceFolder, sequence)
         self.read_sequence_file(file_path)
+
+    def waituntil(self, sec):
+        logger.debug("Waiting: "+str(sec-settings.cycleoffset))
+        time.sleep((sec-settings.cycleoffset) * settings.cyclespeed)
+        settings.cycleoffset = sec
+
 try:
     sequencesHandler = SequencesHandler()
 except Exception as exc:

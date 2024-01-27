@@ -1,6 +1,4 @@
 from dunebuggerlogging import logger
-import time
-from dunebugger_settings import settings
 import os
 import signal
 
@@ -14,13 +12,19 @@ def ArduinoSend(command):
         ccommand = command.replace("\n","")
         logger.warning("ignoring command "+ccommand+" to Arduino")
 
-def waituntil(sec):
-    logger.debug("Waiting: "+str(sec-settings.cycleoffset))
-    time.sleep((sec-settings.cycleoffset) * settings.cyclespeed)
-    settings.cycleoffset = sec
-
 def dunequit():
     # Get the process ID (PID) of the current process
     pid = os.getpid()
     # Send the SIGINT signal (equivalent to Ctrl+C)
     os.kill(pid, signal.SIGINT)
+
+def is_raspberry_pi():
+    try:
+        with open('/proc/device-tree/model', 'r') as model_file:
+            model = model_file.read()
+            if 'Raspberry Pi' in model:
+                return True
+            else:
+                return False
+    except Exception as e:
+        return False
