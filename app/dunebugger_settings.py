@@ -12,6 +12,7 @@ class DunebuggerSettings:
         # Set optionxform to lambda x: x to preserve case
         self.config.optionxform = lambda x: x
         self.load_configuration()
+        self.override_configuration()
         self.cycle_thread_lock = threading.Lock()
 
     def load_configuration(self):
@@ -49,7 +50,7 @@ class DunebuggerSettings:
                 if option in ['normalMusicVolume', 'normalSfxVolume', 'quietMusicVol', 'quietSfxVol',
                               'fadeoutsec', 'ignoreQuietTime']:
                     return int(value) if option != 'ignoreQuietTime' else self.config.getboolean(section, option)
-                elif option in ['musicpath', 'sfxpath', 'sfxfile', 'easteregg', 'entrysong']:
+                elif option in ['musicpath', 'sfxpath', 'sfxfile', 'easteregg', 'entrysong', 'vlcdevice']:
                     return str(value)
             elif section == 'Motors':
                 if option in ['motor1Freq', 'motor2Freq']:
@@ -66,7 +67,11 @@ class DunebuggerSettings:
 
         # If no specific validation is required, return the original value
         return value
-
+    
+    def override_configuration(self):
+        if not self.ON_RASPBERRY_PI:
+            self.vlcdevice = ''
+            
 settings = DunebuggerSettings()
 
 
