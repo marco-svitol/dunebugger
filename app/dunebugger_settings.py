@@ -15,6 +15,8 @@ class DunebuggerSettings:
         self.cycle_thread_lock = threading.Lock()
 
     def load_configuration(self):
+        from utils import is_raspberry_pi
+        
         try:
             dunebuggerConfig = path.join(path.dirname(path.abspath(__file__)), 'config/dunebugger.conf')
             self.config.read(dunebuggerConfig)
@@ -25,8 +27,7 @@ class DunebuggerSettings:
                     setattr(self, option, self.validate_option(section, option, value))
                     logger.info(f"{option}: {value}")
 
-            on_raspberry_pi_str = os.getenv("ON_RASPBERRY_PI")
-            self.ON_RASPBERRY_PI = bool(on_raspberry_pi_str)
+            self.ON_RASPBERRY_PI = is_raspberry_pi()
             logger.info(f"ON_RASPBERRY_PI: {self.ON_RASPBERRY_PI}")
 
         except configparser.Error as e:
