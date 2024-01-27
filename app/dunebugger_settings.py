@@ -25,7 +25,8 @@ class DunebuggerSettings:
                     setattr(self, option, self.validate_option(section, option, value))
                     logger.info(f"{option}: {value}")
 
-            self.ON_RASPBERRY_PI = os.getenv("ON_RASPBERRY_PI")
+            on_raspberry_pi_str = os.getenv("ON_RASPBERRY_PI")
+            self.ON_RASPBERRY_PI = bool(on_raspberry_pi_str)
             logger.info(f"ON_RASPBERRY_PI: {self.ON_RASPBERRY_PI}")
 
         except configparser.Error as e:
