@@ -14,6 +14,7 @@ class DunebuggerSettings:
         self.load_configuration()
         self.override_configuration()
         self.cycle_thread_lock = threading.Lock()
+        self.random_actions_event = threading.Event()
 
     def load_configuration(self):
         from utils import is_raspberry_pi

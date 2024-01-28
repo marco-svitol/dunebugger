@@ -114,6 +114,7 @@ class AudioPlayer:
                         self.sfxplayer.audio_set_volume(svol)
                     print('.', end="", flush=True)
                     time.sleep(fadeoutpause)
+                print(f'\n')
                 self.musiclistplayer.stop()
                 self.sfxplayer.stop()
         except:

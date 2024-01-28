@@ -1,5 +1,5 @@
 from audio_handler import audioPlayer
-from gpio_handler import RPiwrite, RPiToggle
+from gpio_handler import mygpio_handler
 import random, os
 from os import path
 from dunebugger_settings import settings
@@ -43,10 +43,8 @@ class SequencesHandler:
             motor.start(motor_number, direction, speed)
 
     def execute_switch_command(self, device_name, action):
-        if action.lower() == "on":
-            RPiwrite(device_name, 1)
-        elif action.lower() == "off":
-            RPiwrite(device_name, 0)
+        if action.lower() == "on" or action.lower() == "off":
+            mygpio_handler.gpio_set_output(device_name, action.lower())
         else:
             logger.error(f"Unknown action: {action}")
 
@@ -160,7 +158,7 @@ class SequencesHandler:
 
     def random_action(self):
         rand_elem = random.choice(self.random_elements)
-        RPiToggle(rand_elem)
+        mygpio_handler.gpiomap_toggle_output(rand_elem)
 
     def setStandBy(self):
         file_path = os.path.join(self.sequenceFolder, 'standby.seq')
