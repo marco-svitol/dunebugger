@@ -145,6 +145,8 @@ class GPIOHandler:
         startButton = self.GPIOMap[settings.startButton]
         GPIO.remove_event_detect(startButton)
 
+    import RPi.GPIO as GPIO
+
 def RPiwrite(gpio,bit):
     logger.debug("RPi "+gpio+" write "+str(bit))
     bit = not bit
@@ -182,6 +184,19 @@ class TerminalInterpreter:
                 continue
 
             logger.info(f"Unkown command {command_str}")
+    
+    def show_gpio_status(self):
+        gpio_pins = range(1, 28)  # Assuming BCM numbering scheme and 27 available GPIO pins
+
+        for pin in gpio_pins:
+            self.gpio_handler.GPIO.setup(pin, self.gpio_handler.GPIO.IN)
+            mode = "INPUT"
+            if self.gpio_handler.GPIO.gpio_function(pin) == self.gpio_handler.GPIO.OUT:
+                mode = "OUTPUT"
+            
+            state = self.gpio_handler.GPIO.input(pin)
+            
+            print(f"GPIO {pin}: Mode={mode}, State={state}")
 
 mygpio_handler = GPIOHandler()
 if settings.ON_RASPBERRY_PI:
