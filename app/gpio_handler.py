@@ -189,16 +189,24 @@ class TerminalInterpreter:
         gpio_pins = range(1, 28)  # Assuming BCM numbering scheme and 27 available GPIO pins
 
         for pin in gpio_pins:
-            self.gpio_handler.GPIO.setup(pin, self.gpio_handler.GPIO.IN)
-            mode = "INPUT"
-            if self.gpio_handler.GPIO.gpio_function(pin) == self.gpio_handler.GPIO.OUT:
-                mode = "OUTPUT"
-            
-            state = self.gpio_handler.GPIO.input(pin)
-            
-            print(f"GPIO {pin}: Mode={mode}, State={state}")
+            # Determine mode
+            try:
+                if self.gpio_handler.GPIO.gpio_function(pin) == self.gpio_handler.GPIO.IN:
+                    mode = "INPUT"
+                elif self.gpio_handler.GPIO.gpio_function(pin) == self.gpio_handler.GPIO.OUT:
+                    mode = "OUTPUT"
+            except Exception as e:
+                mode = "ERROR"
 
+            # Read state
+            if mode == "INPUT":
+                try:
+                    state = self.gpio_handler.GPIO.input(pin)
+                except Exception as e:
+                    state = "ERROR"
+   
 mygpio_handler = GPIOHandler()
+
 if settings.ON_RASPBERRY_PI:
     terminalInterpreter = TerminalInterpreter(mygpio_handler)
 else:
