@@ -176,7 +176,7 @@ class TerminalInterpreter:
                 continue
 
             elif command_str == "s":
-                print("Show GPIO status")
+                self.show_gpio_status()
                 continue
 
             elif command_str == "q":
