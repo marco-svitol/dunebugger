@@ -189,6 +189,8 @@ class TerminalInterpreter:
         gpio_pins = range(1, 28)  # Assuming BCM numbering scheme and 27 available GPIO pins
 
         for pin in gpio_pins:
+            mode = "UNKNOWN"
+            state = "UNKNOWN"
             # Determine mode
             try:
                 if self.gpio_handler.GPIO.gpio_function(pin) == self.gpio_handler.GPIO.IN:
