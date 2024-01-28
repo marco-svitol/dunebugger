@@ -204,6 +204,8 @@ class TerminalInterpreter:
                     state = self.gpio_handler.GPIO.input(pin)
                 except Exception as e:
                     state = "ERROR"
+                    
+            print(f"GPIO {pin}: Mode={mode}, State={state}")
    
 mygpio_handler = GPIOHandler()
 
