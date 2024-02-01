@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # coding: utf8
-import os, time, serial
+import time
 from gpio_handler import mygpio_handler, GPIO, terminalInterpreter
 import motor
 from dunebuggerlogging import logger
@@ -91,12 +91,12 @@ def main():
         if (settings.motor2Enabled):
             motor2_reset_event.wait()
 
-        random_actions_event = threading.Event()
+        #random_actions_event = threading.Event()
 
-        mygpio_handler.setupStartButton(lambda x: cycle_trigger(x, random_actions_event))
+        mygpio_handler.setupStartButton(lambda x: cycle_trigger(x, settings.random_actions_event))
         logger.info ("Start button ready")
 
-        random_actions_thread = threading.Thread(target=random_actions(random_actions_event))
+        random_actions_thread = threading.Thread(target=random_actions(settings.random_actions_event))
         #random_actions_thread.daemon = True
         random_actions_thread.start()
 
