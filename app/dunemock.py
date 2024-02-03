@@ -31,7 +31,6 @@ class MockGPIO:
             self.set_gpio_state(channel, {'state': initial, 'mode': mode})
 
     def input(self, gpio):
-        logger.debug(f"MockGPIO.input gpio={gpio}")
         return self.gpio_states.get(gpio)['state']
 
     def output(self, gpio, value):

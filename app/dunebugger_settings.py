@@ -16,6 +16,15 @@ class DunebuggerSettings:
         self.cycle_thread_lock = threading.Lock()
         self.random_actions_event = threading.Event()
 
+    def show_configuration(self):
+        print("Current Configuration:")
+        for attr_name in dir(self):
+            if not attr_name.startswith('__') and not callable(getattr(self, attr_name)):
+                print(f"{attr_name}: {getattr(self, attr_name)}")
+        # Print state of random_actions_event
+        random_actions_status =  "off" if self.random_actions_event.is_set() else "on"
+        print(f"Random actions: {random_actions_status}")
+
     def load_configuration(self):
         from utils import is_raspberry_pi
         

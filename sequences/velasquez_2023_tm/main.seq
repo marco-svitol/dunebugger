@@ -7,8 +7,15 @@
 17 switch Case2 Off
 17 switch Fuochi1 Off
 17 switch DimTramonto Off
-#17 switch shadows {cycleoffset}  # duration 48
 30 switch Fuochi1 On
+
+30 motor start 1 ccw 92
+31 switch Ombre1 On
+56 motor start 2 ccw 85
+57 switch Ombre2 On
+58 switch Ombre1 Off
+1:23 switch Ombre2 Off
+
 1:23 switch Case1 On
 1:25 switch Case2 On
 1:30 switch LuceNativita On
@@ -16,8 +23,16 @@
 2:00 switch Case2 Off
 2:07 switch Case1 Off
 2:07 switch LuceNativita Off
-#127 switch shadows {cycleoffset}  # duration 48
-2:07 switch LuceNativita On
+
+
+2:07 motor start 1 ccw 92
+2:08 switch Ombre1 On
+2:23 motor start 2 ccw 85
+2:24 switch Ombre2 On
+2:25 switch Ombre1 Off
+2:50 switch Ombre2 Off
+
+2:52 switch LuceNativita On
 2:58 switch Cometa On
 2:58 switch Calice On
 3:38 switch Calice Off

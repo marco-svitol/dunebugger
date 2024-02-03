@@ -168,6 +168,7 @@ class GPIOHandler:
 
 
     def gpiomap_toggle_output(self, gpiomap):
+        logger.debug(f"Toggling {gpiomap}")
         GPIO.output(self.GPIOMap[gpiomap], not GPIO.input(self.GPIOMap[gpiomap]))
 
     def __gpiomap_get_gpio(self, gpiomap):
@@ -219,6 +220,8 @@ class TerminalInterpreter:
         if settings.ON_RASPBERRY_PI: 
             self.help = f"I am a Raspberry. You can ask me to:\n\
                 s: show gpio status\n\
+                t: show dunebugger conf\n\
+                l: reload dunebugger conf\n\
                 <gpionum or label> on: set gpio status High (OUTPUT gpios only)\n\
                 <gpionum or label> off: set gpio status Low (OUTPUT gpios only)\n\
                 r: toggle random actions\
@@ -229,6 +232,8 @@ class TerminalInterpreter:
         else:
             self.help = f"I am not a Raspberry. You can ask me to:\n\
                 s: show gpio status\n\
+                t: show dunebugger conf\n\
+                l: reload dunebugger conf\n\
                 <#gpionum or label> on: set gpio status High\n\
                 <#gpionum or label> off: set gpio status Low\n\
                 r: toggle random actions\
@@ -251,6 +256,14 @@ class TerminalInterpreter:
 
             elif command_str == "s":
                 self.show_gpio_status(self.gpio_handler)
+                continue
+            
+            elif command_str == "t":
+                settings.show_configuration()
+                continue
+
+            elif command_str == "l":
+                settings.load_configuration()
                 continue
 
             elif command_str == "q":

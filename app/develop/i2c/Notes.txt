@@ -1,9 +1,0 @@
-i2c_set_tout.c is used to alter the BCM rgister value to set the number of clock sycles to wait for clock stretching.
-
-The python module will compile this and run it.
-
-
-Further details are here.
-https://www.byvac.com/index.php/Raspberry_Pi_and_I2C
-
-July 2018 version, modified to work in any directory
