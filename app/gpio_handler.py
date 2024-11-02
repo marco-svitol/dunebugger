@@ -236,7 +236,7 @@ class TerminalInterpreter:
                 l: reload dunebugger conf\n\
                 <#gpionum or label> on: set gpio status High\n\
                 <#gpionum or label> off: set gpio status Low\n\
-                r: toggle random actions\
+                r: toggle random actions\n\
                 q: quit\n\
                 ? or h: help\
                 "
