@@ -139,6 +139,9 @@ class GPIOHandler:
 
     def setupStartButton(self, callback):
          startButton = self.GPIOMap[settings.startButton]
+         if self.check_event_detection(startButton):
+            logger.warning(f"Event detection is active on GPIO pin {startButton}")
+            GPIO.remove_event_detect(startButton)
          GPIO.add_event_detect(startButton,GPIO.RISING,callback=callback,bouncetime=200)
 
     def removeStartButton(self):
@@ -213,7 +216,16 @@ class GPIOHandler:
                     switchcolor = color
             print(f"{color}Pin {gpio} label: {self.getGPIOLabel(gpio) if self.getGPIOLabel(gpio) is not None else '_not_found_'} \
 mode: {mode}, state: {state}, switch: {COLORS['RESET']}{switchcolor}{switchstate}{COLORS['RESET']}")
-            
+
+    # Function to check event detection
+    def check_event_detection(self, gpio):
+        if GPIO.event_detected(gpio):
+            print(f"Event detection is active on GPIO pin {gpio}")
+            return True
+        else:
+            print(f"No event detection on GPIO pin {gpio}")
+            return False            
+
 class TerminalInterpreter:
     def __init__(self, gpio_handler):
         self.gpio_handler = gpio_handler
