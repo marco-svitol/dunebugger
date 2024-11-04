@@ -19,6 +19,15 @@ def random_actions(event):
     logger.debug("Random actions exiting")
 
 def cycle_trigger(channel, my_random_actions_event):
+    with settings.cycle_thread_lock:
+        #TODO : fix bouncing
+            #start_time = time.time()
+            #while time.time() < start_time + settings.bouncingTreshold:
+        time.sleep(0.05)    # avoid catching a bouncing
+        if GPIO.input(channel) != 1:
+            #logger.debug ("Warning! Cycle: below treshold of "+str(settings.bouncingTreshold)+" on channel"+str(channel))
+            return
+    
     threading.Thread(name='_cycle_thread', target=cycle, args=(channel,my_random_actions_event)).start()
 
 def cycle(channel, my_random_actions_event):
@@ -26,12 +35,13 @@ def cycle(channel, my_random_actions_event):
 
         #TODO : fix bouncing
 
-        #start_time = time.time()
-        #while time.time() < start_time + settings.bouncingTreshold:
-        time.sleep(0.05)    # avoid catching a bouncing
-        if GPIO.input(channel) != 1:
-            #logger.debug ("Warning! Cycle: below treshold of "+str(settings.bouncingTreshold)+" on channel"+str(channel))
-            return
+            #start_time = time.time()
+            #while time.time() < start_time + settings.bouncingTreshold:
+
+        # time.sleep(0.05)    # avoid catching a bouncing
+        # if GPIO.input(channel) != 1:
+        #     #logger.debug ("Warning! Cycle: below treshold of "+str(settings.bouncingTreshold)+" on channel"+str(channel))
+        #     return
         
         logger.info("Start button pressed on channel")
     
@@ -52,11 +62,11 @@ def cycle(channel, my_random_actions_event):
         settings.cycleoffset = 0
         logger.info("\nDunebugger listening.\n")
 
-def terminal_input_thread(terminalInterpreter):
+def terminal_input_thread(terminalInterpreter, startFunction):
     while True:
         # Wait for user input and process commands
         user_input = input("Enter command:")
-        terminalInterpreter.process_terminal_input(user_input)
+        terminalInterpreter.process_terminal_input(user_input, startFunction)
 
 def main():
     try:
@@ -64,7 +74,7 @@ def main():
         sequencesHandler.setStandBy()
 
         # Start a separate thread for processing terminal input
-        terminal_thread = threading.Thread(target=terminal_input_thread, args=(terminalInterpreter,), daemon=True)
+        terminal_thread = threading.Thread(target=terminal_input_thread, args=(terminalInterpreter,cycle), daemon=True)
         terminal_thread.start()
         
         # Start button available only after motor reset:
@@ -93,7 +103,7 @@ def main():
 
         #random_actions_event = threading.Event()
 
-        mygpio_handler.setupStartButton(lambda x: cycle_trigger(x, settings.random_actions_event))
+        mygpio_handler.setupStartButton(lambda channel: cycle_trigger(channel, settings.random_actions_event))
         logger.info ("Start button ready")
 
         random_actions_thread = threading.Thread(target=random_actions(settings.random_actions_event))

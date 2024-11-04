@@ -224,7 +224,8 @@ class TerminalInterpreter:
                 l: reload dunebugger conf\n\
                 <gpionum or label> on: set gpio status High (OUTPUT gpios only)\n\
                 <gpionum or label> off: set gpio status Low (OUTPUT gpios only)\n\
-                r: toggle random actions\
+                r: toggle random actions\n\
+                c: start cycle\n\
                 q: quit\n\
                 ? or h: help\
                 "
@@ -237,12 +238,13 @@ class TerminalInterpreter:
                 <#gpionum or label> on: set gpio status High\n\
                 <#gpionum or label> off: set gpio status Low\n\
                 r: toggle random actions\n\
+                c: start cycle\n\
                 q: quit\n\
                 ? or h: help\
                 "
             self.show_gpio_status = self.gpio_handler.GPIO.show_gpio_status
 
-    def process_terminal_input(self, input_str):
+    def process_terminal_input(self, input_str, start_function):
         # Process commands received through the terminal
         command_strs = input_str.split(',')
 
@@ -286,7 +288,12 @@ class TerminalInterpreter:
                     gpio = int(command_parts[0])
                     self.gpio_handler.gpio_set_output(gpio, command_parts[1])
                     continue
-        
+            
+            elif command_str == "c":
+                print(f"Cycle started")
+                start_function(6, settings.random_actions_event)
+                continue
+
             else:
                 # Handle other commands
                 command_parts = command_str.split()
