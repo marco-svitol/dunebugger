@@ -80,35 +80,32 @@ def main():
         # Start button available only after motor reset:
         #  we put an event in the motor.limitTouch callback of MotorXLimitCCW
         #  so that execution continues only when event is set on both motors
-        '''
-        motor1_reset_event = threading.Event()
-        motor1_callback_with_params = lambda channel: motor.limitTouch(channel, motor1_reset_event)
-        
-        GPIO.add_event_detect(mygpio_handler.GPIOMap["In_Motor1LimitCCW"],GPIO.RISING,callback=motor.limitTouch,bouncetime=5)
-        GPIO.add_event_detect(mygpio_handler.GPIOMap["In_Motor1LimitCW"], GPIO.RISING, callback=motor1_callback_with_params, bouncetime=5)
+        if (settings.motorEnabled):
+            motor1_reset_event = threading.Event()
+            motor1_callback_with_params = lambda channel: motor.limitTouch(channel, motor1_reset_event)
+            
+            GPIO.add_event_detect(mygpio_handler.GPIOMap["In_Motor1LimitCCW"],GPIO.RISING,callback=motor.limitTouch,bouncetime=5)
+            GPIO.add_event_detect(mygpio_handler.GPIOMap["In_Motor1LimitCW"], GPIO.RISING, callback=motor1_callback_with_params, bouncetime=5)
 
-        motor2_reset_event = threading.Event()
-        motor2_callback_with_params = lambda channel: motor.limitTouch(channel, motor2_reset_event)
+            motor2_reset_event = threading.Event()
+            motor2_callback_with_params = lambda channel: motor.limitTouch(channel, motor2_reset_event)
 
-        GPIO.add_event_detect(mygpio_handler.GPIOMap["In_Motor2LimitCCW"],GPIO.RISING,callback=motor.limitTouch,bouncetime=5)
-        GPIO.add_event_detect(mygpio_handler.GPIOMap["In_Motor2LimitCW"],GPIO.RISING,callback=motor2_callback_with_params,bouncetime=5)
+            GPIO.add_event_detect(mygpio_handler.GPIOMap["In_Motor2LimitCCW"],GPIO.RISING,callback=motor.limitTouch,bouncetime=5)
+            GPIO.add_event_detect(mygpio_handler.GPIOMap["In_Motor2LimitCW"],GPIO.RISING,callback=motor2_callback_with_params,bouncetime=5)
 
-        if (settings.motor1Enabled):
-            motor.reset(1)
-        if (settings.motor1Enabled):
-            motor1_reset_event.wait()
-        if (settings.motor2Enabled):
-            motor.reset(2)
-        if (settings.motor2Enabled):
-            motor2_reset_event.wait()
-        '''
-        #random_actions_event = threading.Event()
+            if (settings.motor1Enabled):
+                motor.reset(1)
+            if (settings.motor1Enabled):
+                motor1_reset_event.wait()
+            if (settings.motor2Enabled):
+                motor.reset(2)
+            if (settings.motor2Enabled):
+                motor2_reset_event.wait()
 
         mygpio_handler.setupStartButton(lambda channel: cycle_trigger(channel, settings.random_actions_event))
         logger.info ("Start button ready")
 
         random_actions_thread = threading.Thread(target=random_actions(settings.random_actions_event))
-        #random_actions_thread.daemon = True
         random_actions_thread.start()
 
         while True:
