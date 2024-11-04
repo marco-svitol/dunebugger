@@ -147,6 +147,7 @@ class GPIOHandler:
     def removeStartButton(self):
         startButton = self.GPIOMap[settings.startButton]
         GPIO.remove_event_detect(startButton)
+        GPIO.remove_event_detect(self.GPIOMap["In_Motor1LimitCCW"])
 
     def gpio_set_output(self, gpiocast,value):
         if isinstance(gpiocast, int):
