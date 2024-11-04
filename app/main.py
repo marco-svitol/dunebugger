@@ -83,6 +83,8 @@ def main():
         motor1_reset_event = threading.Event()
         motor1_callback_with_params = lambda channel: motor.limitTouch(channel, motor1_reset_event)
         
+        if mygpio_handler.check_event_detection(mygpio_handler.GPIOMap["In_Motor1LimitCCW"]):
+            logger.error("Eventdet")
         GPIO.add_event_detect(mygpio_handler.GPIOMap["In_Motor1LimitCCW"],GPIO.RISING,callback=motor.limitTouch,bouncetime=5)
         GPIO.add_event_detect(mygpio_handler.GPIOMap["In_Motor1LimitCW"], GPIO.RISING, callback=motor1_callback_with_params, bouncetime=5)
 
