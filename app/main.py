@@ -80,11 +80,10 @@ def main():
         # Start button available only after motor reset:
         #  we put an event in the motor.limitTouch callback of MotorXLimitCCW
         #  so that execution continues only when event is set on both motors
+        '''
         motor1_reset_event = threading.Event()
         motor1_callback_with_params = lambda channel: motor.limitTouch(channel, motor1_reset_event)
         
-        if mygpio_handler.check_event_detection(mygpio_handler.GPIOMap["In_Motor1LimitCCW"]):
-            logger.error("Eventdet")
         GPIO.add_event_detect(mygpio_handler.GPIOMap["In_Motor1LimitCCW"],GPIO.RISING,callback=motor.limitTouch,bouncetime=5)
         GPIO.add_event_detect(mygpio_handler.GPIOMap["In_Motor1LimitCW"], GPIO.RISING, callback=motor1_callback_with_params, bouncetime=5)
 
@@ -102,7 +101,7 @@ def main():
             motor.reset(2)
         if (settings.motor2Enabled):
             motor2_reset_event.wait()
-
+        '''
         #random_actions_event = threading.Event()
 
         mygpio_handler.setupStartButton(lambda channel: cycle_trigger(channel, settings.random_actions_event))
