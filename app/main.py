@@ -103,7 +103,7 @@ def main():
                 motor2_reset_event.wait()
 
         mygpio_handler.setupStartButton(lambda channel: cycle_trigger(channel, settings.random_actions_event))
-        logger.info ("Start button ready")
+        logger.info (f"\nStart button ready")
 
         random_actions_thread = threading.Thread(target=random_actions(settings.random_actions_event))
         random_actions_thread.start()
@@ -112,14 +112,14 @@ def main():
             pass
 
     except KeyboardInterrupt:
-        logger.debug ("stopped through keyboard")
+        logger.debug ("\nstopped through keyboard")
         
     except Exception as exc:
         traceback.print_exc()
-        logger.critical ("Exception: "+str(exc)+". Exiting." )
+        logger.critical ("\nException: "+str(exc)+". Exiting." )
 
     finally:
-        logger.info ("GPIO     : removing interrupt on GPIO "+str(mygpio_handler.GPIOMap["In_StartButton"])+" and cleaning up GPIOs")
+        logger.info ("\nGPIO     : removing interrupt on GPIO "+str(mygpio_handler.GPIOMap["In_StartButton"])+" and cleaning up GPIOs")
         mygpio_handler.removeStartButton()
         mygpio_handler.cleanup()
         audioPlayer.vstopaudio()
