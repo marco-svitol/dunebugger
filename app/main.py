@@ -3,13 +3,15 @@
 import time
 from gpio_handler import mygpio_handler, GPIO, terminalInterpreter
 import motor
-from dunebuggerlogging import logger
+from dunebuggerlogging import logger, set_logger_level
 import threading
 from audio_handler import audioPlayer
 from dunebugger_settings import settings
 from sequence import sequencesHandler
+import signal_handler
 import traceback
 import random
+import atexit
 
 def random_actions(event):
     while (settings.randomActionsEnabled):
@@ -63,14 +65,28 @@ def cycle(channel, my_random_actions_event):
         logger.info("\nDunebugger listening.\n")
 
 def terminal_input_thread(terminalInterpreter, startFunction):
-    while True:
+    while not signal_handler.sigint_received :
         # Wait for user input and process commands
-        user_input = input("Enter command:")
+        user_input = input("Enter command: ")
         terminalInterpreter.process_terminal_input(user_input, startFunction)
 
+def mainClean():
+    mygpio_handler.removeEventDetect("In_StartButton")
+    mygpio_handler.cleanup()
+    audioPlayer.vstopaudio()
+
+def motorClean():
+    mygpio_handler.removeEventDetect("In_Motor1LimitCCW")
+    mygpio_handler.removeEventDetect("In_Motor1LimitCW")
+    mygpio_handler.removeEventDetect("In_Motor2LimitCCW")
+    mygpio_handler.removeEventDetect("In_Motor2LimitCW")
+
 def main():
+    atexit.register(mainClean)
+    set_logger_level("dunebuggerLog", settings.dunebuggerLogLevel)
+
     try:
-        logger.info('Setting standby state')
+        logger.debug('Setting standby state')
         sequencesHandler.setStandBy()
 
         # Start a separate thread for processing terminal input
@@ -81,17 +97,19 @@ def main():
         #  we put an event in the motor.limitTouch callback of MotorXLimitCCW
         #  so that execution continues only when event is set on both motors
         if (settings.motorEnabled):
+            logger.warning(f"Motor module is ${settings.motorEnabled}")
+            atexit.register(motorClean)
             motor1_reset_event = threading.Event()
             motor1_callback_with_params = lambda channel: motor.limitTouch(channel, motor1_reset_event)
             
-            GPIO.add_event_detect(mygpio_handler.GPIOMap["In_Motor1LimitCCW"],GPIO.RISING,callback=motor.limitTouch,bouncetime=5)
-            GPIO.add_event_detect(mygpio_handler.GPIOMap["In_Motor1LimitCW"], GPIO.RISING, callback=motor1_callback_with_params, bouncetime=5)
+            mygpio_handler.addEventDetect("In_Motor1LimitCCW",motor.limitTouch,5)
+            mygpio_handler.addEventDetect("In_Motor1LimitCW", motor1_callback_with_params, 5)
 
             motor2_reset_event = threading.Event()
             motor2_callback_with_params = lambda channel: motor.limitTouch(channel, motor2_reset_event)
 
-            GPIO.add_event_detect(mygpio_handler.GPIOMap["In_Motor2LimitCCW"],GPIO.RISING,callback=motor.limitTouch,bouncetime=5)
-            GPIO.add_event_detect(mygpio_handler.GPIOMap["In_Motor2LimitCW"],GPIO.RISING,callback=motor2_callback_with_params,bouncetime=5)
+            mygpio_handler.addEventDetect("In_Motor2LimitCCW",motor.limitTouch,5)
+            mygpio_handler.addEventDetect("In_Motor2LimitCW",motor2_callback_with_params,5)
 
             if (settings.motor1Enabled):
                 motor.reset(1)
@@ -101,9 +119,11 @@ def main():
                 motor.reset(2)
             if (settings.motor2Enabled):
                 motor2_reset_event.wait()
+        else:
+            logger.warning("Motor module is disabled")
 
-        mygpio_handler.setupStartButton(lambda channel: cycle_trigger(channel, settings.random_actions_event))
-        logger.info (f"\nStart button ready")
+        mygpio_handler.addEventDetect("In_StartButton", lambda channel: cycle_trigger(channel, settings.random_actions_event), 200)
+        logger.debug ("Start button ready")
 
         random_actions_thread = threading.Thread(target=random_actions(settings.random_actions_event))
         random_actions_thread.start()
@@ -112,17 +132,11 @@ def main():
             pass
 
     except KeyboardInterrupt:
-        logger.debug ("\nstopped through keyboard")
+        logger.debug ("stopped through keyboard")
         
     except Exception as exc:
         traceback.print_exc()
-        logger.critical ("\nException: "+str(exc)+". Exiting." )
-
-    finally:
-        logger.info ("\nGPIO     : removing interrupt on GPIO "+str(mygpio_handler.GPIOMap["In_StartButton"])+" and cleaning up GPIOs")
-        mygpio_handler.removeStartButton()
-        mygpio_handler.cleanup()
-        audioPlayer.vstopaudio()
+        logger.critical ("Exception: "+str(exc)+". Exiting." )
 
 if __name__ == "__main__":
     main()
