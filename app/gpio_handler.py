@@ -221,8 +221,9 @@ class GPIOHandler:
 mode: {mode}, state: {state}, switch: {COLORS['RESET']}{switchcolor}{switchstate}{COLORS['RESET']}")          
 
 class TerminalInterpreter:
-    def __init__(self, gpio_handler):
+    def __init__(self, gpio_handler, sequencesHandler):
         self.gpio_handler = gpio_handler
+        self.sequencesHandler = sequencesHandler
 
         history_path = "~/.python_history"
         self.enableHistory(history_path)
@@ -233,6 +234,7 @@ class TerminalInterpreter:
                 s: show gpio status\n\
                 t: show dunebugger conf\n\
                 l: reload dunebugger conf\n\
+                sb: set standby state\n\
                 <gpionum or label> on: set gpio status High (OUTPUT gpios only)\n\
                 <gpionum or label> off: set gpio status Low (OUTPUT gpios only)\n\
                 r: toggle random actions\n\
@@ -248,6 +250,7 @@ class TerminalInterpreter:
                 s: show gpio status\n\
                 t: show dunebugger conf\n\
                 l: reload dunebugger conf\n\
+                sb: set standby state\n\
                 <#gpionum or label> on: set gpio status High\n\
                 <#gpionum or label> off: set gpio status Low\n\
                 r: toggle random actions\n\
@@ -326,6 +329,11 @@ class TerminalInterpreter:
                 set_logger_level("dunebuggerLog",  get_logging_level_from_name("INFO"))
                 continue
 
+            elif command_str == "sb":
+                self.sequencesHandler.setStandBy()
+                print(f"Standby state set")
+                continue
+
             else:
                 # Handle other commands
                 command_parts = command_str.split()
@@ -338,4 +346,3 @@ class TerminalInterpreter:
 
 
 mygpio_handler = GPIOHandler()
-terminalInterpreter = TerminalInterpreter(mygpio_handler)

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # coding: utf8
 import time
-from gpio_handler import mygpio_handler, GPIO, terminalInterpreter
+from gpio_handler import mygpio_handler, GPIO, TerminalInterpreter
 import motor
 from dunebuggerlogging import logger, set_logger_level
 import threading
@@ -84,6 +84,7 @@ def motorClean():
 def main():
     atexit.register(mainClean)
     set_logger_level("dunebuggerLog", settings.dunebuggerLogLevel)
+    terminalInterpreter = TerminalInterpreter(mygpio_handler, sequencesHandler)
 
     try:
         logger.debug('Setting standby state')
