@@ -1,10 +1,14 @@
-from dunebuggerlogging import logger, COLORS
+from dunebuggerlogging import logger, COLORS, set_logger_level, get_logging_level_from_name
 import configparser
 from ast import literal_eval
 from dunebugger_settings import settings
 from os import path
 import re
-from utils import dunequit
+import signal_handler
+import readline
+import os
+import atexit
+
 if settings.ON_RASPBERRY_PI:
     import RPi.GPIO as GPIO
 else:
@@ -103,9 +107,6 @@ class GPIOHandler:
             logger.error(f"Error reading GPIO configuration: {e}")
             # You might want to handle the error in an appropriate way, e.g., logging or quitting the program
 
-    def cleanup(self):
-        GPIO.cleanup()
-
     def getGPIOLabel(self,GPIONum):
         for key, value in self.GPIOMap.items():
             if value == GPIONum:
@@ -137,15 +138,20 @@ class GPIOHandler:
         else:
             return None, None
 
-    def setupStartButton(self, callback):
-         startButton = self.GPIOMap[settings.startButton]
-         GPIO.add_event_detect(startButton,GPIO.RISING,callback=callback,bouncetime=200)
+    def addEventDetect(self, gpioName, callback, bounceMs):
+        gpio = self.GPIOMap[gpioName]
+        GPIO.add_event_detect(gpio,GPIO.RISING,callback=callback,bouncetime=bounceMs)
 
-    def removeStartButton(self):
-        startButton = self.GPIOMap[settings.startButton]
-        GPIO.remove_event_detect(startButton)
+    def removeEventDetect(self, gpioName):
+        gpio = self.GPIOMap[gpioName]
+        logger.info (f"Removing interrupt on {self.getGPIOLabel(gpio)}")
+        GPIO.remove_event_detect(gpio)
 
-    def gpio_set_output(self, gpiocast,value):
+    def cleanup(self):
+        logger.info ("Cleanup GPIOs")
+        GPIO.cleanup()
+
+    def gpio_set_output(self, gpiocast, value):
         if isinstance(gpiocast, int):
             gpio = gpiocast
             gpiomap = self.getGPIOLabel(gpio)
@@ -212,19 +218,29 @@ class GPIOHandler:
                     color = COLORS['RED']
                     switchcolor = color
             print(f"{color}Pin {gpio} label: {self.getGPIOLabel(gpio) if self.getGPIOLabel(gpio) is not None else '_not_found_'} \
-mode: {mode}, state: {state}, switch: {COLORS['RESET']}{switchcolor}{switchstate}{COLORS['RESET']}")
-            
+mode: {mode}, state: {state}, switch: {COLORS['RESET']}{switchcolor}{switchstate}{COLORS['RESET']}")          
+
 class TerminalInterpreter:
-    def __init__(self, gpio_handler):
+    def __init__(self, gpio_handler, sequencesHandler):
         self.gpio_handler = gpio_handler
+        self.sequencesHandler = sequencesHandler
+
+        history_path = "~/.python_history"
+        self.enableHistory(history_path)
+        atexit.register(self.save_history, history_path)
+
         if settings.ON_RASPBERRY_PI: 
             self.help = f"I am a Raspberry. You can ask me to:\n\
                 s: show gpio status\n\
                 t: show dunebugger conf\n\
                 l: reload dunebugger conf\n\
+                sb: set standby state\n\
                 <gpionum or label> on: set gpio status High (OUTPUT gpios only)\n\
                 <gpionum or label> off: set gpio status Low (OUTPUT gpios only)\n\
-                r: toggle random actions\
+                r: toggle random actions\n\
+                c: start cycle\n\
+                ld: set logger verbosity to DEBUG\n\
+                li: set logger verbosity to INFO\n\
                 q: quit\n\
                 ? or h: help\
                 "
@@ -234,15 +250,28 @@ class TerminalInterpreter:
                 s: show gpio status\n\
                 t: show dunebugger conf\n\
                 l: reload dunebugger conf\n\
+                sb: set standby state\n\
                 <#gpionum or label> on: set gpio status High\n\
                 <#gpionum or label> off: set gpio status Low\n\
                 r: toggle random actions\n\
+                c: start cycle\n\
+                ld: set logger verbosity to DEBUG\n\
+                li: set logger verbosity to INFO\n\
                 q: quit\n\
                 ? or h: help\
                 "
             self.show_gpio_status = self.gpio_handler.GPIO.show_gpio_status
 
-    def process_terminal_input(self, input_str):
+    def enableHistory(self, historyPath):
+        history_file = os.path.expanduser(historyPath)
+        if os.path.exists(history_file):
+            readline.read_history_file(history_file)
+
+    def save_history(self, historyPath):
+        history_file = os.path.expanduser(historyPath)
+        readline.write_history_file(history_file)
+
+    def process_terminal_input(self, input_str, start_function):
         # Process commands received through the terminal
         command_strs = input_str.split(',')
 
@@ -267,7 +296,7 @@ class TerminalInterpreter:
                 continue
 
             elif command_str == "q":
-                dunequit()
+                signal_handler.dunequit()
                 continue
 
             elif command_str in {"r"}:
@@ -286,7 +315,25 @@ class TerminalInterpreter:
                     gpio = int(command_parts[0])
                     self.gpio_handler.gpio_set_output(gpio, command_parts[1])
                     continue
-        
+            
+            elif command_str == "c":
+                print(f"Cycle started")
+                start_function(6, settings.random_actions_event)
+                continue
+            
+            elif command_str == "ld":
+                set_logger_level("dunebuggerLog", get_logging_level_from_name("DEBUG"))
+                continue
+
+            elif command_str == "li":
+                set_logger_level("dunebuggerLog",  get_logging_level_from_name("INFO"))
+                continue
+
+            elif command_str == "sb":
+                self.sequencesHandler.setStandBy()
+                print(f"Standby state set")
+                continue
+
             else:
                 # Handle other commands
                 command_parts = command_str.split()
@@ -299,4 +346,3 @@ class TerminalInterpreter:
 
 
 mygpio_handler = GPIOHandler()
-terminalInterpreter = TerminalInterpreter(mygpio_handler)

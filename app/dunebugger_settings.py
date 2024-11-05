@@ -2,7 +2,7 @@ import threading, os
 from os import path
 import configparser
 from dotenv import load_dotenv
-from dunebuggerlogging import logger
+from dunebuggerlogging import logger, get_logging_level_from_name
 
 class DunebuggerSettings:
     def __init__(self):
@@ -32,7 +32,7 @@ class DunebuggerSettings:
             dunebuggerConfig = path.join(path.dirname(path.abspath(__file__)), 'config/dunebugger.conf')
             self.config.read(dunebuggerConfig)
 
-            for section in ['General', 'Audio', 'Motors', 'Debug']:
+            for section in ['General', 'Audio', 'Motors', 'Debug', 'Log']:
                 for option in self.config.options(section):
                     value = self.config.get(section, option)
                     setattr(self, option, self.validate_option(section, option, value))
@@ -65,13 +65,20 @@ class DunebuggerSettings:
             elif section == 'Motors':
                 if option in ['motor1Freq', 'motor2Freq']:
                     return int(value)
-                elif option in ['motor1Enabled', 'motor2Enabled']:
+                elif option in ['motorEnabled', 'motor1Enabled', 'motor2Enabled']:
                     return self.config.getboolean(section, option)
             elif section == 'Debug':
                 if option == 'cyclespeed':
                     return float(value)
                 elif option == 'testdunebugger':
                     return self.config.getboolean(section, option)
+            elif section == 'Log':
+                logLevel= get_logging_level_from_name(value)
+                if (logLevel == ""):
+                    return get_logging_level_from_name("INFO")
+                else:
+                    return logLevel
+                
         except (configparser.NoOptionError, ValueError):
             raise ValueError(f"Invalid configuration: Section={section}, Option={option}, Value={value}")
 

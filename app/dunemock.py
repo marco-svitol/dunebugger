@@ -1,5 +1,4 @@
 from dunebuggerlogging import logger, COLORS
-from utils import dunequit
 
 class MockGPIO:
 

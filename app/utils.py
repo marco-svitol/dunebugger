@@ -1,6 +1,4 @@
 from dunebuggerlogging import logger
-import os
-import signal
 
 def ArduinoSend(command):
     global Arduino    
@@ -12,12 +10,6 @@ def ArduinoSend(command):
         ccommand = command.replace("\n","")
         logger.warning("ignoring command "+ccommand+" to Arduino")
 
-def dunequit():
-    # Get the process ID (PID) of the current process
-    pid = os.getpid()
-    # Send the SIGINT signal (equivalent to Ctrl+C)
-    os.kill(pid, signal.SIGINT)
-
 def is_raspberry_pi():
     try:
         with open('/proc/device-tree/model', 'r') as model_file:
@@ -28,3 +20,4 @@ def is_raspberry_pi():
                 return False
     except Exception as e:
         return False
+    
