@@ -51,7 +51,7 @@ def tmuxnewpane():
     return paneid
 
 def set_prompt(paneid):
-    cmd = ["tmux", "send-keys", "-t", paneid, "export PS1='>'", "C-m"]
+    cmd = ["tmux", "send-keys", "-t", paneid, "export PS1='eericdcs>'", "C-m"]
     subprocess.Popen(cmd)
 
 def previous_and_next(some_iterable):
@@ -127,7 +127,7 @@ logging.config.fileConfig(supervisorloggingConfig) #load logging config file
 logger = logging.getLogger('supervisorLog')
 logger.info('Dunebugger supervisor started')
 
-onseq = [dtime(6,55),dtime(14,55)]
+onseq = [dtime(8,55),dtime(14,55)]
 offseq = [dtime(12,30),dtime(19,30)]
 onoffsorted = []
 
