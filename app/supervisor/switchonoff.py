@@ -3,7 +3,7 @@ import os,schedule,time,subprocess, logging, logging.config
 from datetime import time as dtime
 from datetime import datetime
 from itertools import tee, islice, chain
-from app.supervisor.InTime import getNTPTime
+from InTime import getNTPTime
 from os import path
 
 appPath = path.join(path.dirname(path.abspath(__file__)), '..')

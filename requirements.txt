@@ -1,0 +1,7 @@
+RPi.GPIO
+python-vlc
+schedule
+dotenv
+load_dotenv
+schedule
+
