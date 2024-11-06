@@ -51,7 +51,7 @@ def tmuxnewpane():
     return paneid
 
 def set_prompt(paneid):
-    cmd = ["tmux", "send-keys", "-t", paneid, "export PS1='eericdcs>'", "C-m"]
+    cmd = ["tmux", "send-keys", "-t", paneid, "export PS1='>'", "C-m"]
     subprocess.Popen(cmd)
 
 def previous_and_next(some_iterable):
