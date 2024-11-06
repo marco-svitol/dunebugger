@@ -22,7 +22,6 @@ def tmuxsessioneexist(sessname):
 
 def switchon():
     global showoffsched
-    global installfolder
     cmd = ["tmux","send","-t",mainpaneid,"q","ENTER"]
     subprocess.Popen(cmd)
     mainModulePath = path.join(appPath, mainModule)
@@ -34,30 +33,21 @@ def switchon():
 def switchoff():
     global showonsched
     if timesyncJob is None:
-        logger.info ("Switching off dunebugger")
-        cmd = ["tmux","send","-t",mainpaneid,"ENTER"]
+        logger.info("Switching off dunebugger")
+        cmd = ["tmux", "send-keys", "-t", mainpaneid, "C-c"]
         subprocess.Popen(cmd)
     else:
         logger.warning("Time not synced, scheduled switching off not done")
     showonsched = True
-
+    
 def tmuxnewpane():
-    global installfolder
-    pipepath = "paneid"
-    cmd = ["tmux","split-window","-h","-c",appPath]
-    subprocess.Popen(cmd)
-    if not os.path.exists(pipepath):
-        logger.debug("Creating named pipe")
-        os.mkfifo(pipepath)
-    cmd = ["tmux","send","echo $TMUX_PANE > ",pipepath,"ENTER"]
-    subprocess.Popen(cmd)
-    time.sleep(0.5)
-    pipe = os.open(pipepath,os.O_RDONLY)
-    paneid = (os.read(pipe,100)).decode('ascii')
-    os.close(pipe)
-    os.remove(pipepath)
-    logger.info("New tmux pane created with id: "+paneid.strip())
-    return paneid.strip()
+    cmd = ["tmux", "split-window", "-h", "-c", appPath]
+    subprocess.Popen(cmd).wait()  # Wait for the pane to be created
+
+    # Get the pane ID of the last pane created
+    cmd = ["tmux", "display-message", "-p", "#{pane_id}"]
+    paneid = subprocess.check_output(cmd).decode('ascii').strip()
+    return paneid
 
 def previous_and_next(some_iterable):
     prevs, items, nexts = tee(some_iterable, 3)
@@ -132,8 +122,8 @@ logging.config.fileConfig(supervisorloggingConfig) #load logging config file
 logger = logging.getLogger('supervisorLog')
 logger.info('Dunebugger supervisor started')
 
-onseq = [dtime(7,00)]#,dtime(15,00)]
-offseq = [dtime(22,45)]#,dtime(23,00)]
+onseq = [dtime(6,55),dtime(14,55)]
+offseq = [dtime(12,30),dtime(19,30)]
 onoffsorted = []
 
 timesyncsleep = 10
@@ -181,10 +171,10 @@ if len(onoffsorted) % 2 != 0:
 for ind,onoff in enumerate(onoffsorted):
     if ind % 2 ==  starton :
         logger.debug("Adding SwitchOn scheduling at "+str(onoff))
-        schedule.every().day.at(str(onoff.hour)+":"+str(onoff.minute)).do(switchon)
+        schedule.every().day.at(str(onoff)).do(switchon)
     else:
         logger.debug("Adding SwitchOff scheduling at "+str(onoff))
-        schedule.every().day.at(str(onoff.hour)+":"+str(onoff.minute)).do(switchoff)
+        schedule.every().day.at(str(onoff)).do(switchoff)
 
 logger.info("Checking scheduling every "+str(checkinterval)+" seconds")
 
