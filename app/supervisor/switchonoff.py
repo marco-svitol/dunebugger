@@ -41,6 +41,7 @@ def switchoff():
     showonsched = True
     
 def tmuxnewpane():
+    appPath = '/home/marco/dunebugger/app'  # Adjust this path as needed
     cmd = ["tmux", "split-window", "-h", "-c", appPath]
     subprocess.Popen(cmd).wait()  # Wait for the pane to be created
 
@@ -48,6 +49,10 @@ def tmuxnewpane():
     cmd = ["tmux", "display-message", "-p", "#{pane_id}"]
     paneid = subprocess.check_output(cmd).decode('ascii').strip()
     return paneid
+
+def set_prompt(paneid):
+    cmd = ["tmux", "send-keys", "-t", paneid, "export PS1='>'", "C-m"]
+    subprocess.Popen(cmd)
 
 def previous_and_next(some_iterable):
     prevs, items, nexts = tee(some_iterable, 3)
@@ -137,6 +142,8 @@ showoffsched = False
 showonsched = False
 
 mainpaneid = tmuxnewpane() #creates new tmux pane and return ID num
+time.sleep(1)
+set_prompt(mainpaneid)
 
 logger.info("Checking if time sync is available...")
 
