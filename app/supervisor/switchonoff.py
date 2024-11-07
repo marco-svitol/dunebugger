@@ -41,7 +41,7 @@ def tmuxNewPane():
 def switchon():
     global showoffsched
     logger.info ("Switching on dunebugger")
-    tmuxSendCommandToPane(".","ENTER")
+    tmuxSendCommandToPane("##","ENTER")
     mainModulePath = path.join(parentDir, mainModule)
     tmuxSendCommandToPane("python "+mainModulePath,"ENTER")
     showoffsched = True
