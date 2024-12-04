@@ -123,7 +123,7 @@ def main():
         else:
             logger.warning("Motor module is disabled")
 
-        mygpio_handler.addEventDetect("In_StartButton", lambda channel: cycle_trigger(channel, settings.random_actions_event), 200)
+        mygpio_handler.addEventDetect("In_StartButton", lambda channel: cycle_trigger(channel, settings.random_actions_event))
         logger.debug ("Start button ready")
 
         random_actions_thread = threading.Thread(target=random_actions(settings.random_actions_event))
