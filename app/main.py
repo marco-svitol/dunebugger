@@ -25,7 +25,7 @@ def cycle_trigger(channel, my_random_actions_event):
         #TODO : fix bouncing
             #start_time = time.time()
             #while time.time() < start_time + settings.bouncingTreshold:
-        time.sleep(settings.bouncingTreshold)    # avoid catching a bouncing
+        #time.sleep(settings.bouncingTreshold)    # avoid catching a bouncing
         if GPIO.input(channel) != 1:
             logger.debug ("Warning! Cycle: below treshold of "+str(settings.bouncingTreshold)+" on channel"+str(channel))
             return
