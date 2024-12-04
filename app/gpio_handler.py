@@ -138,7 +138,7 @@ class GPIOHandler:
         else:
             return None, None
 
-    def addEventDetect(self, gpioName, callback, bounceMs):
+    def addEventDetect(self, gpioName, callback, bounceMs = 0):
         gpio = self.GPIOMap[gpioName]
         GPIO.add_event_detect(gpio,GPIO.RISING,callback=callback,bouncetime=bounceMs)
 
