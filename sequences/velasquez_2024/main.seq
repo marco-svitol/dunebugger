@@ -1,5 +1,5 @@
 0 switch LuceStartButton Off
-0 switch PompaAcqua On
+10 switch PompaAcqua On
 10 switch Case1 Off
 17 switch Case2 Off
 17 switch Fuochi1 Off
