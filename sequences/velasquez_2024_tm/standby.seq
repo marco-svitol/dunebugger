@@ -1,0 +1,9 @@
+#remove
+0 switch LuceStartButton On
+0 switch AlwaysOnNativita On
+0 switch Case1 On
+0 switch Case2 On
+0 switch Fuochi1 On
+0 switch LuceNativita Off
+0 switch PompaAcqua Off
+#0 switch Cometa Off
