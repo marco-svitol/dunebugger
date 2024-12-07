@@ -2,6 +2,7 @@
 0 switch Case1 off
 0 switch Case2 off
 0 switch Fuochi off
+0 switch Led2ReteStelle off
 0 switch GrottaFuochi on
 0 switch Dim1GM on
 10 switch Fuochi on
@@ -30,3 +31,5 @@
 4:00 switch GrottaFuochi off
 4:00 audio fadeout
 4:00 switch Dim1GM off
+3:20 switch Led2ReteStelle on
+4:00 switch LuceStartButton on
