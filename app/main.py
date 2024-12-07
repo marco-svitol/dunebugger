@@ -1,3 +1,5 @@
+
+#
 #!/usr/bin/env python3
 # coding: utf8
 import time
@@ -25,12 +27,12 @@ def cycle_trigger(channel, my_random_actions_event):
         #TODO : fix bouncing
             #start_time = time.time()
             #while time.time() < start_time + settings.bouncingTreshold:
-        #time.sleep(settings.bouncingTreshold)    # avoid catching a bouncing
+        time.sleep(settings.bouncingTreshold)    # avoid catching a bouncing
         if GPIO.input(channel) != 1:
             logger.debug ("Warning! Cycle: below treshold of "+str(settings.bouncingTreshold)+" on channel"+str(channel))
             return
     
-    threading.Thread(name='_cycle_thread', target=cycle, args=(channel,my_random_actions_event)).start()
+        threading.Thread(name='_cycle_thread', target=cycle, args=(channel,my_random_actions_event)).start()
 
 def cycle(channel, my_random_actions_event):
     with settings.cycle_thread_lock:
