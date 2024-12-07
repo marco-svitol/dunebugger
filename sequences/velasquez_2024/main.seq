@@ -26,4 +26,7 @@
 3:20 switch Fuochi on
 3:30 switch Case1 on
 3:45 switch Case2 on
+4:00 switch PompaAcqua off
+4:00 switch GrottaFuochi off
 4:00 audio fadeout
+4:00 switch Dim1GM off
