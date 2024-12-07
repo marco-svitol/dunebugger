@@ -10,6 +10,7 @@
 30 switch PompaAcqua On
 33 switch Case1 on
 40 switch Dim4AlbaTramonto on
+40 switch Led1Goccia on
 45 switch Dim5Giorno on
 1:00 switch Case1 off
 1:05 switch Case2 off
@@ -28,8 +29,10 @@
 3:30 switch Case1 on
 3:45 switch Case2 on
 4:00 switch PompaAcqua off
+4:00 switch Led1Goccia
 4:00 switch GrottaFuochi off
 4:00 audio fadeout
 4:00 switch Dim1GM off
 4:00 switch Led2ReteStelle on
 4:00 switch LuceStartButton on
+
