@@ -1,20 +1,8 @@
 0 switch LuceStartButton Off
 0 switch PompaAcqua On
-0 switch DimTramonto On
-0 switch DimIngressoEst Off
-0 switch DimGiorno Off
 10 switch Case1 Off
 17 switch Case2 Off
 17 switch Fuochi1 Off
-17 switch DimTramonto Off
-30 switch Fuochi1 On
-
-30 motor start 1 ccw 92
-31 switch Ombre1 On
-56 motor start 2 ccw 85
-57 switch Ombre2 On
-58 switch Ombre1 Off
-1:23 switch Ombre2 Off
 
 1:23 switch Case1 On
 1:25 switch Case2 On

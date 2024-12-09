@@ -4,28 +4,54 @@ from datetime import time as dtime
 from datetime import timedelta
 from socket import AF_INET, SOCK_DGRAM
 import socket, struct
+import sys
+from os import path
+# Get parent directory
+parent_dir = path.join(path.dirname(path.abspath(__file__)), '..')
+# Add the parent directory to sys.path
+sys.path.append(parent_dir)
+from dunebuggerlogging import logger
 
-def getNTPTime(host = "it.pool.ntp.org"):
-    port = 123
-    buf = 1024
-    address = (host,port)
-    msg = '\x1b' + 47 * '\0'
- 
-    # reference time (in seconds since 1900-01-01 00:00:00)
-    TIME1970 = 2208988800 # 1970-01-01 00:00:00
- 
-    # connect to server
-    client = socket.socket( AF_INET, SOCK_DGRAM)
-    client.settimeout(3)
+import subprocess
+
+def check_ntp_sync():
     try:
-        client.sendto(msg.encode('utf-8'), address)
-        msg, address = client.recvfrom( buf )
+        # Run the timedatectl command and capture the output
+        result = subprocess.run(['timedatectl', 'status'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        if result.returncode == 0:
+            # Check if NTP is synchronized
+            if "synchronized: yes" in result.stdout:
+                return True
+            else:
+                return False
+        else:
+            logger.error(f"Error running timedatectl: {result.stderr}")
+            return False
     except Exception as e:
-        return ""
+        logger.error(f"Error running timedatectl: ${str(e)}")
+        return False
 
-    t = struct.unpack( "!12I", msg )[10]
-    t -= TIME1970
-    return t#ime.ctime(t)#.replace("  "," ")
+# def getNTPTime(host = "it.pool.ntp.org"):
+#     port = 123
+#     buf = 1024
+#     address = (host,port)
+#     msg = '\x1b' + 47 * '\0'
+ 
+#     # reference time (in seconds since 1900-01-01 00:00:00)
+#     TIME1970 = 2208988800 # 1970-01-01 00:00:00
+ 
+#     # connect to server
+#     client = socket.socket( AF_INET, SOCK_DGRAM)
+#     client.settimeout(3)
+#     try:
+#         client.sendto(msg.encode('utf-8'), address)
+#         msg, address = client.recvfrom( buf )
+#     except Exception as e:
+#         return ""
+
+#     t = struct.unpack( "!12I", msg )[10]
+#     t -= TIME1970
+#     return t#ime.ctime(t)#.replace("  "," ")
 
 def duranteCelebrazioni(dt,cyclelength):
     tday = dt.date()

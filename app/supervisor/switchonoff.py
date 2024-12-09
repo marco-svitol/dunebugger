@@ -1,58 +1,62 @@
 #!/usr/bin/python3
-import os,schedule,time,subprocess, logging, logging.config
+import schedule,time,subprocess
 from datetime import time as dtime
 from datetime import datetime
 from itertools import tee, islice, chain
-from InTime import getNTPTime
+from InTime import check_ntp_sync#, getNTPTime
+import sys
 from os import path
 
-appPath = path.join(path.dirname(path.abspath(__file__)), '..')
+parentDir = path.join(path.dirname(path.abspath(__file__)), '..')
+# Add the parent directory to sys.path
+sys.path.append(parentDir)
+
+from dunebuggerlogging import logger
+
 mainModule = "main.py"
+onseq = [dtime(8,55),dtime(14,55)]
+offseq = [dtime(12,30),dtime(19,30)]
+onoffsorted = []
+timesyncJob = None
+mainpaneid = ""
+showoffsched = False
+showonsched = False
 
 #TODO verific timesync su orologio hw
 #TODO forza switch on tramite tree state
 
-def tmuxsessioneexist(sessname):
-    cmd = ["tmux","has-session","-t",sessname]
-    res = subprocess.Popen(cmd)
-    res.communicate()[0]
-    if res.returncode == 1: #session does not exist
-        return False
-    return True
+def tmuxSendCommandToPane(command, key = ""):
+    tmuxCommand = ["tmux","send-keys","-t",mainpaneid,command,key]
+    subprocess.Popen(tmuxCommand)
 
-def switchon():
-    global showoffsched
-    cmd = ["tmux","send","-t",mainpaneid,"q","ENTER"]
-    subprocess.Popen(cmd)
-    mainModulePath = path.join(appPath, mainModule)
-    cmd = ["tmux","send","-t",mainpaneid,"python "+mainModulePath,"ENTER"]
-    logger.info ("Switching on dunebugger")
-    subprocess.Popen(cmd)
-    showoffsched = True
-
-def switchoff():
-    global showonsched
-    if timesyncJob is None:
-        logger.info("Switching off dunebugger")
-        cmd = ["tmux", "send-keys", "-t", mainpaneid, "C-c"]
-        subprocess.Popen(cmd)
-    else:
-        logger.warning("Time not synced, scheduled switching off not done")
-    showonsched = True
-    
-def tmuxnewpane():
-    appPath = '/home/marco/dunebugger/app'  # Adjust this path as needed
-    cmd = ["tmux", "split-window", "-h", "-c", appPath]
+def tmuxNewPane():
+    global mainpaneid
+    cmd = ["tmux", "split-window", "-h", "-c", parentDir]
     subprocess.Popen(cmd).wait()  # Wait for the pane to be created
 
     # Get the pane ID of the last pane created
     cmd = ["tmux", "display-message", "-p", "#{pane_id}"]
-    paneid = subprocess.check_output(cmd).decode('ascii').strip()
-    return paneid
+    mainpaneid = subprocess.check_output(cmd).decode('ascii').strip()
 
-def set_prompt(paneid):
-    cmd = ["tmux", "send-keys", "-t", paneid, "export PS1='>'", "C-m"]
-    subprocess.Popen(cmd)
+def switchon():
+    global showoffsched
+    logger.info ("Switching on dunebugger")
+    tmuxSendCommandToPane("##","ENTER")
+    mainModulePath = path.join(parentDir, mainModule)
+    tmuxSendCommandToPane("python "+mainModulePath,"ENTER")
+    showoffsched = True
+
+def switchoff():
+    global showonsched
+    if timeSyncJobIsRunning():
+        logger.warning("Time not synced, scheduled switching off not done")
+    else:
+        logger.info("Switching off dunebugger")
+        tmuxSendCommandToPane("C-c")
+    showonsched = True
+    
+def set_prompt():
+    tmuxSendCommandToPane("export PS1='>'", "C-m")
 
 def previous_and_next(some_iterable):
     prevs, items, nexts = tee(some_iterable, 3)
@@ -100,18 +104,24 @@ def checktimeon(d):
         i += 1
     return True
 
+def timeSyncJobIsRunning():
+    if timesyncJob:
+        return timesyncJob.is_job_cancelled()
+    else:
+        return False
+
 def checkTimeSync():
-    global timesyncJob
-    nettime = getNTPTime()
-    if isinstance(nettime,int): #check Internet time sync
-        logging.info("Time successfully synced from the net:"+time.ctime(nettime))
-        if timesyncJob is not None:
-            logging.info("Removing timesync job from scheduling")
+    #nettime = getNTPTime()
+    if check_ntp_sync():
+    #if isinstance(nettime,int): #check Internet time sync
+        #logging.info("Time successfully synced from the net:"+time.ctime(nettime))
+        logger.info(f"Time successfully synced {datetime.now().strftime('%H:%M:%S')}")
+        if timeSyncJobIsRunning():
+            logger.info("Removing timesync job from scheduling")
             schedule.cancel_job(timesyncJob)
-            timesyncJob = None
             checktimeonandswitch()
     else:
-        logging.warning("Time syncing failed!")
+        logger.warning("Time syncing failed!")
 
 def checktimeonandswitch():
     if checktimeon(datetime.now().time()) : #check if current time dunebugger should be on
@@ -121,80 +131,78 @@ def checktimeonandswitch():
         logger.info("Current time is after a switch off and before a switch on: switching off")
         switchoff()
 
-supervisorloggingConfig = path.join(appPath, 'config/supervisorlogging.conf')
+def main():
+    logger.info('Dunebugger supervisor started')
+    global showoffsched
+    global showonsched
+    timesyncsleep = 10
+    timesyncmin = 180
+    timesyncmax = 200
+    checkinterval = 20 #checkscheduling interval
 
-logging.config.fileConfig(supervisorloggingConfig) #load logging config file
-logger = logging.getLogger('supervisorLog')
-logger.info('Dunebugger supervisor started')
+    tmuxNewPane() #creates new tmux pane and set ID num
+    time.sleep(1)
+    set_prompt()
 
-onseq = [dtime(8,55),dtime(14,55)]
-offseq = [dtime(12,30),dtime(19,30)]
-onoffsorted = []
+    logger.info("Checking if time sync is available...")
 
-timesyncsleep = 10
-timesyncmin = 180
-timesyncmax = 200
-timesyncJob = None
+    #nettime = getNTPTime() #check Internet time sync
+    #if not isinstance(nettime,int):
+    if not check_ntp_sync():
+        logger.warning("Not syncing first try...waiting "+str(timesyncsleep)+" secs")
+        time.sleep(timesyncsleep)
+        #nettime = getNTPTime()
+        #verify another another time. If still not syncing run a scheduled job and switch on the presepe
+        #if not isinstance(nettime,int):
+        if not check_ntp_sync():
+            logger.warning ("time not synced at startup: scheduling timesyncjob with random frequency between " + str(timesyncmin) + " secs and " + str(timesyncmax) + " secs")
+            timesyncJob = schedule.every(timesyncmin).to(timesyncmax).seconds.do(checkTimeSync)
+            #fo = open(installfolder+"timenotsynced", "wb") #tells dunebugger that syncing is not working....
+            #fo.close()
+    #if isinstance(nettime,int):
+    if check_ntp_sync():
+        logger.info(f"...time sync ok. Time is {datetime.now().strftime('%H:%M:%S')}")
+        #logger.info("...time sync ok. Time is "+time.ctime(nettime))
 
-checkinterval = 20 #checkscheduling interval
+    sortonoff() #sort, merge and clean on off sequence
 
-showoffsched = False
-showonsched = False
-
-mainpaneid = tmuxnewpane() #creates new tmux pane and return ID num
-time.sleep(1)
-set_prompt(mainpaneid)
-
-logger.info("Checking if time sync is available...")
-
-nettime = getNTPTime() #check Internet time sync
-if not isinstance(nettime,int):
-    logger.warning("Not syncing first try...waiting "+str(timesyncsleep)+" secs")
-    time.sleep(timesyncsleep)
-    nettime = getNTPTime()
-    #verify another another time. If still not syncing run a scheduled job and switch on the presepe
-    if not isinstance(nettime,int):
-        logger.warning ("time not synced at startup: scheduling timesyncjob with random frequency between " + str(timesyncmin) + " secs and " + str(timesyncmax) + " secs")
-        timesyncJob = schedule.every(timesyncmin).to(timesyncmax).seconds.do(checkTimeSync)
-        #fo = open(installfolder+"timenotsynced", "wb") #tells dunebugger that syncing is not working....
-        #fo.close()
-if isinstance(nettime,int):
-    logger.info("...time sync ok. Time is "+time.ctime(nettime))
-
-sortonoff() #sort, merge and clean on off sequence
-
-if timesyncJob is None: # if time is synced check scheduling
-    checktimeonandswitch()
-else: #if time is not syncing switch on and warning
-    logger.warning("Time not synced, forcefully switching on")
-    switchon()
-
-# se dispari, se index0 == 0:0 allora parte con spegnimento all'index1
-starton = 0
-if len(onoffsorted) % 2 != 0:
-    starton = 1
-    onoffsorted.pop(0)
-
-for ind,onoff in enumerate(onoffsorted):
-    if ind % 2 ==  starton :
-        logger.debug("Adding SwitchOn scheduling at "+str(onoff))
-        schedule.every().day.at(str(onoff)).do(switchon)
+    if timeSyncJobIsRunning():
+        #if time is not syncing switch on and warning
+        logger.warning("Time not synced, forcefully switching on")
+        switchon()
     else:
-        logger.debug("Adding SwitchOff scheduling at "+str(onoff))
-        schedule.every().day.at(str(onoff)).do(switchoff)
+         # if time is synced check scheduling
+        checktimeonandswitch()
 
-logger.info("Checking scheduling every "+str(checkinterval)+" seconds")
+    # se dispari, se index0 == 0:0 allora parte con spegnimento all'index1
+    starton = 0
+    if len(onoffsorted) % 2 != 0:
+        starton = 1
+        onoffsorted.pop(0)
 
-while True:
-    time.sleep(checkinterval) #check scheduling every checkinterval seconds
-    schedule.run_pending()
-    if timesyncJob is None:
-        if showoffsched:
-            logger.info ("Next scheduled switchOFF at "+str(schedule.next_run()))
+    for ind,onoff in enumerate(onoffsorted):
+        if ind % 2 ==  starton :
+            logger.debug("Adding SwitchOn scheduling at "+str(onoff))
+            schedule.every().day.at(str(onoff)).do(switchon)
+        else:
+            logger.debug("Adding SwitchOff scheduling at "+str(onoff))
+            schedule.every().day.at(str(onoff)).do(switchoff)
+
+    logger.info("Checking scheduling every "+str(checkinterval)+" seconds")
+
+    while True:
+        time.sleep(checkinterval) #check scheduling every checkinterval seconds
+        schedule.run_pending()
+        if timeSyncJobIsRunning():
             showoffsched = False
-        if showonsched:
-            logger.info ("Next scheduled switchON at "+str(schedule.next_run()))
             showonsched = False
-    else:
-        showoffsched = False
-        showonsched = False
+        else:
+            if showoffsched:
+                logger.info ("Next scheduled switchOFF at "+str(schedule.next_run()))
+                showoffsched = False
+            if showonsched:
+                logger.info ("Next scheduled switchON at "+str(schedule.next_run()))
+                showonsched = False
+
+if __name__ == "__main__":
+    main()
