@@ -1,4 +1,5 @@
 from dunebuggerlogging import logger
+import os
 
 def ArduinoSend(command):
     global Arduino    
@@ -21,3 +22,8 @@ def is_raspberry_pi():
     except Exception as e:
         return False
     
+def validate_path(path):
+    if os.path.exists(path):
+        return True
+    else:
+        return False

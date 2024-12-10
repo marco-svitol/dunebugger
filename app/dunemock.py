@@ -66,7 +66,7 @@ class MockGPIO:
         logger.debug(f"MockGPIO.remove_event_detect gpio={gpio}")
         pass
 
-    def add_event_detect(self, gpio, mode, callback, bouncetime):
+    def add_event_detect(self, gpio, mode, callback, bouncetime = 0):
         logger.debug(f"MockGPIO.add_event_detect gpio={gpio}, mode={mode}, callback={callback}, bouncetime={bouncetime}")
                 # Associate the callback with the GPIO and mode
         self.events_detect[(gpio, mode)] = callback

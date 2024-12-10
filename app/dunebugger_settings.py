@@ -54,13 +54,12 @@ class DunebuggerSettings:
                     return float(value)
                 elif option in ['arduinoConnected', 'eastereggEnabled', 'randomActionsEnabled']:
                     return self.config.getboolean(section, option)
-                elif option in ['sequenceFolder', 'arduinoSerialPort', 'startButton']:
+                elif option in ['sequenceFolder', 'sequenceFile','standbyFile','randomElementsFile','arduinoSerialPort', 'startButtonGPIOName']:
                     return str(value)
             elif section == 'Audio':
-                if option in ['normalMusicVolume', 'normalSfxVolume', 'quietMusicVol', 'quietSfxVol',
-                              'fadeoutsec', 'ignoreQuietTime']:
+                if option in ['normalMusicVolume', 'normalSfxVolume', 'quietMusicVol', 'quietSfxVol', 'ignoreQuietTime']:
                     return int(value) if option != 'ignoreQuietTime' else self.config.getboolean(section, option)
-                elif option in ['musicpath', 'sfxpath', 'sfxfile', 'easteregg', 'entrysong', 'vlcdevice']:
+                elif option in ['easteregg', 'vlcdevice']:
                     return str(value)
             elif section == 'Motors':
                 if option in ['motor1Freq', 'motor2Freq']:
@@ -70,8 +69,6 @@ class DunebuggerSettings:
             elif section == 'Debug':
                 if option == 'cyclespeed':
                     return float(value)
-                elif option == 'testdunebugger':
-                    return self.config.getboolean(section, option)
             elif section == 'Log':
                 logLevel= get_logging_level_from_name(value)
                 if (logLevel == ""):

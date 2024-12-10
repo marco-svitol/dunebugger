@@ -51,6 +51,8 @@ class GPIOHandler:
                 pull_up_down = GPIO.PUD_UP if initial_state == 'UP' else GPIO.PUD_DOWN
                 GPIO.setup(self.channels[channel], GPIO.IN, pull_up_down)
 
+        atexit.register(self.clean_gpios)
+
     def load_gpio_configuration(self):
         config = configparser.ConfigParser()
         # Set optionxform to lambda x: x to preserve case
@@ -99,9 +101,9 @@ class GPIOHandler:
                 logger.error(f"Error reading LogicalChannels configuration: {e}")
                 # Handle the error as needed
 
-            # Check if "I_StartButton" entry exists in GPIOMap
-            if 'In_StartButton' not in self.GPIOMap:
-                raise ValueError('GPIOMap must have an entry for "I_StartButton"')
+            # Check if StartButton entry exists in GPIOMap
+            if settings.startButtonGPIOName not in self.GPIOMap:
+                raise ValueError(f"GPIOMap must have an entry for {settings.startButtonGPIOName}")
 
         except (configparser.Error, ValueError) as e:
             logger.error(f"Error reading GPIO configuration: {e}")
@@ -150,7 +152,7 @@ class GPIOHandler:
         logger.info (f"Removing interrupt on {self.getGPIOLabel(gpio)}")
         GPIO.remove_event_detect(gpio)
 
-    def cleanup(self):
+    def clean_gpios(self):
         logger.info ("Cleanup GPIOs")
         GPIO.cleanup()
 
@@ -238,8 +240,8 @@ class TerminalInterpreter:
                 t: show dunebugger conf\n\
                 l: reload dunebugger conf\n\
                 sb: set standby state\n\
-                <gpionum or label> on: set gpio status High (OUTPUT gpios only)\n\
-                <gpionum or label> off: set gpio status Low (OUTPUT gpios only)\n\
+                <#gpionum or label> on: set gpio status High (OUTPUT gpios only)\n\
+                <#gpionum or label> off: set gpio status Low (OUTPUT gpios only)\n\
                 r: toggle random actions\n\
                 c: start cycle\n\
                 ld: set logger verbosity to DEBUG\n\
@@ -321,7 +323,7 @@ class TerminalInterpreter:
             
             elif command_str == "c":
                 print(f"Cycle started")
-                start_function(6, settings.random_actions_event)
+                start_function(settings.random_actions_event)
                 continue
             
             elif command_str == "ld":

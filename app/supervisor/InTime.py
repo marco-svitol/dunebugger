@@ -53,6 +53,7 @@ def check_ntp_sync():
 #     t -= TIME1970
 #     return t#ime.ctime(t)#.replace("  "," ")
 
+#TODO: cyclelength must be the last event in main sequence
 def duranteCelebrazioni(dt,cyclelength):
     tday = dt.date()
     wday = tday.weekday() #0 lun ... 6 domenica

@@ -1,11 +1,13 @@
 from audio_handler import audioPlayer
-from gpio_handler import mygpio_handler
+from gpio_handler import mygpio_handler, GPIO
+from utils import validate_path
 import random, os
 from os import path
 from dunebugger_settings import settings
 import motor
 from dunebuggerlogging import logger
 import time
+import atexit
 
 class SequencesHandler:
     
@@ -14,8 +16,13 @@ class SequencesHandler:
     def __init__(self):
         self.sequenceFolder = path.join(path.dirname(path.abspath(__file__)), f"../sequences/{settings.sequenceFolder}")
         self.random_elements = {}
+        self.random_elements_file = settings.randomElementsFile
+        self.sequence_file = settings.sequenceFile
+        self.standby_file = settings.standbyFile
+        atexit.register(self.sequence_clean)
+
         if (settings.randomActionsEnabled == True):
-            self.random_sequence_from_file("randomelements")
+            self.random_sequence_from_file(self.random_elements_file)
         self.sequences = self.validate_all_sequence_files(self.sequenceFolder)
     
     def validate_all_sequence_files(self, directory):
@@ -24,7 +31,7 @@ class SequencesHandler:
                 if filename.endswith(".seq"):
                     file_path = os.path.join(directory, filename)
                     logger.info(f"Validating sequence {file_path}")
-                    self.read_sequence_file(file_path, testcommand=True)
+                    self.read_sequence_file(file_path, dry_run=True)
                     
         except OSError as e:
             logger.error(f"Error validating sequence files in {directory}: {e}")
@@ -51,18 +58,20 @@ class SequencesHandler:
     def execute_waituntil_command(self, duration):
         self.waituntil(duration)
 
-    def execute_audio_fadeout_command(self):
-        audioPlayer.vstopaudio()
+    def execute_audio_fadeout_command(self, fadeout_secs):
+        audioPlayer.vstopaudio(fadeout_secs)
 
-    def execute_command(self, command, testmode = False):
-        # Remove everything after #, treating it as a comment
-        command = command.split('#', 1)[0].strip()
+    def execute_playmusic_command(self, music_folder):
+        gpio = mygpio_handler.GPIOMap[settings.startButtonGPIOName]
+        if GPIO.input(gpio) == 1:
+            audioPlayer.setEasterEggTrigger(True)
+        audioPlayer.playMusic(music_folder)
 
-        if not command:
-            # If the line is empty after removing the comment, skip it
-            return True
-        
-        parts = command.split()
+    def execute_play_sfx_command(self, music_folder):
+        audioPlayer.play_sfx(music_folder)
+
+    def execute_command(self, command_body, dry_run = False):
+        parts = command_body.split()
 
         verb = parts[0].lower()
         # TODO: motor stop
@@ -70,7 +79,7 @@ class SequencesHandler:
             motor_number = int(parts[2])
             direction = parts[3].lower()
             speed = int(parts[4])
-            if not testmode:
+            if not dry_run:
                 self.execute_motor_command(motor_number, direction, speed)
         else:
 
@@ -78,47 +87,62 @@ class SequencesHandler:
             if verb == "switch":
                 device_name = parts[1]
                 action = parts[2]
-                if not testmode:
+                if not dry_run:
                     self.execute_switch_command(device_name, action)
 
-            elif verb == "waituntil":
-                timeMark = int(parts[1])
-                if not testmode:
-                    self.execute_waituntil_command(timeMark)
-                else:
-                    if timeMark <= self.lastTimeMark:
-                        logger.error(f"TimeMark {timeMark} is lower or equal previous one: {self.lastTimeMark}")
-                        return False
-
-            elif verb == "audio" and len(parts) >= 2 and parts[1] == "fadeout": 
-                action = parts[1]
-                if not testmode:
-                    if action == "fadeout":
-                        self.execute_audio_fadeout_command()
+            elif verb == "audio" and len(parts) >= 2: 
+                action = parts[1].lower()
+                parameter = parts[2].lower()
+                if action == "fadeout":
+                    fadeout_secs = int(parameter)
+                    if not dry_run:
+                        self.execute_audio_fadeout_command(fadeout_secs)
+                elif action == "playmusic":
+                    music_folder = audioPlayer.get_music_path(parameter)
+                    if dry_run:
+                        if not validate_path(music_folder):
+                            logger.error(f"Music folder {music_folder} does not exist")
+                            return False
+                    else: 
+                        self.execute_playmusic_command(music_folder)
+                elif action == "playsfx":
+                    sfx_file = audioPlayer.get_sfx_filepath(parameter)
+                    if dry_run:
+                        if not validate_path(sfx_file):
+                            logger.error(f"Sfx file {sfx_file} does not exist")
+                            return False
+                    else:
+                        self.execute_play_sfx_command(sfx_file)
 
             else:
-                logger.error(f"Unknown command: {command}")
+                logger.error(f"Unknown command: {command_body}")
                 return False
         
         return True
 
-    def read_sequence_file(self, file_path, testcommand=False):
+    def read_sequence_file(self, file_path, dry_run=False):
         try:
             with open(file_path, "r") as file:
                 for line_num, line in enumerate(file, start=1):
-                    command = line.strip()
-                    if command:
-                        if command.startswith('#') or command.startswith('//'):
-                            continue  # Skip comments
-                        time_mark_seconds, rest_of_command = self.extract_time_mark(command)
-                        if time_mark_seconds is not None:
-                            if not testcommand:
-                                self.execute_waituntil_command(int(time_mark_seconds))
-                            command_result = self.execute_command(rest_of_command, testcommand)
-                            if testcommand and not command_result:
-                                raise ValueError(f"Error validating sequence: {file_path} (line {line_num}). Review the command there.")
-                        else:
-                            raise ValueError(f"Error validating sequence: {file_path} (line {line_num}). Time mark needs a fix")
+                    command_line = line.strip()
+
+                    # Remove everything after #, treating it as a comment
+                    command_line = command_line.split('#', 1)[0].strip()
+                    command_line = command_line.split('//', 1)[0].strip()
+
+                    if not command_line:
+                        # If the line is empty after removing the comment, skip it
+                        continue
+
+                    time_mark_seconds, command_body = self.extract_time_mark(command_line)
+                    if time_mark_seconds is not None:
+                        if not dry_run:
+                            self.execute_waituntil_command(int(time_mark_seconds))
+                        command_result = self.execute_command(command_body, dry_run)
+                        if dry_run and not command_result:
+                            raise ValueError(f"Error validating sequence: {file_path} (line {line_num}). Review the command there.")
+                    else:
+                        raise ValueError(f"Error validating sequence: {file_path} (line {line_num}). Time mark needs a fix")
 
         except FileNotFoundError:
             logger.error(f"File not found: {file_path}")
@@ -127,7 +151,7 @@ class SequencesHandler:
         parts = command.split(' ', 1)
         if len(parts) == 2:
             time_mark = parts[0].strip()
-            rest_of_command = parts[1].strip()
+            command_body = parts[1].strip()
             if ':' in time_mark:
                 # Check if the time mark contains hours, minutes, and seconds
                 time_components = time_mark.split(':')
@@ -141,9 +165,9 @@ class SequencesHandler:
                     time_mark_seconds = minutes * 60 + seconds
                 else:
                     raise ValueError("Invalid time format")
-                return time_mark_seconds, rest_of_command
+                return time_mark_seconds, command_body
             else:
-                return time_mark, rest_of_command
+                return time_mark, command_body
 
         return None, command
 
@@ -160,15 +184,19 @@ class SequencesHandler:
         rand_elem = random.choice(self.random_elements)
         mygpio_handler.gpiomap_toggle_output(rand_elem)
 
+    def random_actions(self, event):
+        while (settings.randomActionsEnabled):
+            event.wait(timeout=random.uniform(settings.randomActionsMinSecs,settings.randomActionsMaxSecs))
+            if not event.is_set():
+                self.random_action()
+        logger.debug("Random actions exiting")
+
     def setStandBy(self):
-        file_path = os.path.join(self.sequenceFolder, 'standby.seq')
+        file_path = os.path.join(self.sequenceFolder, self.standby_file)
         self.read_sequence_file(file_path)
     
     def start(self):
-        sequence = 'main.seq'
-        if settings.testdunebugger:
-            sequence = 'test.seq'
-        file_path = os.path.join(self.sequenceFolder, sequence)
+        file_path = os.path.join(self.sequenceFolder, self.sequence_file)
         self.read_sequence_file(file_path)
 
     def waituntil(self, sec):
@@ -176,6 +204,10 @@ class SequencesHandler:
         time.sleep((sec-settings.cycleoffset) * settings.cyclespeed)
         settings.cycleoffset = sec
 
+    def sequence_clean(self):
+        logger.info ("Sequence remove event detect")
+        mygpio_handler.removeEventDetect(settings.startButtonGPIOName)
+        
 try:
     sequencesHandler = SequencesHandler()
 except Exception as exc:
