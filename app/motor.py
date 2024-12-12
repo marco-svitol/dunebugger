@@ -106,4 +106,3 @@ def initMotorLimits():
         reset(2)
     if (settings.motor2Enabled):
         motor2_reset_event.wait()
-        

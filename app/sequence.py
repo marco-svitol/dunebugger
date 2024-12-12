@@ -8,6 +8,7 @@ import motor
 from dunebuggerlogging import logger
 import time
 import atexit
+import threading
 
 class SequencesHandler:
     
@@ -19,8 +20,12 @@ class SequencesHandler:
         self.random_elements_file = settings.randomElementsFile
         self.sequence_file = settings.sequenceFile
         self.standby_file = settings.standbyFile
+        self.off_file = settings.offFile
+        #self.random_actions_thread = threading.Thread(target=self.random_actions(settings.random_actions_event))
+
         atexit.register(self.sequence_clean)
 
+        #self.random_actions_thread.start()
         if (settings.randomActionsEnabled == True):
             self.random_sequence_from_file(self.random_elements_file)
         self.sequences = self.validate_all_sequence_files(self.sequenceFolder)
@@ -30,7 +35,7 @@ class SequencesHandler:
             for filename in os.listdir(directory):
                 if filename.endswith(".seq"):
                     file_path = os.path.join(directory, filename)
-                    logger.info(f"Validating sequence {file_path}")
+                    logger.debug(f"Validating sequence {file_path}")
                     self.read_sequence_file(file_path, dry_run=True)
                     
         except OSError as e:
@@ -75,12 +80,13 @@ class SequencesHandler:
 
         verb = parts[0].lower()
         # TODO: motor stop
-        if verb == "motor" and parts[1].lower() == "start":
-            motor_number = int(parts[2])
-            direction = parts[3].lower()
-            speed = int(parts[4])
-            if not dry_run:
-                self.execute_motor_command(motor_number, direction, speed)
+        if verb == "motor" and settings.motorEnabled:
+            if parts[1].lower() == "start":
+                motor_number = int(parts[2])
+                direction = parts[3].lower()
+                speed = int(parts[4])
+                if not dry_run:
+                    self.execute_motor_command(motor_number, direction, speed)
         else:
 
             # TODO verify switch works
@@ -113,7 +119,6 @@ class SequencesHandler:
                             return False
                     else:
                         self.execute_play_sfx_command(sfx_file)
-
             else:
                 logger.error(f"Unknown command: {command_body}")
                 return False
@@ -191,10 +196,14 @@ class SequencesHandler:
                 self.random_action()
         logger.debug("Random actions exiting")
 
-    def setStandBy(self):
+    def setStandByMode(self):
         file_path = os.path.join(self.sequenceFolder, self.standby_file)
         self.read_sequence_file(file_path)
     
+    def setOffMode(self):
+        file_path = os.path.join(self.sequenceFolder, self.off_file)
+        self.read_sequence_file(file_path)
+
     def start(self):
         file_path = os.path.join(self.sequenceFolder, self.sequence_file)
         self.read_sequence_file(file_path)
@@ -205,8 +214,45 @@ class SequencesHandler:
         settings.cycleoffset = sec
 
     def sequence_clean(self):
-        logger.info ("Sequence remove event detect")
-        mygpio_handler.removeEventDetect(settings.startButtonGPIOName)
+        logger.debug ("Sequence clean")
+        self.disable_start_button()
+
+    def enable_start_button(self):
+        mygpio_handler.addEventDetect(settings.startButtonGPIOName, lambda channel: self.cycle_trigger(channel, settings.random_actions_event))
+
+    def disable_start_button(self):
+        try:
+            mygpio_handler.removeEventDetect(settings.startButtonGPIOName)
+        except Exception as e:
+            logger.debug (f"Error while disabling start button {e}")
+        
+
+    def cycle_trigger(self, channel, my_random_actions_event):
+        with settings.cycle_thread_lock:
+            #TODO : fix bouncing
+                #start_time = time.time()
+                #while time.time() < start_time + settings.bouncingTreshold:
+            time.sleep(settings.bouncingTreshold)    # avoid catching a bouncing
+            if GPIO.input(channel) != 1:
+                logger.debug ("Warning! Cycle: below treshold of "+str(settings.bouncingTreshold)+" on channel"+str(channel))
+                return
+        
+            threading.Thread(name='_cycle_thread', target=self.cycle, args=([my_random_actions_event])).start()
+
+    def cycle(self, my_random_actions_event):
+        with settings.cycle_thread_lock:
+            
+            logger.info("Start button pressed")
+
+            my_random_actions_event.set()
+
+            self.start()
+
+            my_random_actions_event.clear()
+
+            settings.cycleoffset = 0
+
+            self.setStandByMode()
         
 try:
     sequencesHandler = SequencesHandler()

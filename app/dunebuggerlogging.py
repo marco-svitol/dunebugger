@@ -15,6 +15,18 @@ COLORS = {
     'RESET': '\033[0m'
 }
 
+class CustomFormatter(logging.Formatter):
+    def format(self, record):
+        log_fmt = self._style._fmt
+        if record.levelno == logging.ERROR:
+            log_fmt = COLORS['RED'] + log_fmt + COLORS['RESET']
+        elif record.levelno == logging.WARNING:
+            log_fmt =  COLORS['YELLOW'] + log_fmt + COLORS['RESET']
+        elif record.levelno == logging.DEBUG:
+            log_fmt =  COLORS['BLUE'] + log_fmt + COLORS['RESET']
+        formatter = logging.Formatter(log_fmt, self.datefmt)
+        return formatter.format(record)
+    
 def get_logging_level_from_name(level_str):
     # Convert the string level to a logging level
     level = getattr(logging, level_str.upper(), None)
@@ -31,3 +43,6 @@ def set_logger_level(logger_name, level):
     except Exception as exc:
         print(f"Error while setting logger ${logger_name} level to {logging.getLevelName(level)}: ${str(exc)}")
         
+# Get the console handler and set the custom formatter
+console_handler = logger.handlers[0]
+console_handler.setFormatter(CustomFormatter('%(levelname)s - %(asctime)s : %(message)s', '%d/%m/%Y %H:%M:%S'))

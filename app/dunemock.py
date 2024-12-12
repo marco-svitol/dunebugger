@@ -106,12 +106,12 @@ class MockGPIO:
             try:
                 gpioitem = self.gpio_states[gpio]
                 if gpioitem is not None and gpioitem['mode'] == GPIO.OUT:
-                    color = COLORS['BLUE']
+                    color = COLORS['RESET']
                     state = 'OFF' if gpioitem['state'] else 'ON' 
                     switchcolor = COLORS['MAGENTA'] if gpioitem['state'] else COLORS['GREEN']
                 else:   
                     state = 'HIGH' if gpioitem['state'] else 'LOW'
-                    color = COLORS['CYAN']
+                    color = COLORS['BLUE']
                     switchcolor = COLORS['MAGENTA'] if gpioitem['state'] else COLORS['GREEN']
                 print(f"{color}Pin {gpio} label: {gpio_handler.getGPIOLabel(gpio)} mode: {gpioitem['mode']}, state: {COLORS['RESET']}{switchcolor}{state}{COLORS['RESET']}")
             except Exception as e:

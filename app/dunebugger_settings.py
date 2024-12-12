@@ -2,7 +2,7 @@ import threading, os
 from os import path
 import configparser
 from dotenv import load_dotenv
-from dunebuggerlogging import logger, get_logging_level_from_name
+from dunebuggerlogging import logger, get_logging_level_from_name, set_logger_level
 
 class DunebuggerSettings:
     def __init__(self):
@@ -15,6 +15,7 @@ class DunebuggerSettings:
         self.override_configuration()
         self.cycle_thread_lock = threading.Lock()
         self.random_actions_event = threading.Event()
+        set_logger_level("dunebuggerLog", self.dunebuggerLogLevel)
 
     def show_configuration(self):
         print("Current Configuration:")
@@ -36,10 +37,10 @@ class DunebuggerSettings:
                 for option in self.config.options(section):
                     value = self.config.get(section, option)
                     setattr(self, option, self.validate_option(section, option, value))
-                    logger.info(f"{option}: {value}")
+                    logger.debug(f"{option}: {value}")
 
             self.ON_RASPBERRY_PI = is_raspberry_pi()
-            logger.info(f"ON_RASPBERRY_PI: {self.ON_RASPBERRY_PI}")
+            logger.debug(f"ON_RASPBERRY_PI: {self.ON_RASPBERRY_PI}")
 
         except configparser.Error as e:
             logger.error(f"Error reading configuration: {e}")
@@ -54,7 +55,7 @@ class DunebuggerSettings:
                     return float(value)
                 elif option in ['arduinoConnected', 'eastereggEnabled', 'randomActionsEnabled']:
                     return self.config.getboolean(section, option)
-                elif option in ['sequenceFolder', 'sequenceFile','standbyFile','randomElementsFile','arduinoSerialPort', 'startButtonGPIOName']:
+                elif option in ['sequenceFolder', 'sequenceFile','standbyFile','offFile','randomElementsFile','arduinoSerialPort', 'startButtonGPIOName']:
                     return str(value)
             elif section == 'Audio':
                 if option in ['normalMusicVolume', 'normalSfxVolume', 'quietMusicVol', 'quietSfxVol', 'ignoreQuietTime']:
