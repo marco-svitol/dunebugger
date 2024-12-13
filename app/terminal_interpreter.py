@@ -34,7 +34,8 @@ class TerminalInterpreter:
                 <#gpionum or label> off: set gpio status Low (OUTPUT gpios only)\n\
                 er: enable random actions\n\
                 dr: disable random actions\n\
-                c: start cycle\n\
+                c: cycle start\n\
+                cs: cycle stop (send stop signal)\n\
                 ld: set logger verbosity to DEBUG\n\
                 li: set logger verbosity to INFO\n\
                 q: quit\n\
@@ -55,7 +56,8 @@ class TerminalInterpreter:
                 <#gpionum or label> off: set gpio status Low\n\
                 er: enable random actions\n\
                 dr: disable random actions\n\
-                c: start cycle\n\
+                c: cycle start\n\
+                cs: cycle stop (send stop signal)\n\
                 ld: set logger verbosity to DEBUG\n\
                 li: set logger verbosity to INFO\n\
                 q: quit\n\
@@ -151,7 +153,12 @@ class TerminalInterpreter:
             
             elif command_str == "c":
                 print(f"Cycle started")
-                sequencesHandler.cycle()
+                sequencesHandler.cycle_trigger()
+                continue
+
+            elif command_str == "cs":
+                print(f"Stopping cycle")
+                sequencesHandler.cycle_stop()
                 continue
             
             elif command_str == "ld":

@@ -23,6 +23,7 @@ class SequencesHandler:
         self.off_file = settings.offFile
         self.cycle_thread_lock = threading.Lock()
         self.cycle_event = threading.Event()
+        self.cycle_stop_event = threading.Event()
 
         atexit.register(self.sequence_clean)
 
@@ -141,6 +142,10 @@ class SequencesHandler:
                     if time_mark_seconds is not None:
                         if not dry_run:
                             self.execute_waituntil_command(int(time_mark_seconds))
+                        # check for stop signal
+                        if self.cycle_stop_event.is_set():
+                            self.cycle_stop_event.clear()
+                            break
                         command_result = self.execute_command(command_body, dry_run)
                         if dry_run and not command_result:
                             raise ValueError(f"Error validating sequence: {file_path} (line {line_num}). Review the command there.")
@@ -239,16 +244,20 @@ class SequencesHandler:
             mygpio_handler.removeEventDetect(settings.startButtonGPIOName)
         except Exception as e:
             logger.debug (f"Error while disabling start button {e}")
-        
-    def cycle_trigger(self, channel):
+    
+    def cycle_stop(self):
+        self.cycle_stop_event.set()
+
+    def cycle_trigger(self, channel = False):
         with self.cycle_thread_lock:
+            if (False != channel):
             #TODO : fix bouncing
                 #start_time = time.time()
                 #while time.time() < start_time + settings.bouncingTreshold:
-            time.sleep(settings.bouncingTreshold)    # avoid catching a bouncing
-            if GPIO.input(channel) != 1:
-                logger.debug ("Warning! Cycle: below treshold of "+str(settings.bouncingTreshold)+" on channel"+str(channel))
-                return
+                time.sleep(settings.bouncingTreshold)    # avoid catching a bouncing
+                if GPIO.input(channel) != 1:
+                    logger.debug ("Warning! Cycle: below treshold of "+str(settings.bouncingTreshold)+" on channel"+str(channel))
+                    return
         
             logger.info("Start button pressed")
             threading.Thread(name='_cycle_thread', target=self.cycle, daemon=True).start()
@@ -256,6 +265,7 @@ class SequencesHandler:
     def cycle(self):
         with self.cycle_thread_lock:
             self.cycle_event.clear()
+            self.cycle_stop_event.clear()
             self.disable_random_actions()
             self.start()
             self.enable_random_actions()
