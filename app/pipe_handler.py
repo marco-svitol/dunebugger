@@ -2,6 +2,7 @@ import os
 import threading
 from terminal_interpreter import terminal_interpreter
 from dunebugger_settings import settings
+import time
 
 class PipeListener:
     def __init__(self):
@@ -15,6 +16,7 @@ class PipeListener:
                 command = pipe.readline().strip()
                 if command:
                     terminal_interpreter.process_terminal_input(command)
+                time.sleep(0.1)  # Sleep for 100 milliseconds to reduce CPU usage
 
     def pipe_listen(self):
         # Start a separate thread for reading from the named pipe
