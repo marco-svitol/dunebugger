@@ -21,13 +21,11 @@ class SequencesHandler:
         self.sequence_file = settings.sequenceFile
         self.standby_file = settings.standbyFile
         self.off_file = settings.offFile
-        #self.random_actions_thread = threading.Thread(target=self.random_actions(settings.random_actions_event))
+        self.cycle_thread_lock = threading.Lock()
+        self.cycle_event = threading.Event()
 
         atexit.register(self.sequence_clean)
 
-        #self.random_actions_thread.start()
-        if (settings.randomActionsEnabled == True):
-            self.random_sequence_from_file(self.random_elements_file)
         self.sequences = self.validate_all_sequence_files(self.sequenceFolder)
     
     def validate_all_sequence_files(self, directory):
@@ -189,13 +187,29 @@ class SequencesHandler:
         rand_elem = random.choice(self.random_elements)
         mygpio_handler.gpiomap_toggle_output(rand_elem)
 
-    def random_actions(self, event):
-        while (settings.randomActionsEnabled):
-            event.wait(timeout=random.uniform(settings.randomActionsMinSecs,settings.randomActionsMaxSecs))
-            if not event.is_set():
-                self.random_action()
-        logger.debug("Random actions exiting")
+    def random_actions(self):
+        while not self.random_actions_event.is_set():
+            self.random_actions_event.wait(timeout=random.uniform(settings.randomActionsMinSecs,settings.randomActionsMaxSecs))
+            self.random_action()
 
+    def enable_random_actions(self):
+        if settings.randomActionsEnabled:
+            self.random_sequence_from_file(self.random_elements_file)
+            self.random_actions_event = threading.Event()
+            self.random_actions_event.clear()
+            self.random_actions_thread = threading.Thread(name='_random_actions', target=self.random_actions, daemon=True)
+            self.random_actions_thread.start()
+            
+    def disable_random_actions(self):
+        if hasattr(self, "random_actions_event"):
+            self.random_actions_event.set()
+
+    def get_random_actions_status(self):
+        if hasattr(self, "random_actions_event"):
+            if not self.random_actions_event.is_set():
+                return True
+        return False
+        
     def setStandByMode(self):
         file_path = os.path.join(self.sequenceFolder, self.standby_file)
         self.read_sequence_file(file_path)
@@ -210,7 +224,7 @@ class SequencesHandler:
 
     def waituntil(self, sec):
         logger.debug("Waiting: "+str(sec-settings.cycleoffset))
-        time.sleep((sec-settings.cycleoffset) * settings.cyclespeed)
+        self.cycle_event.wait((sec-settings.cycleoffset) * settings.cyclespeed)
         settings.cycleoffset = sec
 
     def sequence_clean(self):
@@ -218,7 +232,7 @@ class SequencesHandler:
         self.disable_start_button()
 
     def enable_start_button(self):
-        mygpio_handler.addEventDetect(settings.startButtonGPIOName, lambda channel: self.cycle_trigger(channel, settings.random_actions_event))
+        mygpio_handler.addEventDetect(settings.startButtonGPIOName, lambda channel: self.cycle_trigger(channel))
 
     def disable_start_button(self):
         try:
@@ -226,9 +240,8 @@ class SequencesHandler:
         except Exception as e:
             logger.debug (f"Error while disabling start button {e}")
         
-
-    def cycle_trigger(self, channel, my_random_actions_event):
-        with settings.cycle_thread_lock:
+    def cycle_trigger(self, channel):
+        with self.cycle_thread_lock:
             #TODO : fix bouncing
                 #start_time = time.time()
                 #while time.time() < start_time + settings.bouncingTreshold:
@@ -237,23 +250,18 @@ class SequencesHandler:
                 logger.debug ("Warning! Cycle: below treshold of "+str(settings.bouncingTreshold)+" on channel"+str(channel))
                 return
         
-            threading.Thread(name='_cycle_thread', target=self.cycle, args=([my_random_actions_event])).start()
-
-    def cycle(self, my_random_actions_event):
-        with settings.cycle_thread_lock:
-            
             logger.info("Start button pressed")
+            threading.Thread(name='_cycle_thread', target=self.cycle, daemon=True).start()
 
-            my_random_actions_event.set()
-
+    def cycle(self):
+        with self.cycle_thread_lock:
+            self.cycle_event.clear()
+            self.disable_random_actions()
             self.start()
-
-            my_random_actions_event.clear()
-
+            self.enable_random_actions()
             settings.cycleoffset = 0
-
             self.setStandByMode()
-        
+
 try:
     sequencesHandler = SequencesHandler()
 except Exception as exc:

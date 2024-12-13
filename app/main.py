@@ -1,19 +1,12 @@
 #!/usr/bin/env python3
 # coding: utf8
-from terminal_interpreter import TerminalInterpreter
+from terminal_interpreter import terminal_interpreter
+from pipe_handler import pipe_listener
 
 def main():
-
-    terminalInterpreter = TerminalInterpreter()
-    
-    # Set standby mode
-    terminalInterpreter.process_terminal_input("sb")
-    # Initialize motors if module is enabled
-    terminalInterpreter.process_terminal_input("mi")
-    # Enable start button
-    terminalInterpreter.process_terminal_input("esb")
-
-    terminalInterpreter.terminal_listen()
+    pipe_listener.pipe_listen()
+    pipe_listener.pipe_send("sb\nmi\nesb\ner\n")
+    terminal_interpreter.terminal_listen()
 
 if __name__ == "__main__":
     main()

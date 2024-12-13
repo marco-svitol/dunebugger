@@ -1,5 +1,5 @@
 0 switch LuceStartButton off
 1 audio playMusic music
-5 audio fadeout 2
+30 audio fadeout 2
 
 

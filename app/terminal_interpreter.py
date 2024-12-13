@@ -1,7 +1,6 @@
-
-import signal_handler
 import readline
 import os
+import time
 from dunebugger_settings import settings
 import atexit
 from dunebuggerlogging import logger, set_logger_level, get_logging_level_from_name
@@ -13,26 +12,13 @@ from gpio_handler import mygpio_handler
 
 class TerminalInterpreter:
     def __init__(self):
-        self.pipe_path = "/tmp/dunebugger_pipe"
-        if not os.path.exists(self.pipe_path):
-            os.mkfifo(self.pipe_path)
-
         self.gpio_handler = mygpio_handler
         self.sequencesHandler = sequencesHandler
-
-        # Start a separate thread for processing terminal input
-        # 'cycle' function is passed to the 'terminal_input_thread' target function to be able to call the start
-        # function from the terminal
-        terminal_thread = threading.Thread(target=self.terminal_input_thread, daemon=True)
-        terminal_thread.start()
-
-        # Start a separate thread for reading from the named pipe
-        pipe_thread = threading.Thread(target=self.pipe_input_thread, daemon=True)
-        pipe_thread.start()
 
         history_path = "~/.python_history"
         self.enableHistory(history_path)
         atexit.register(self.save_history, history_path)
+        self.stop_terminal_event = threading.Event()
 
         if settings.ON_RASPBERRY_PI: 
             self.help = f"I am a Raspberry. You can ask me to:\n\
@@ -46,7 +32,8 @@ class TerminalInterpreter:
                 so: set off state\n\
                 <#gpionum or label> on: set gpio status High (OUTPUT gpios only)\n\
                 <#gpionum or label> off: set gpio status Low (OUTPUT gpios only)\n\
-                r: toggle random actions\n\
+                er: enable random actions\n\
+                dr: disable random actions\n\
                 c: start cycle\n\
                 ld: set logger verbosity to DEBUG\n\
                 li: set logger verbosity to INFO\n\
@@ -66,7 +53,8 @@ class TerminalInterpreter:
                 so: set off state\n\
                 <#gpionum or label> on: set gpio status High\n\
                 <#gpionum or label> off: set gpio status Low\n\
-                r: toggle random actions\n\
+                er: enable random actions\n\
+                dr: disable random actions\n\
                 c: start cycle\n\
                 ld: set logger verbosity to DEBUG\n\
                 li: set logger verbosity to INFO\n\
@@ -76,30 +64,29 @@ class TerminalInterpreter:
             self.show_gpio_status = self.gpio_handler.GPIO.show_gpio_status
 
     def terminal_listen(self):
+        # Start a separate thread for processing terminal input
+        terminal_thread = threading.Thread(target=self.terminal_input_thread, daemon=True)
+        terminal_thread.start()
+
         try:
-            random_actions_thread = threading.Thread(target=sequencesHandler.random_actions(settings.random_actions_event))
-            random_actions_thread.start()
-            while True:
-                pass
+            while not self.stop_terminal_event.is_set():
+                time.sleep(0.1)
         except KeyboardInterrupt:
-            logger.debug ("stopped through keyboard")
-            
+            self.stop_terminal_event.set()
+            logger.debug ("Stopping main thread...")
         except Exception as exc:
             traceback.print_exc()
             logger.critical ("Exception: "+str(exc)+". Exiting." )
 
     def terminal_input_thread(self):
-        while not signal_handler.sigint_received :
-            # Wait for user input and process commands
-            user_input = input("Enter command: ")
-            self.process_terminal_input(user_input)
-
-    def pipe_input_thread(self):
-        with open(self.pipe_path, 'r') as pipe:
-            while True:
-                command = pipe.readline().strip()
-                if command:
-                    self.process_terminal_input(command)
+        while not self.stop_terminal_event.is_set():
+            try:
+                # Wait for user input and process commands
+                user_input = input("Enter command: ")
+                self.process_terminal_input(user_input)
+            except KeyboardInterrupt:
+                self.stop_terminal_event.set()
+                logger.debug ("Stopping terminal input thread...")
 
     def enableHistory(self, historyPath):
         history_file = os.path.expanduser(historyPath)
@@ -128,6 +115,9 @@ class TerminalInterpreter:
             
             elif command_str == "t":
                 settings.show_configuration()
+                # Print state of random_actions_event
+                random_actions_status =  "on" if sequencesHandler.get_random_actions_status() else "off"
+                print(f"Random actions is now: {random_actions_status}")
                 continue
 
             elif command_str == "l":
@@ -135,16 +125,20 @@ class TerminalInterpreter:
                 continue
 
             elif command_str == "quit":
-                signal_handler.dunequit()
+                self.stop_terminal_event.set()
                 continue
 
-            elif command_str in {"r"}:
-                if settings.random_actions_event.is_set():
-                    settings.random_actions_event.clear()
+            elif command_str in {"er"}:
+                if settings.randomActionsEnabled:
+                    sequencesHandler.enable_random_actions()
                     print(f"Random actions enabled")
                 else:
-                    settings.random_actions_event.set()
-                    print(f"Random actions disabled")
+                    print(f"Random actions is disabled in the configuration")
+                continue
+            
+            elif command_str in {"dr"}:
+                sequencesHandler.disable_random_actions()
+                print(f"Random actions disabled")
                 continue
 
             elif command_str.startswith("#"):
@@ -157,7 +151,7 @@ class TerminalInterpreter:
             
             elif command_str == "c":
                 print(f"Cycle started")
-                sequencesHandler.cycle(settings.random_actions_event)
+                sequencesHandler.cycle()
                 continue
             
             elif command_str == "ld":
@@ -205,3 +199,5 @@ class TerminalInterpreter:
                     continue
 
             print(f"Unkown command {command_str}")
+
+terminal_interpreter = TerminalInterpreter()

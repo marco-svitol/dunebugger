@@ -13,8 +13,6 @@ class DunebuggerSettings:
         self.config.optionxform = lambda x: x
         self.load_configuration()
         self.override_configuration()
-        self.cycle_thread_lock = threading.Lock()
-        self.random_actions_event = threading.Event()
         set_logger_level("dunebuggerLog", self.dunebuggerLogLevel)
 
     def show_configuration(self):
@@ -22,9 +20,6 @@ class DunebuggerSettings:
         for attr_name in dir(self):
             if not attr_name.startswith('__') and not callable(getattr(self, attr_name)):
                 print(f"{attr_name}: {getattr(self, attr_name)}")
-        # Print state of random_actions_event
-        random_actions_status =  "off" if self.random_actions_event.is_set() else "on"
-        print(f"Random actions: {random_actions_status}")
 
     def load_configuration(self):
         from utils import is_raspberry_pi
