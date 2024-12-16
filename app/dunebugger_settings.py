@@ -1,8 +1,8 @@
-import threading, os
 from os import path
 import configparser
 from dotenv import load_dotenv
 from dunebuggerlogging import logger, get_logging_level_from_name, set_logger_level
+from utils import is_raspberry_pi
 
 class DunebuggerSettings:
     def __init__(self):
@@ -11,6 +11,8 @@ class DunebuggerSettings:
         self.config = configparser.ConfigParser()
         # Set optionxform to lambda x: x to preserve case
         self.config.optionxform = lambda x: x
+        self.terminal_interpreter_command_handlers = {}
+        self.load_terminal_interpreter_commands()
         self.load_configuration()
         self.override_configuration()
         set_logger_level("dunebuggerLog", self.dunebuggerLogLevel)
@@ -22,8 +24,6 @@ class DunebuggerSettings:
                 print(f"{attr_name}: {getattr(self, attr_name)}")
 
     def load_configuration(self):
-        from utils import is_raspberry_pi
-        
         try:
             dunebuggerConfig = path.join(path.dirname(path.abspath(__file__)), 'config/dunebugger.conf')
             self.config.read(dunebuggerConfig)
@@ -38,7 +38,21 @@ class DunebuggerSettings:
             logger.debug(f"ON_RASPBERRY_PI: {self.ON_RASPBERRY_PI}")
 
         except configparser.Error as e:
-            logger.error(f"Error reading configuration: {e}")
+            logger.error(f"Error reading {dunebuggerConfig} configuration: {e}")
+
+    def load_terminal_interpreter_commands(self):
+        try:
+            commandsConfig = path.join(path.dirname(path.abspath(__file__)), 'config/commands.conf')
+            self.config.read(commandsConfig)
+            for command, value in self.config.items('Commands'):
+                handler, description = value.split(', ')
+                self.terminal_interpreter_command_handlers[command] = {
+                    'handler': handler,
+                    'description': description.strip('"')
+                }
+
+        except configparser.Error as e:
+            logger.error(f"Error reading {commandsConfig} configuration: {e}")
 
     def validate_option(self, section, option, value):
         # Validation for specific options
@@ -50,8 +64,13 @@ class DunebuggerSettings:
                     return float(value)
                 elif option in ['arduinoConnected', 'eastereggEnabled', 'randomActionsEnabled']:
                     return self.config.getboolean(section, option)
-                elif option in ['sequenceFolder', 'sequenceFile','standbyFile','offFile','randomElementsFile','arduinoSerialPort', 'startButtonGPIOName']:
+                elif option in ['sequenceFolder', 'sequenceFile','standbyFile','offFile','randomElementsFile','arduinoSerialPort', 'startButtonGPIOName','pipePath']:
                     return str(value)
+                elif option == 'initializationCommandsString':
+                    commands = value.split(',')
+                    for command in commands:
+                        if command not in self.terminal_interpreter_command_handlers:
+                            raise ValueError(f"Invalid commands in initializationCommandsString: {command}")
             elif section == 'Audio':
                 if option in ['normalMusicVolume', 'normalSfxVolume', 'quietMusicVol', 'quietSfxVol', 'ignoreQuietTime']:
                     return int(value) if option != 'ignoreQuietTime' else self.config.getboolean(section, option)
@@ -72,8 +91,8 @@ class DunebuggerSettings:
                 else:
                     return logLevel
                 
-        except (configparser.NoOptionError, ValueError):
-            raise ValueError(f"Invalid configuration: Section={section}, Option={option}, Value={value}")
+        except (configparser.NoOptionError, ValueError) as e:
+            raise ValueError(f"Invalid configuration: Section={section}, Option={option}, Value={value}. Error: {e}")
 
         # If no specific validation is required, return the original value
         return value
