@@ -7,6 +7,7 @@ from pipe_handler import pipe_listener
 
 def main():
     pipe_listener.pipe_listen()
+    #TODO: comment lines below to make a real server
     pipe_listener.pipe_send(settings.initializationCommandsString)
     terminal_interpreter.terminal_listen()
 
