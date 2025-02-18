@@ -31,28 +31,7 @@ def check_ntp_sync():
         logger.error(f"Error running timedatectl: ${str(e)}")
         return False
 
-# def getNTPTime(host = "it.pool.ntp.org"):
-#     port = 123
-#     buf = 1024
-#     address = (host,port)
-#     msg = '\x1b' + 47 * '\0'
- 
-#     # reference time (in seconds since 1900-01-01 00:00:00)
-#     TIME1970 = 2208988800 # 1970-01-01 00:00:00
- 
-#     # connect to server
-#     client = socket.socket( AF_INET, SOCK_DGRAM)
-#     client.settimeout(3)
-#     try:
-#         client.sendto(msg.encode('utf-8'), address)
-#         msg, address = client.recvfrom( buf )
-#     except Exception as e:
-#         return ""
-
-#     t = struct.unpack( "!12I", msg )[10]
-#     t -= TIME1970
-#     return t#ime.ctime(t)#.replace("  "," ")
-
+#TODO: cyclelength must be the last event in main sequence
 def duranteCelebrazioni(dt,cyclelength):
     tday = dt.date()
     wday = tday.weekday() #0 lun ... 6 domenica

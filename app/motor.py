@@ -4,6 +4,8 @@ import time
 from dunebuggerlogging import logger 
 from pwm_handler import pwm_motor1, pwm_motor2
 from dunebugger_settings import settings
+import atexit
+import threading
 
 def start(motornum, rotation="cw",speed=100):
     logger.debug("motor "+str(motornum)+" start with rotation "+rotation+" and speed "+str(speed))
@@ -72,8 +74,35 @@ def reset(motornum):
     logger.debug("Motor "+str(motornum)+" position is "+pos+". Reaching CW limit.")
     start(motornum,"cw",100)
 
+def motor_clean():
+    logger.info ("Motor remove events detect")
+    mygpio_handler.removeEventDetect("In_Motor1LimitCCW")
+    mygpio_handler.removeEventDetect("In_Motor1LimitCW")
+    mygpio_handler.removeEventDetect("In_Motor2LimitCCW")
+    mygpio_handler.removeEventDetect("In_Motor2LimitCW")
 
-
-
-
+def initMotorLimits():
+    # Start button available only after motor reset:
+    #  we put an event in the motor.limitTouch callback of MotorXLimitCCW
+    #  so that execution continues only when event is set on both motors
+    atexit.register(motor_clean)
+    motor1_reset_event = threading.Event()
+    motor1_callback_with_params = lambda channel: limitTouch(channel, motor1_reset_event)
     
+    mygpio_handler.addEventDetect("In_Motor1LimitCCW",limitTouch,5)
+    mygpio_handler.addEventDetect("In_Motor1LimitCW", motor1_callback_with_params, 5)
+
+    motor2_reset_event = threading.Event()
+    motor2_callback_with_params = lambda channel: limitTouch(channel, motor2_reset_event)
+
+    mygpio_handler.addEventDetect("In_Motor2LimitCCW",limitTouch,5)
+    mygpio_handler.addEventDetect("In_Motor2LimitCW",motor2_callback_with_params,5)
+
+    if (settings.motor1Enabled):
+        reset(1)
+    if (settings.motor1Enabled):
+        motor1_reset_event.wait()
+    if (settings.motor2Enabled):
+        reset(2)
+    if (settings.motor2Enabled):
+        motor2_reset_event.wait()

@@ -1,12 +1,9 @@
-from dunebuggerlogging import logger, COLORS, set_logger_level, get_logging_level_from_name
+from dunebuggerlogging import logger, COLORS
 import configparser
 from ast import literal_eval
 from dunebugger_settings import settings
 from os import path
 import re
-import signal_handler
-import readline
-import os
 import atexit
 
 if settings.ON_RASPBERRY_PI:
@@ -50,6 +47,8 @@ class GPIOHandler:
             elif (pin_setup == 'IN' and (initial_state == 'DOWN' or initial_state == 'UP')):
                 pull_up_down = GPIO.PUD_UP if initial_state == 'UP' else GPIO.PUD_DOWN
                 GPIO.setup(self.channels[channel], GPIO.IN, pull_up_down)
+
+        atexit.register(self.clean_gpios)
 
     def load_gpio_configuration(self):
         config = configparser.ConfigParser()
@@ -99,9 +98,9 @@ class GPIOHandler:
                 logger.error(f"Error reading LogicalChannels configuration: {e}")
                 # Handle the error as needed
 
-            # Check if "I_StartButton" entry exists in GPIOMap
-            if 'In_StartButton' not in self.GPIOMap:
-                raise ValueError('GPIOMap must have an entry for "I_StartButton"')
+            # Check if StartButton entry exists in GPIOMap
+            if settings.startButtonGPIOName not in self.GPIOMap:
+                raise ValueError(f"GPIOMap must have an entry for {settings.startButtonGPIOName}")
 
         except (configparser.Error, ValueError) as e:
             logger.error(f"Error reading GPIO configuration: {e}")
@@ -147,11 +146,11 @@ class GPIOHandler:
 
     def removeEventDetect(self, gpioName):
         gpio = self.GPIOMap[gpioName]
-        logger.info (f"Removing interrupt on {self.getGPIOLabel(gpio)}")
+        logger.debug (f"Removing interrupt on {self.getGPIOLabel(gpio)}")
         GPIO.remove_event_detect(gpio)
 
-    def cleanup(self):
-        logger.info ("Cleanup GPIOs")
+    def clean_gpios(self):
+        logger.debug ("Cleanup GPIOs")
         GPIO.cleanup()
 
     def gpio_set_output(self, gpiocast, value):
@@ -202,10 +201,10 @@ class GPIOHandler:
             try:
                 if self.GPIO.gpio_function(gpio) == self.GPIO.IN:
                     mode = "INPUT"
-                    color = COLORS['CYAN']
+                    color = COLORS['BLUE']
                 elif self.GPIO.gpio_function(gpio) == self.GPIO.OUT:
                     mode = "OUTPUT"
-                    color = COLORS['BLUE']
+                    color = COLORS['RESET']
             except Exception as e:
                 mode = "ERROR"
 
@@ -222,130 +221,5 @@ class GPIOHandler:
                     switchcolor = color
             print(f"{color}Pin {gpio} label: {self.getGPIOLabel(gpio) if self.getGPIOLabel(gpio) is not None else '_not_found_'} \
 mode: {mode}, state: {state}, switch: {COLORS['RESET']}{switchcolor}{switchstate}{COLORS['RESET']}")          
-
-class TerminalInterpreter:
-    def __init__(self, gpio_handler, sequencesHandler):
-        self.gpio_handler = gpio_handler
-        self.sequencesHandler = sequencesHandler
-
-        history_path = "~/.python_history"
-        self.enableHistory(history_path)
-        atexit.register(self.save_history, history_path)
-
-        if settings.ON_RASPBERRY_PI: 
-            self.help = f"I am a Raspberry. You can ask me to:\n\
-                s: show gpio status\n\
-                t: show dunebugger conf\n\
-                l: reload dunebugger conf\n\
-                sb: set standby state\n\
-                <gpionum or label> on: set gpio status High (OUTPUT gpios only)\n\
-                <gpionum or label> off: set gpio status Low (OUTPUT gpios only)\n\
-                r: toggle random actions\n\
-                c: start cycle\n\
-                ld: set logger verbosity to DEBUG\n\
-                li: set logger verbosity to INFO\n\
-                q: quit\n\
-                ? or h: help\
-                "
-            self.show_gpio_status = self.gpio_handler.show_gpio_status
-        else:
-            self.help = f"I am not a Raspberry. You can ask me to:\n\
-                s: show gpio status\n\
-                t: show dunebugger conf\n\
-                l: reload dunebugger conf\n\
-                sb: set standby state\n\
-                <#gpionum or label> on: set gpio status High\n\
-                <#gpionum or label> off: set gpio status Low\n\
-                r: toggle random actions\n\
-                c: start cycle\n\
-                ld: set logger verbosity to DEBUG\n\
-                li: set logger verbosity to INFO\n\
-                q: quit\n\
-                ? or h: help\
-                "
-            self.show_gpio_status = self.gpio_handler.GPIO.show_gpio_status
-
-    def enableHistory(self, historyPath):
-        history_file = os.path.expanduser(historyPath)
-        if os.path.exists(history_file):
-            readline.read_history_file(history_file)
-
-    def save_history(self, historyPath):
-        history_file = os.path.expanduser(historyPath)
-        readline.write_history_file(history_file)
-
-    def process_terminal_input(self, input_str, start_function):
-        # Process commands received through the terminal
-        command_strs = input_str.split(',')
-
-        for command_str in command_strs:
-            if command_str == "":
-                continue
-
-            elif command_str in {"h", "?"}:
-                print(self.help)
-                continue
-
-            elif command_str == "s":
-                self.show_gpio_status(self.gpio_handler)
-                continue
-            
-            elif command_str == "t":
-                settings.show_configuration()
-                continue
-
-            elif command_str == "l":
-                settings.load_configuration()
-                continue
-
-            elif command_str == "q":
-                signal_handler.dunequit()
-                continue
-
-            elif command_str in {"r"}:
-                if settings.random_actions_event.is_set():
-                    settings.random_actions_event.clear()
-                    print(f"Random actions enabled")
-                else:
-                    settings.random_actions_event.set()
-                    print(f"Random actions disabled")
-                continue
-
-            elif command_str.startswith("#"):
-                # Handle commands starting with "#"
-                command_parts = command_str[1:].split()  # Remove "#" from the beginning
-                if len(command_parts) == 2 and (command_parts[1] == "on" or command_parts[1] == "off"):
-                    gpio = int(command_parts[0])
-                    self.gpio_handler.gpio_set_output(gpio, command_parts[1])
-                    continue
-            
-            elif command_str == "c":
-                print(f"Cycle started")
-                start_function(6, settings.random_actions_event)
-                continue
-            
-            elif command_str == "ld":
-                set_logger_level("dunebuggerLog", get_logging_level_from_name("DEBUG"))
-                continue
-
-            elif command_str == "li":
-                set_logger_level("dunebuggerLog",  get_logging_level_from_name("INFO"))
-                continue
-
-            elif command_str == "sb":
-                self.sequencesHandler.setStandBy()
-                print(f"Standby state set")
-                continue
-
-            else:
-                # Handle other commands
-                command_parts = command_str.split()
-                if len(command_parts) == 2 and (command_parts[1] == "on" or command_parts[1] == "off"):
-                    gpiomap = command_parts[0]
-                    self.gpio_handler.gpio_set_output(gpiomap, command_parts[1])
-                    continue
-
-            logger.info(f"Unkown command {command_str}")
-
 
 mygpio_handler = GPIOHandler()

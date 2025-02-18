@@ -66,7 +66,7 @@ class MockGPIO:
         logger.debug(f"MockGPIO.remove_event_detect gpio={gpio}")
         pass
 
-    def add_event_detect(self, gpio, mode, callback, bouncetime):
+    def add_event_detect(self, gpio, mode, callback, bouncetime = 0):
         logger.debug(f"MockGPIO.add_event_detect gpio={gpio}, mode={mode}, callback={callback}, bouncetime={bouncetime}")
                 # Associate the callback with the GPIO and mode
         self.events_detect[(gpio, mode)] = callback
@@ -106,12 +106,12 @@ class MockGPIO:
             try:
                 gpioitem = self.gpio_states[gpio]
                 if gpioitem is not None and gpioitem['mode'] == GPIO.OUT:
-                    color = COLORS['BLUE']
+                    color = COLORS['RESET']
                     state = 'OFF' if gpioitem['state'] else 'ON' 
                     switchcolor = COLORS['MAGENTA'] if gpioitem['state'] else COLORS['GREEN']
                 else:   
                     state = 'HIGH' if gpioitem['state'] else 'LOW'
-                    color = COLORS['CYAN']
+                    color = COLORS['BLUE']
                     switchcolor = COLORS['MAGENTA'] if gpioitem['state'] else COLORS['GREEN']
                 print(f"{color}Pin {gpio} label: {gpio_handler.getGPIOLabel(gpio)} mode: {gpioitem['mode']}, state: {COLORS['RESET']}{switchcolor}{state}{COLORS['RESET']}")
             except Exception as e:
