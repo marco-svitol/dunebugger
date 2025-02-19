@@ -6,10 +6,11 @@ from azure.messaging.webpubsubclient import WebPubSubClient
 from azure.messaging.webpubsubclient.models import CallbackType, WebPubSubDataType
 from dunebuggerlogging import logger
 from dunebugger_auth import AuthClient
-
+from message_handler import MessageHandler
 class WebPubSubListener:
     def __init__(self, auth_client):
         self.auth_client = auth_client
+        self.message_handler = MessageHandler(self)
         self.wss_url = ""
         self.client = None
         self.group_name = os.getenv('WS_GROUP_NAME')
@@ -98,39 +99,21 @@ class WebPubSubListener:
     def _on_message_received(self, e):
         logger.info(f"Message received from group {e.group}: {e.data}")
         """Handle received messages."""
-        message_type = e.data.get("type")
-        if message_type == "request_initial_state":
-            self.send_initial_state()
-        
-    def send_initial_state(self):
-        if self.client and self.client.is_connected:
-            try:
-                data = {
-                    "body": "true",
-                    "type": "device_online",
-                    "source": "controller",
-                    "destination": "client"
-                }
-                self.client.send_to_group(self.group_name, data, WebPubSubDataType.JSON, no_echo=True)
-                logger.info(f"Sent message: {data}")
-            except Exception as e:
-                logger.error(f"Failed to send message: {e}")
-        else:
-            logger.warning("Cannot send message, WebSocket is disconnected.")
+        self.handle_message(e.data)
+
+    def handle_message(self, message):
+        self.message_handler.process_message(message)
+    
+    def send_log(self, message):
+        self.message_handler.send_log(message)
 
     def send_message(self, message):
         if self.client and self.client.is_connected:
             try:
-                data = {
-                    "body": message,
-                    "type": "log",
-                    "source": "controller",
-                    "destination": "client"
-                }
-                self.client.send_to_group(self.group_name, data, WebPubSubDataType.JSON, no_echo=True)
-                logger.info(f"Sent message: {data}")
+                self.client.send_to_group(self.group_name, message, WebPubSubDataType.JSON, no_echo=True)
+                logger.debug(f"Sending message to group {self.group_name}: {message}")
             except Exception as e:
-                logger.error(f"Failed to send message: {e}")
+                logger.error(f"Failed to send message to group ${self.group_name}: {e}")
         else:
             logger.warning("Cannot send message, WebSocket is disconnected.")
 

@@ -153,8 +153,8 @@ class TerminalInterpreter:
         self.sequencesHandler.disable_start_button()
         print("Start button disabled")
 
-    def handle_send_message(self, message):
-        self.websocket_listener.send_message(message)
+    def handle_send_log(self, message):
+        self.websocket_listener.send_log(message)
         print("Message sent")
 
     def process_terminal_input(self, input_str):
@@ -173,7 +173,7 @@ class TerminalInterpreter:
             
             if command_str.startswith("sm"):
                 message = command_str[2:].strip()
-                self.handle_send_message(message)
+                self.handle_send_log(message)
                 continue
             
             if command_str in self.command_handlers:
