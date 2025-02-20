@@ -11,6 +11,7 @@ from sequence import sequencesHandler
 from gpio_handler import mygpio_handler
 from dunebugger_websocket import websocket_listener
 
+
 class TerminalInterpreter:
     def __init__(self):
         self.gpio_handler = mygpio_handler
@@ -43,9 +44,9 @@ class TerminalInterpreter:
     def load_command_handlers(self):
         self.command_handlers = {}
         for command, details in settings.terminal_interpreter_command_handlers.items():
-            self.command_handlers[command] = { 
+            self.command_handlers[command] = {
                 "handler": getattr(self, details["handler"]),
-                "description": details["description"]
+                "description": details["description"],
             }
 
     def terminal_listen(self):
@@ -58,10 +59,10 @@ class TerminalInterpreter:
                 time.sleep(0.1)
         except KeyboardInterrupt:
             self.stop_terminal_event.set()
-            logger.debug ("Stopping main thread...")
+            logger.debug("Stopping main thread...")
         except Exception as exc:
             traceback.print_exc()
-            logger.critical ("Exception: "+str(exc)+". Exiting." )
+            logger.critical("Exception: " + str(exc) + ". Exiting.")
 
     def terminal_input_thread(self):
         while not self.stop_terminal_event.is_set():
@@ -71,7 +72,7 @@ class TerminalInterpreter:
                 self.process_terminal_input(user_input)
             except KeyboardInterrupt:
                 self.stop_terminal_event.set()
-                logger.debug ("Stopping terminal input thread...")
+                logger.debug("Stopping terminal input thread...")
 
     def enableHistory(self, historyPath):
         history_file = os.path.expanduser(historyPath)
@@ -160,7 +161,7 @@ class TerminalInterpreter:
     def process_terminal_input(self, input_str):
 
         # Process commands received through the terminal
-        command_strs = input_str.split(',')
+        command_strs = input_str.split(",")
 
         for command_str in command_strs:
             if command_str == "":
@@ -170,15 +171,16 @@ class TerminalInterpreter:
                 command_parts = command_str[1:].split()  # Remove "#" from the beginning
                 self.handle_gpio_command(command_parts)
                 continue
-            
+
             if command_str.startswith("sm"):
                 message = command_str[2:].strip()
                 self.handle_send_log(message)
                 continue
-            
+
             if command_str in self.command_handlers:
-                    self.command_handlers[command_str]["handler"]()
+                self.command_handlers[command_str]["handler"]()
             else:
                 print(f"Unknown command {command_str}. Type ? or h for help")
+
 
 terminal_interpreter = TerminalInterpreter()

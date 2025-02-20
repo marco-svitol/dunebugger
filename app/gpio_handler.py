@@ -11,7 +11,7 @@ if settings.ON_RASPBERRY_PI:
 else:
     from dunemock import GPIO
 
-#PWM 13,19,12,18 # free : 19
+# PWM 13,19,12,18 # free : 19
 # 2,3 were used for Arduino serial (no rele). Two GPIOs were reserved for Arduino reset (14) relè and Dimmer board reset (15) relè
 
 #     # Dimmer1 I2C - Light dimmering : 0 Fully open - 100 Fully closed
@@ -25,6 +25,7 @@ else:
 #     Ch1Rst = "900\n"
 #     Ch1FIn = "i\n"
 #     Ch1FOu = "o\n"
+
 
 class GPIOHandler:
     def __init__(self):
@@ -42,10 +43,14 @@ class GPIOHandler:
 
         for channel, config in self.channelsSetup.items():
             pin_setup, initial_state = config
-            if (pin_setup == 'OUT' and (initial_state == 'HIGH' or initial_state == 'LOW')):
-                GPIO.setup(self.channels[channel], GPIO.OUT, initial=GPIO.HIGH if initial_state == 'HIGH' else GPIO.LOW)
-            elif (pin_setup == 'IN' and (initial_state == 'DOWN' or initial_state == 'UP')):
-                pull_up_down = GPIO.PUD_UP if initial_state == 'UP' else GPIO.PUD_DOWN
+            if pin_setup == "OUT" and (initial_state == "HIGH" or initial_state == "LOW"):
+                GPIO.setup(
+                    self.channels[channel],
+                    GPIO.OUT,
+                    initial=GPIO.HIGH if initial_state == "HIGH" else GPIO.LOW,
+                )
+            elif pin_setup == "IN" and (initial_state == "DOWN" or initial_state == "UP"):
+                pull_up_down = GPIO.PUD_UP if initial_state == "UP" else GPIO.PUD_DOWN
                 GPIO.setup(self.channels[channel], GPIO.IN, pull_up_down)
 
         atexit.register(self.clean_gpios)
@@ -55,13 +60,13 @@ class GPIOHandler:
         # Set optionxform to lambda x: x to preserve case
         config.optionxform = lambda x: x
         try:
-            gpioConfig = path.join(path.dirname(path.abspath(__file__)), 'config/gpio.conf')
+            gpioConfig = path.join(path.dirname(path.abspath(__file__)), "config/gpio.conf")
             config.read(gpioConfig)
 
             # Load Channels Setup
             try:
-                for channelSetup, values in config.items('ChannelsSetup'):
-                    channelSetupValues = values.split(', ')
+                for channelSetup, values in config.items("ChannelsSetup"):
+                    channelSetupValues = values.split(", ")
                     self.channelsSetup[channelSetup] = channelSetupValues
             except (configparser.Error, ValueError) as e:
                 logger.error(f"Error reading channel setup configuration: {e}")
@@ -69,7 +74,7 @@ class GPIOHandler:
 
             # Load Channels
             try:
-                for physicalChannel, values in config.items('Channels'):
+                for physicalChannel, values in config.items("Channels"):
                     # Convert the values to tuple if there is more than one element
                     channel_values = literal_eval(values)
                     if isinstance(channel_values, tuple):
@@ -82,16 +87,16 @@ class GPIOHandler:
 
             # Load GPIOMapPhysical
             try:
-                for logicalChannel, values in config.items('LogicalChannels'):
+                for logicalChannel, values in config.items("LogicalChannels"):
                     channel, index = self.__extract_variable_info(values)
                     self.logicalChannels[logicalChannel] = self.channels[channel][index]
             except (configparser.Error, ValueError) as e:
                 logger.error(f"Error reading LogicalChannels configuration: {e}")
                 # Handle the error as needed
-        
+
             # Load GPIOMap
             try:
-                for GPIOMap, values in config.items('GPIOMaps'):
+                for GPIOMap, values in config.items("GPIOMaps"):
                     logicalChannel, index = self.__extract_variable_info(values)
                     self.GPIOMap[GPIOMap] = self.logicalChannels[index]
             except (configparser.Error, ValueError) as e:
@@ -106,7 +111,7 @@ class GPIOHandler:
             logger.error(f"Error reading GPIO configuration: {e}")
             # You might want to handle the error in an appropriate way, e.g., logging or quitting the program
 
-    def getGPIOLabel(self,GPIONum):
+    def getGPIOLabel(self, GPIONum):
         for key, value in self.GPIOMap.items():
             if value == GPIONum:
                 return key
@@ -116,7 +121,7 @@ class GPIOHandler:
     def __extract_variable_info(solf, expression):
         """
         Extract variable name and index from an expression of the form 'variable[index]'.
-        
+
         Parameters:
         - expression (str): The input expression.
 
@@ -124,8 +129,8 @@ class GPIOHandler:
         - Tuple[str, int]: A tuple containing the variable name and index.
         If the expression is not in the correct format, returns (None, None).
         """
-        match = re.match(r'([a-zA-Z_][a-zA-Z0-9_]*)\[(.+)\]', expression)
-        
+        match = re.match(r"([a-zA-Z_][a-zA-Z0-9_]*)\[(.+)\]", expression)
+
         if match:
             variable_name = match.group(1)
             index = match.group(2)
@@ -137,20 +142,20 @@ class GPIOHandler:
         else:
             return None, None
 
-    def addEventDetect(self, gpioName, callback, bounceMs = 0):
+    def addEventDetect(self, gpioName, callback, bounceMs=0):
         gpio = self.GPIOMap[gpioName]
-        if (bounceMs > 0):
-            GPIO.add_event_detect(gpio,GPIO.RISING,callback=callback,bouncetime=bounceMs)
+        if bounceMs > 0:
+            GPIO.add_event_detect(gpio, GPIO.RISING, callback=callback, bouncetime=bounceMs)
         else:
-            GPIO.add_event_detect(gpio,GPIO.RISING,callback=callback)
+            GPIO.add_event_detect(gpio, GPIO.RISING, callback=callback)
 
     def removeEventDetect(self, gpioName):
         gpio = self.GPIOMap[gpioName]
-        logger.debug (f"Removing interrupt on {self.getGPIOLabel(gpio)}")
+        logger.debug(f"Removing interrupt on {self.getGPIOLabel(gpio)}")
         GPIO.remove_event_detect(gpio)
 
     def clean_gpios(self):
-        logger.debug ("Cleanup GPIOs")
+        logger.debug("Cleanup GPIOs")
         GPIO.cleanup()
 
     def gpio_set_output(self, gpiocast, value):
@@ -162,18 +167,17 @@ class GPIOHandler:
             gpio = self.__gpiomap_get_gpio(gpiomap)
 
         gpiomode = self.__gpio_get_mode(gpio)
-        if gpiomap is not None: 
+        if gpiomap is not None:
             if gpiomode == self.GPIO.OUT or (not settings.ON_RASPBERRY_PI):
                 logger.debug(f"{gpiomap} {value}")
                 bit = int(value == "off")
                 if gpiomode == self.GPIO.IN:
                     bit = int(not bit)
-                GPIO.output(gpio,bit)
+                GPIO.output(gpio, bit)
             elif gpiomode == self.GPIO.IN and settings.ON_RASPBERRY_PI:
                 logger.error(f"Can't set an input GPIO. (gpio={gpio}, gpiomap={gpiomap})")
         else:
             logger.error(f"gpio_set_output: gpio={gpio}, gpiomap={gpiomap}, gpiomode={gpiomode}")
-
 
     def gpiomap_toggle_output(self, gpiomap):
         logger.debug(f"Toggling {gpiomap}")
@@ -190,10 +194,10 @@ class GPIOHandler:
             return self.GPIO.gpio_function(gpio)
         except Exception as e:
             return None
-        
-    def show_gpio_status(self, gpio_handler = None):
+
+    def show_gpio_status(self, gpio_handler=None):
         gpios = range(0, 28)  # Assuming BCM numbering scheme and 27 available GPIO pins
-        print("Current GPIO Status:") 
+        print("Current GPIO Status:")
         for gpio in gpios:
             mode = "UNKNOWN"
             state = "UNKNOWN"
@@ -201,25 +205,30 @@ class GPIOHandler:
             try:
                 if self.GPIO.gpio_function(gpio) == self.GPIO.IN:
                     mode = "INPUT"
-                    color = COLORS['BLUE']
+                    color = COLORS["BLUE"]
                 elif self.GPIO.gpio_function(gpio) == self.GPIO.OUT:
                     mode = "OUTPUT"
-                    color = COLORS['RESET']
+                    color = COLORS["RESET"]
             except Exception as e:
                 mode = "ERROR"
 
             # Read state
             if mode == "INPUT" or mode == "OUTPUT":
                 try:
-                    state = 'HIGH' if self.GPIO.input(gpio) == 1 else 'LOW'
-                    switchstate = 'OFF' if self.GPIO.input(gpio) == 1 else 'ON'
-                    switchcolor = COLORS['MAGENTA'] if self.GPIO.input(gpio) == 1 else COLORS['GREEN']
-                
+                    state = "HIGH" if self.GPIO.input(gpio) == 1 else "LOW"
+                    switchstate = "OFF" if self.GPIO.input(gpio) == 1 else "ON"
+                    switchcolor = (
+                        COLORS["MAGENTA"] if self.GPIO.input(gpio) == 1 else COLORS["GREEN"]
+                    )
+
                 except Exception as e:
                     state = "ERROR"
-                    color = COLORS['RED']
+                    color = COLORS["RED"]
                     switchcolor = color
-            print(f"{color}Pin {gpio} label: {self.getGPIOLabel(gpio) if self.getGPIOLabel(gpio) is not None else '_not_found_'} \
-mode: {mode}, state: {state}, switch: {COLORS['RESET']}{switchcolor}{switchstate}{COLORS['RESET']}")          
+            print(
+                f"{color}Pin {gpio} label: {self.getGPIOLabel(gpio) if self.getGPIOLabel(gpio) is not None else '_not_found_'} \
+mode: {mode}, state: {state}, switch: {COLORS['RESET']}{switchcolor}{switchstate}{COLORS['RESET']}"
+            )
+
 
 mygpio_handler = GPIOHandler()
