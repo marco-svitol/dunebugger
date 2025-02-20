@@ -25,9 +25,7 @@ class DunebuggerSettings:
 
     def load_configuration(self):
         try:
-            dunebuggerConfig = path.join(
-                path.dirname(path.abspath(__file__)), "config/dunebugger.conf"
-            )
+            dunebuggerConfig = path.join(path.dirname(path.abspath(__file__)), "config/dunebugger.conf")
             self.config.read(dunebuggerConfig)
 
             for section in ["General", "Audio", "Motors", "Debug", "Log"]:
@@ -86,9 +84,7 @@ class DunebuggerSettings:
                     commands = value.split(",")
                     for command in commands:
                         if command not in self.terminal_interpreter_command_handlers:
-                            raise ValueError(
-                                f"Invalid commands in initializationCommandsString: {command}"
-                            )
+                            raise ValueError(f"Invalid commands in initializationCommandsString: {command}")
             elif section == "Audio":
                 if option in [
                     "normalMusicVolume",
@@ -97,11 +93,7 @@ class DunebuggerSettings:
                     "quietSfxVol",
                     "ignoreQuietTime",
                 ]:
-                    return (
-                        int(value)
-                        if option != "ignoreQuietTime"
-                        else self.config.getboolean(section, option)
-                    )
+                    return int(value) if option != "ignoreQuietTime" else self.config.getboolean(section, option)
                 elif option in ["easteregg", "vlcdevice"]:
                     return str(value)
             elif section == "Motors":
@@ -120,9 +112,7 @@ class DunebuggerSettings:
                     return logLevel
 
         except (configparser.NoOptionError, ValueError) as e:
-            raise ValueError(
-                f"Invalid configuration: Section={section}, Option={option}, Value={value}. Error: {e}"
-            )
+            raise ValueError(f"Invalid configuration: Section={section}, Option={option}, Value={value}. Error: {e}")
 
         # If no specific validation is required, return the original value
         return value

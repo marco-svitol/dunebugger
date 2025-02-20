@@ -8,17 +8,10 @@ import threading
 
 
 def start(motornum, rotation="cw", speed=100):
-    logger.debug(
-        "motor " + str(motornum) + " start with rotation " + rotation + " and speed " + str(speed)
-    )
+    logger.debug("motor " + str(motornum) + " start with rotation " + rotation + " and speed " + str(speed))
 
     # Crashprevention
-    if (
-        rotation == "cw"
-        and mygpio_handler.GPIOMap["In_Motor" + str(motornum) + "LimitCW"] == GPIO.HIGH
-        or rotation == "ccw"
-        and mygpio_handler.GPIOMap["In_Motor" + str(motornum) + "LimitCCW"] == GPIO.HIGH
-    ):
+    if rotation == "cw" and mygpio_handler.GPIOMap["In_Motor" + str(motornum) + "LimitCW"] == GPIO.HIGH or rotation == "ccw" and mygpio_handler.GPIOMap["In_Motor" + str(motornum) + "LimitCCW"] == GPIO.HIGH:
         logger.warning("Start command aborted to prevent motor crash")
         return
     ######
@@ -51,10 +44,7 @@ def limitTouch(channel, event=None):
     GPIOLabel = mygpio_handler.getGPIOLabel(channel)
     logger.debug("Limit touched on channel " + GPIOLabel)
     motornum = 0
-    if (
-        channel == mygpio_handler.GPIOMap["In_Motor1LimitCCW"]
-        or channel == mygpio_handler.GPIOMap["In_Motor1LimitCW"]
-    ):
+    if channel == mygpio_handler.GPIOMap["In_Motor1LimitCCW"] or channel == mygpio_handler.GPIOMap["In_Motor1LimitCW"]:
         motornum = 1
     else:
         motornum = 2

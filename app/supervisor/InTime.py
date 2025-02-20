@@ -19,9 +19,7 @@ import subprocess
 def check_ntp_sync():
     try:
         # Run the timedatectl command and capture the output
-        result = subprocess.run(
-            ["timedatectl", "status"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
-        )
+        result = subprocess.run(["timedatectl", "status"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         if result.returncode == 0:
             # Check if NTP is synchronized
             if "synchronized: yes" in result.stdout:
@@ -50,9 +48,7 @@ def duranteCelebrazioni(dt, cyclelength):
         datetime.strptime("12 24", "%m %d").date().replace(year=date.today().year),
         datetime.strptime("01 01", "%m %d").date().replace(year=date.today().year),
         datetime.strptime("01 06", "%m %d").date().replace(year=date.today().year),
-        datetime.strptime("01 27", "%m %d")
-        .date()
-        .replace(year=date.today().year),  # aggiunto temporaneamente Lunedì 27/1/2020
+        datetime.strptime("01 27", "%m %d").date().replace(year=date.today().year),  # aggiunto temporaneamente Lunedì 27/1/2020
     ]
 
     messeprefestive = [  # Ora minuti
@@ -98,35 +94,15 @@ def duranteCelebrazioni(dt, cyclelength):
     if wday == 5 and cfestivo < 0:  # se sabato allora verifico se in orario messa prefest
         # print ("sabato")
         for mprefes in messeprefestive:
-            if (
-                (datetime.combine(date(1, 1, 1), mprefes) - timedelta(seconds=cyclelength)).time()
-                <= ctime
-                <= (
-                    datetime.combine(date(1, 1, 1), mprefes) + timedelta(minutes=duratamessafestiva)
-                ).time()
-            ):
+            if (datetime.combine(date(1, 1, 1), mprefes) - timedelta(seconds=cyclelength)).time() <= ctime <= (datetime.combine(date(1, 1, 1), mprefes) + timedelta(minutes=duratamessafestiva)).time():
                 return True
-    elif (
-        wday == 6 or cfestivo >= 0
-    ):  # se domenica o festivo allora verifico se in orario messa domenicale
+    elif wday == 6 or cfestivo >= 0:  # se domenica o festivo allora verifico se in orario messa domenicale
         for mfes in messefestive:
-            if (
-                (datetime.combine(date(1, 1, 1), mfes) - timedelta(seconds=cyclelength)).time()
-                <= ctime
-                <= (
-                    datetime.combine(date(1, 1, 1), mfes) + timedelta(minutes=duratamessafestiva)
-                ).time()
-            ):
+            if (datetime.combine(date(1, 1, 1), mfes) - timedelta(seconds=cyclelength)).time() <= ctime <= (datetime.combine(date(1, 1, 1), mfes) + timedelta(minutes=duratamessafestiva)).time():
                 return True
     else:  # allora feriale (pre-festivo suppongo uguale a messa feriale)
         for mfer in messeferiali:
             # print (str(ctime) + " " + str((datetime.combine(date(1,1,1),mfer)-timedelta(seconds=cyclelength)).time())+ " " + str((datetime.combine(date(1,1,1),mfer)+timedelta(minutes=duratamessaferiale)).time()))
-            if (
-                (datetime.combine(date(1, 1, 1), mfer) - timedelta(seconds=cyclelength)).time()
-                <= ctime
-                <= (
-                    datetime.combine(date(1, 1, 1), mfer) + timedelta(minutes=duratamessaferiale)
-                ).time()
-            ):
+            if (datetime.combine(date(1, 1, 1), mfer) - timedelta(seconds=cyclelength)).time() <= ctime <= (datetime.combine(date(1, 1, 1), mfer) + timedelta(minutes=duratamessaferiale)).time():
                 return True
     return False

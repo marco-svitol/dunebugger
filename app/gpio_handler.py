@@ -217,9 +217,7 @@ class GPIOHandler:
                 try:
                     state = "HIGH" if self.GPIO.input(gpio) == 1 else "LOW"
                     switchstate = "OFF" if self.GPIO.input(gpio) == 1 else "ON"
-                    switchcolor = (
-                        COLORS["MAGENTA"] if self.GPIO.input(gpio) == 1 else COLORS["GREEN"]
-                    )
+                    switchcolor = COLORS["MAGENTA"] if self.GPIO.input(gpio) == 1 else COLORS["GREEN"]
 
                 except Exception as e:
                     state = "ERROR"

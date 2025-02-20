@@ -19,9 +19,7 @@ class WebPubSubListener:
         self.stop_event = threading.Event()
         self.internet_available = True
         self.internet_check_thread = threading.Thread(target=self._monitor_internet, daemon=True)
-        self.websocket_monitor_thread = threading.Thread(
-            target=self._monitor_websocket, daemon=True
-        )
+        self.websocket_monitor_thread = threading.Thread(target=self._monitor_websocket, daemon=True)
         self.internet_check_thread.start()
         time.sleep(2)  # Allow some time for the internet check to initialize
         # self.websocket_monitor_thread.start()
@@ -29,24 +27,16 @@ class WebPubSubListener:
     def _setup_client(self):
         """Setup the WebSocket client with event subscriptions."""
         self.update_auth()
-        self.client = WebPubSubClient(
-            self.wss_url, auto_rejoin_groups=True, autoReconnect=True, reconnect_retry_total=2
-        )
-        self.client.subscribe(
-            CallbackType.CONNECTED, lambda e: logger.info(f"Connected: {e.connection_id}")
-        )
+        self.client = WebPubSubClient(self.wss_url, auto_rejoin_groups=True, autoReconnect=True, reconnect_retry_total=2)
+        self.client.subscribe(CallbackType.CONNECTED, lambda e: logger.info(f"Connected: {e.connection_id}"))
         self.client.subscribe(
             CallbackType.DISCONNECTED,
             lambda e: logger.debug(f"Websocket disconnected {e.connection_id}"),
         )
-        self.client.subscribe(
-            CallbackType.STOPPED, lambda: logger.debug(f"Websocket client stopped")
-        )
+        self.client.subscribe(CallbackType.STOPPED, lambda: logger.debug(f"Websocket client stopped"))
         self.client.subscribe(CallbackType.GROUP_MESSAGE, self._on_message_received)
         self.client.subscribe(CallbackType.SERVER_MESSAGE, self._on_message_received)
-        self.client.subscribe(
-            CallbackType.REJOIN_GROUP_FAILED, lambda e: self._handle_rejoin_failure(e)
-        )
+        self.client.subscribe(CallbackType.REJOIN_GROUP_FAILED, lambda e: self._handle_rejoin_failure(e))
 
     def _monitor_internet(self):
         """Continuously check if the internet is available."""
@@ -63,9 +53,7 @@ class WebPubSubListener:
         while not self.stop_event.is_set():
             if self.internet_available:
                 if not self.client or not self.client.is_connected:
-                    logger.warning(
-                        "Internet is available, but WebSocket is disconnected. Attempting to reconnect..."
-                    )
+                    logger.warning("Internet is available, but WebSocket is disconnected. Attempting to reconnect...")
                     self._restart()
             time.sleep(10)  # Check every 10 seconds
 
@@ -127,9 +115,7 @@ class WebPubSubListener:
     def send_message(self, message):
         if self.client and self.client.is_connected:
             try:
-                self.client.send_to_group(
-                    self.group_name, message, WebPubSubDataType.JSON, no_echo=True
-                )
+                self.client.send_to_group(self.group_name, message, WebPubSubDataType.JSON, no_echo=True)
                 logger.debug(f"Sending message to group {self.group_name}: {message}")
             except Exception as e:
                 logger.error(f"Failed to send message to group ${self.group_name}: {e}")

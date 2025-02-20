@@ -83,12 +83,8 @@ class AudioPlayer:
 
         if settings.eastereggEnabled and self.eastereggTriggered:
             logger.info("EasterEgg enabled!!")
-            playlist.add_media(
-                self.vlcinstance.media_new(self.get_sfx_filepath("app_audio_files/ohhche.mp3"))
-            )
-            playlist.add_media(
-                self.vlcinstance.media_new(self.get_music_path("app_audio_files/dunebuggy.mp3"))
-            )
+            playlist.add_media(self.vlcinstance.media_new(self.get_sfx_filepath("app_audio_files/ohhche.mp3")))
+            playlist.add_media(self.vlcinstance.media_new(self.get_music_path("app_audio_files/dunebuggy.mp3")))
             self.eastereggTriggered = False
 
         for song in range(len(fileplaylist)):  # add path to songname
@@ -103,14 +99,7 @@ class AudioPlayer:
         time.sleep(0.1)
         logger.info("Setting music volume at " + str(self.musicVolume))
 
-        logger.info(
-            "Playing music (first three songs): "
-            + fileplaylist[0]
-            + " "
-            + fileplaylist[1]
-            + " "
-            + fileplaylist[2]
-        )
+        logger.info("Playing music (first three songs): " + fileplaylist[0] + " " + fileplaylist[1] + " " + fileplaylist[2])
 
         self.musicSetVolume(self.musicVolume)
 
@@ -126,9 +115,7 @@ class AudioPlayer:
     def vstopaudio(self, fadeout_secs=3):
         try:
             if self.musicVolume > 0 or self.sfxVolume > 0:
-                if (
-                    self.musicVolume > self.sfxVolume
-                ):  # calculate pause interval. Takes higher volume
+                if self.musicVolume > self.sfxVolume:  # calculate pause interval. Takes higher volume
                     fadeoutpause = int(fadeout_secs) / (self.musicVolume * 1.0)
                 else:
                     fadeoutpause = int(fadeout_secs) / (self.sfxVolume * 1.0)
@@ -171,21 +158,11 @@ class AudioPlayer:
             if not isinstance(InTime.getNTPTime(), int):  # time not synced
                 self.musicVolume = self.quietMusicVol
                 self.sfxVolume = self.quietSfxVol
-                logger.info(
-                    "Orario non sincronizzato: vol musica="
-                    + str(self.musicVolume)
-                    + " vol sfx="
-                    + str(self.sfxVolume)
-                )
+                logger.info("Orario non sincronizzato: vol musica=" + str(self.musicVolume) + " vol sfx=" + str(self.sfxVolume))
             elif InTime.duranteCelebrazioni(datetime.now(), 372):
                 self.musicVolume = self.quietMusicVol
                 self.sfxVolume = self.quietSfxVol
-                logger.info(
-                    "Siamo durante una celebrazione: vol music="
-                    + str(self.musicVolume)
-                    + " vol sfx="
-                    + str(self.sfxVolume)
-                )
+                logger.info("Siamo durante una celebrazione: vol music=" + str(self.musicVolume) + " vol sfx=" + str(self.sfxVolume))
 
     def setEasterEggTrigger(self, easter_egg_trigger):
         self.eastereggTriggered = easter_egg_trigger

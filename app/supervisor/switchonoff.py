@@ -74,17 +74,13 @@ def previous_and_next(some_iterable):
 def sortonoff():
     global onseq, offseq, onoffsorted
 
-    if offseq[0] == dtime(
-        0, 0
-    ):  # se lo spegnimento è alle 0:0 è troppo complesso da gestire e lo sposto avanti un minuto. Muore nessuno dai.
+    if offseq[0] == dtime(0, 0):  # se lo spegnimento è alle 0:0 è troppo complesso da gestire e lo sposto avanti un minuto. Muore nessuno dai.
         offseq[0] = dtime(0, 1)
 
     onseq.sort()
     offseq.sort()
 
-    if onseq[len(onseq) - 1] > offseq[len(offseq) - 1] and offseq[0] != dtime(
-        0, 0
-    ):  # se finisce con un'accensione allora aggiungo accensione a mezzanotte
+    if onseq[len(onseq) - 1] > offseq[len(offseq) - 1] and offseq[0] != dtime(0, 0):  # se finisce con un'accensione allora aggiungo accensione a mezzanotte
         onseq.insert(0, dtime(0, 0))
 
     onoffsorted = [onseq[0]]
@@ -104,9 +100,7 @@ def sortonoff():
 def checktimeon(d):
     if d < onoffsorted[0]:  # now è prima della prima accensione
         return False
-    elif (
-        d > onoffsorted[len(onoffsorted) - 1]
-    ):  # se sono oltre l'ultimo orario verifico se l'ultimo item è accen o spegn
+    elif d > onoffsorted[len(onoffsorted) - 1]:  # se sono oltre l'ultimo orario verifico se l'ultimo item è accen o spegn
         if len(onoffsorted) % 2 == 0:  # se pari allora ultimo è spegnimento
             return False
         else:
@@ -173,13 +167,7 @@ def main():
         # verify another another time. If still not syncing run a scheduled job and switch on the presepe
         # if not isinstance(nettime,int):
         if not check_ntp_sync():
-            logger.warning(
-                "time not synced at startup: scheduling timesyncjob with random frequency between "
-                + str(timesyncmin)
-                + " secs and "
-                + str(timesyncmax)
-                + " secs"
-            )
+            logger.warning("time not synced at startup: scheduling timesyncjob with random frequency between " + str(timesyncmin) + " secs and " + str(timesyncmax) + " secs")
             timesyncJob = schedule.every(timesyncmin).to(timesyncmax).seconds.do(checkTimeSync)
             # fo = open(installfolder+"timenotsynced", "wb") #tells dunebugger that syncing is not working....
             # fo.close()

@@ -44,13 +44,9 @@ def set_logger_level(logger_name, level):
         logger.setLevel(level)
         print(f"Logger {logger_name} level set to {logging.getLevelName(level)}")
     except Exception as exc:
-        print(
-            f"Error while setting logger ${logger_name} level to {logging.getLevelName(level)}: ${str(exc)}"
-        )
+        print(f"Error while setting logger ${logger_name} level to {logging.getLevelName(level)}: ${str(exc)}")
 
 
 # Get the console handler and set the custom formatter
 console_handler = logger.handlers[0]
-console_handler.setFormatter(
-    CustomFormatter("%(levelname)s - %(asctime)s : %(message)s", "%d/%m/%Y %H:%M:%S")
-)
+console_handler.setFormatter(CustomFormatter("%(levelname)s - %(asctime)s : %(message)s", "%d/%m/%Y %H:%M:%S"))

@@ -16,9 +16,7 @@ class SequencesHandler:
     lastTimeMark = 0
 
     def __init__(self):
-        self.sequenceFolder = path.join(
-            path.dirname(path.abspath(__file__)), f"../sequences/{settings.sequenceFolder}"
-        )
+        self.sequenceFolder = path.join(path.dirname(path.abspath(__file__)), f"../sequences/{settings.sequenceFolder}")
         self.random_elements = {}
         self.random_elements_file = settings.randomElementsFile
         self.sequence_file = settings.sequenceFile
@@ -151,13 +149,9 @@ class SequencesHandler:
                             break
                         command_result = self.execute_command(command_body, dry_run)
                         if dry_run and not command_result:
-                            raise ValueError(
-                                f"Error validating sequence: {file_path} (line {line_num}). Review the command there."
-                            )
+                            raise ValueError(f"Error validating sequence: {file_path} (line {line_num}). Review the command there.")
                     else:
-                        raise ValueError(
-                            f"Error validating sequence: {file_path} (line {line_num}). Time mark needs a fix"
-                        )
+                        raise ValueError(f"Error validating sequence: {file_path} (line {line_num}). Time mark needs a fix")
 
         except FileNotFoundError:
             logger.error(f"File not found: {file_path}")
@@ -201,9 +195,7 @@ class SequencesHandler:
 
     def random_actions(self):
         while not self.random_actions_event.is_set():
-            self.random_actions_event.wait(
-                timeout=random.uniform(settings.randomActionsMinSecs, settings.randomActionsMaxSecs)
-            )
+            self.random_actions_event.wait(timeout=random.uniform(settings.randomActionsMinSecs, settings.randomActionsMaxSecs))
             self.random_action()
 
     def enable_random_actions(self):
@@ -211,9 +203,7 @@ class SequencesHandler:
             self.random_sequence_from_file(self.random_elements_file)
             self.random_actions_event = threading.Event()
             self.random_actions_event.clear()
-            self.random_actions_thread = threading.Thread(
-                name="_random_actions", target=self.random_actions, daemon=True
-            )
+            self.random_actions_thread = threading.Thread(name="_random_actions", target=self.random_actions, daemon=True)
             self.random_actions_thread.start()
 
     def disable_random_actions(self):
@@ -248,9 +238,7 @@ class SequencesHandler:
         self.disable_start_button()
 
     def enable_start_button(self):
-        mygpio_handler.addEventDetect(
-            settings.startButtonGPIOName, lambda channel: self.cycle_trigger(channel)
-        )
+        mygpio_handler.addEventDetect(settings.startButtonGPIOName, lambda channel: self.cycle_trigger(channel))
 
     def disable_start_button(self):
         try:
@@ -269,12 +257,7 @@ class SequencesHandler:
                 # while time.time() < start_time + settings.bouncingTreshold:
                 time.sleep(settings.bouncingTreshold)  # avoid catching a bouncing
                 if GPIO.input(channel) != 1:
-                    logger.debug(
-                        "Warning! Cycle: below treshold of "
-                        + str(settings.bouncingTreshold)
-                        + " on channel"
-                        + str(channel)
-                    )
+                    logger.debug("Warning! Cycle: below treshold of " + str(settings.bouncingTreshold) + " on channel" + str(channel))
                     return
 
             logger.info("Start button pressed")
