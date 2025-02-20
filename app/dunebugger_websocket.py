@@ -33,7 +33,7 @@ class WebPubSubListener:
             CallbackType.DISCONNECTED,
             lambda e: logger.debug(f"Websocket disconnected {e.connection_id}"),
         )
-        self.client.subscribe(CallbackType.STOPPED, lambda: logger.debug(f"Websocket client stopped"))
+        self.client.subscribe(CallbackType.STOPPED, lambda: logger.debug("Websocket client stopped"))
         self.client.subscribe(CallbackType.GROUP_MESSAGE, self._on_message_received)
         self.client.subscribe(CallbackType.SERVER_MESSAGE, self._on_message_received)
         self.client.subscribe(CallbackType.REJOIN_GROUP_FAILED, lambda e: self._handle_rejoin_failure(e))

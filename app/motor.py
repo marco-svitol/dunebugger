@@ -53,7 +53,7 @@ def limitTouch(channel, event=None):
     if channel == mygpio_handler.GPIOMap["In_Motor" + str(motornum) + "LimitCCW"]:
         time.sleep(0.2)
         start(motornum, "cw", speed=100)
-    elif event != None:
+    elif event is not None:
         start(motornum, "ccw", speed=85)
         time.sleep(3)
         stop(motornum)
@@ -91,13 +91,17 @@ def initMotorLimits():
     #  so that execution continues only when event is set on both motors
     atexit.register(motor_clean)
     motor1_reset_event = threading.Event()
-    motor1_callback_with_params = lambda channel: limitTouch(channel, motor1_reset_event)
+
+    def motor1_callback_with_params(channel):
+        limitTouch(channel, motor1_reset_event)
 
     mygpio_handler.addEventDetect("In_Motor1LimitCCW", limitTouch, 5)
     mygpio_handler.addEventDetect("In_Motor1LimitCW", motor1_callback_with_params, 5)
 
     motor2_reset_event = threading.Event()
-    motor2_callback_with_params = lambda channel: limitTouch(channel, motor2_reset_event)
+
+    def motor2_callback_with_params(channel):
+        limitTouch(channel, motor2_reset_event)
 
     mygpio_handler.addEventDetect("In_Motor2LimitCCW", limitTouch, 5)
     mygpio_handler.addEventDetect("In_Motor2LimitCW", motor2_callback_with_params, 5)

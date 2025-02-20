@@ -186,13 +186,13 @@ class GPIOHandler:
     def __gpiomap_get_gpio(self, gpiomap):
         try:
             return self.GPIOMap[gpiomap]
-        except Exception as e:
+        except Exception:
             return None
 
     def __gpio_get_mode(self, gpio):
         try:
             return self.GPIO.gpio_function(gpio)
-        except Exception as e:
+        except Exception:
             return None
 
     def show_gpio_status(self, gpio_handler=None):
@@ -209,7 +209,7 @@ class GPIOHandler:
                 elif self.GPIO.gpio_function(gpio) == self.GPIO.OUT:
                     mode = "OUTPUT"
                     color = COLORS["RESET"]
-            except Exception as e:
+            except Exception:
                 mode = "ERROR"
 
             # Read state
@@ -219,7 +219,7 @@ class GPIOHandler:
                     switchstate = "OFF" if self.GPIO.input(gpio) == 1 else "ON"
                     switchcolor = COLORS["MAGENTA"] if self.GPIO.input(gpio) == 1 else COLORS["GREEN"]
 
-                except Exception as e:
+                except Exception:
                     state = "ERROR"
                     color = COLORS["RED"]
                     switchcolor = color

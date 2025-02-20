@@ -5,7 +5,7 @@ import os
 def ArduinoSend(command):
     global Arduino
     ccommand = command.replace("\n", "")
-    if Arduino != False:
+    if Arduino is not False:
         Arduino.write(bytes(command, "UTF-8"))
         logger.debug("Sending command " + ccommand + " to Arduino")
     else:
@@ -21,7 +21,7 @@ def is_raspberry_pi():
                 return True
             else:
                 return False
-    except Exception as e:
+    except Exception:
         return False
 
 

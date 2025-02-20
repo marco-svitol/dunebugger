@@ -1,4 +1,5 @@
-import logging, logging.config
+import logging
+import logging.config
 from os import path
 
 logConfig = path.join(path.dirname(path.abspath(__file__)), "config/dunebuggerlogging.conf")

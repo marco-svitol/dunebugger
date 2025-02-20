@@ -38,7 +38,7 @@ class MockGPIO:
         pass
 
     def cleanup(self):
-        logger.debug(f"MockGPIO.cleanup")
+        logger.debug("MockGPIO.cleanup")
         pass
 
     def setwarnings(self, mode):
@@ -115,7 +115,7 @@ class MockGPIO:
                     color = COLORS["BLUE"]
                     switchcolor = COLORS["MAGENTA"] if gpioitem["state"] else COLORS["GREEN"]
                 print(f"{color}Pin {gpio} label: {gpio_handler.getGPIOLabel(gpio)} mode: {gpioitem['mode']}, state: {COLORS['RESET']}{switchcolor}{state}{COLORS['RESET']}")
-            except Exception as e:
+            except Exception:
                 print(
                     f"{COLORS['RED']}Pin {gpio} label: {gpio_handler.getGPIOLabel(gpio) if gpio_handler.getGPIOLabel(gpio) is not None else '_not_found_'} \
 mode: INPUT, state: ERROR{COLORS['RESET']}"

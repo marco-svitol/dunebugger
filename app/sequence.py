@@ -1,7 +1,8 @@
 from audio_handler import audioPlayer
 from gpio_handler import mygpio_handler, GPIO
 from utils import validate_path
-import random, os
+import random
+import os
 from os import path
 from dunebugger_settings import settings
 import motor
@@ -251,7 +252,7 @@ class SequencesHandler:
 
     def cycle_trigger(self, channel=False):
         with self.cycle_thread_lock:
-            if False != channel:
+            if channel is not False:
                 # TODO : fix bouncing
                 # start_time = time.time()
                 # while time.time() < start_time + settings.bouncingTreshold:

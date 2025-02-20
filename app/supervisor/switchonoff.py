@@ -1,17 +1,18 @@
 #!/usr/bin/python3
-import schedule, time, subprocess
+import schedule
+import time
+import subprocess
 from datetime import time as dtime
 from datetime import datetime
 from itertools import tee, islice, chain
 from InTime import check_ntp_sync  # , getNTPTime
 import sys
 from os import path
+from dunebuggerlogging import logger
 
 parentDir = path.join(path.dirname(path.abspath(__file__)), "..")
 # Add the parent directory to sys.path
 sys.path.append(parentDir)
-
-from dunebuggerlogging import logger
 
 mainModule = "main.py"
 onseq = [dtime(8, 55), dtime(14, 55)]
@@ -85,7 +86,7 @@ def sortonoff():
 
     onoffsorted = [onseq[0]]
 
-    for previous, item, nxt in previous_and_next(onseq):
+    for _previous, item, nxt in previous_and_next(onseq):
         for ofs in offseq:
             if nxt is not None:
                 if item < ofs < nxt:
@@ -106,7 +107,7 @@ def checktimeon(d):
         else:
             return True  # se invece dispari l'ultimo è accensione
     i = 1
-    for previous, item, nxt in previous_and_next(onoffsorted):
+    for _previous, item, nxt in previous_and_next(onoffsorted):
         if item < d < nxt and i % 2 == 0:
             return False
         i += 1

@@ -104,13 +104,13 @@ class TerminalInterpreter:
     def handle_enable_random_actions(self):
         if settings.randomActionsEnabled:
             sequencesHandler.enable_random_actions()
-            print(f"Random actions enabled")
+            print("Random actions enabled")
         else:
-            print(f"Random actions is disabled in the configuration")
+            print("Random actions is disabled in the configuration")
 
     def handle_disable_random_actions(self):
         sequencesHandler.disable_random_actions()
-        print(f"Random actions disabled")
+        print("Random actions disabled")
 
     def handle_gpio_command(self, command_parts):
         if len(command_parts) == 2 and (command_parts[1] == "on" or command_parts[1] == "off"):
@@ -118,11 +118,11 @@ class TerminalInterpreter:
             self.gpio_handler.gpio_set_output(gpio, command_parts[1])
 
     def handle_cycle_start(self):
-        print(f"Cycle started")
+        print("Cycle started")
         sequencesHandler.cycle_trigger()
 
     def handle_cycle_stop(self):
-        print(f"Stopping cycle")
+        print("Stopping cycle")
         sequencesHandler.cycle_stop()
 
     def handle_set_logger_debug(self):
@@ -144,7 +144,7 @@ class TerminalInterpreter:
             print("Initializing motor limits")
             motor.initMotorLimits()
         else:
-            print(f"Motor module is disabled")
+            print("Motor module is disabled")
 
     def handle_enable_start_button(self):
         self.sequencesHandler.enable_start_button()

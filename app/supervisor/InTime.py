@@ -2,18 +2,15 @@ from datetime import date
 from datetime import datetime
 from datetime import time as dtime
 from datetime import timedelta
-from socket import AF_INET, SOCK_DGRAM
-import socket, struct
 import sys
 from os import path
+from dunebuggerlogging import logger
+import subprocess
 
 # Get parent directory
 parent_dir = path.join(path.dirname(path.abspath(__file__)), "..")
 # Add the parent directory to sys.path
 sys.path.append(parent_dir)
-from dunebuggerlogging import logger
-
-import subprocess
 
 
 def check_ntp_sync():
@@ -87,7 +84,7 @@ def duranteCelebrazioni(dt, cyclelength):
 
     try:  # verifica se in elenco giorni festivi
         cfestivo = festivi.index(tday)
-    except:
+    except Exception:
         cfestivo = -1
 
     # print(cfestivo)
