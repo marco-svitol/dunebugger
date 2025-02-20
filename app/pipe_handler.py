@@ -4,14 +4,15 @@ from terminal_interpreter import terminal_interpreter
 from dunebugger_settings import settings
 import time
 
+
 class PipeListener:
     def __init__(self):
         self.pipe_path = settings.pipePath
         if not os.path.exists(self.pipe_path):
             os.mkfifo(self.pipe_path)
-    
+
     def pipe_input_thread(self):
-        with open(self.pipe_path, 'r') as pipe:
+        with open(self.pipe_path) as pipe:
             while True:
                 command = pipe.readline().strip()
                 if command:
@@ -23,11 +24,12 @@ class PipeListener:
         pipe_thread = threading.Thread(target=self.pipe_input_thread, daemon=True)
         pipe_thread.start()
         # remove comment belowe when ready to make a real server
-        #while not terminal_interpreter.stop_terminal_event.is_set():
+        # while not terminal_interpreter.stop_terminal_event.is_set():
         #    time.sleep(0.1)
-    
+
     def pipe_send(self, stream):
-        with open(self.pipe_path, 'w') as pipe:
+        with open(self.pipe_path, "w") as pipe:
             pipe.write(stream + "\n")
+
 
 pipe_listener = PipeListener()

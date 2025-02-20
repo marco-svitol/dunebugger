@@ -6,7 +6,7 @@ Dunebugger is a Python-based software that powers a Raspberry Pi to serve as the
 ---
 
 ## Introduction
-Dunebugger is part of a unique project designed to automate the lights, music, and special effects (such as water pumps and mechanical movements) of a nativity scene setup in a public space in Milan. This nativity scene, visited by thousands of people every Christmas season, is located in a Franciscan monastery and serves as a focal point of community celebration. The software and hardware combined enable a dynamic and immersive experience for visitors. 
+Dunebugger is part of a unique project designed to automate the lights, music, and special effects (such as water pumps and mechanical movements) of a nativity scene setup in a public space in Milan. This nativity scene, visited by thousands of people every Christmas season, is located in a Franciscan monastery and serves as a focal point of community celebration. The software and hardware combined enable a dynamic and immersive experience for visitors.
 
 In addition to controlling physical components, the sequence system allows playing background music, randomly chosen from a list of audio files at each startup. It also supports playing single audio files during specific moments in the sequence to enhance the experience. For example, during a sunrise light effect, the system could play environmental sounds like a rooster crowing, dogs barking, or birds chirping.
 

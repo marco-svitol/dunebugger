@@ -11,8 +11,8 @@
 ### install rpi notes (use with care)
 ```
 sudo apt update -y; sudo apt upgrade -y
-sudo apt install git tmux speedtest-cli -y    
-git clone https://github.com/marco-svitol/dunebugger.git     
+sudo apt install git tmux speedtest-cli -y
+git clone https://github.com/marco-svitol/dunebugger.git
 
 # create key pair for github
 ssh-keygen -t ed25519 -C "marco.cambon@gmail.com"
@@ -44,7 +44,7 @@ ssh-keygen -t ed25519 -C "marco.cambon@gmail.com"
 
 sudo apt install vlc
 
-# run 
+# run
 sudo raspi-config
 # and check settings:
 # mandatory: enlarge filesystem in "Advanced Options"
@@ -69,12 +69,12 @@ sudo nmcli connection modify Rosetum ipv6.method "disabled"
 # optional : add your id_rsa.pub to authorized_keys to access to ssh without password
 
 # to fix keyboard arrows
-sudo apt install vim 
+sudo apt install vim
 
 # copy .vimrc
 
 
-#Troubleshoot 
+#Troubleshoot
 apt install shows  "apt_pkg" missing
 solution:
 sudo ln -s apt_pkg.cpython-311-arm-linux-gnueabihf.so apt_pkg.so
@@ -90,5 +90,3 @@ sudo nmcli con modify hotspot wifi-sec.key-mgmt wpa-psk
 sudo nmcli con modify hotspot wifi-sec.psk "Shish2018"
 sudo nmcli con modify hotspot 802-11-wireless.mode ap 802-11-wireless.band bg ipv4.method shared
 ```
-
-

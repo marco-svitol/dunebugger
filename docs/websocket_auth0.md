@@ -36,7 +36,7 @@ exports.onExecutePostLogin = async (event, api) => {
 
     // Extract the token value
   const token = tokenObject.token;
-  
+
   const wss_url = `wss://${event.secrets.dunebugger_webpubsub_service_name}.webpubsub.azure.com/client/hubs/${event.secrets.dunebugger_webpubsub_service_hub}?access_token=${token}`;
   api.idToken.setCustomClaim('wss_url', wss_url);
 };
