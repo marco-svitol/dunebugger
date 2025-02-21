@@ -9,14 +9,11 @@ import threading
 import traceback
 from sequence import sequencesHandler
 from gpio_handler import mygpio_handler
-from dunebugger_websocket import websocket_listener
-
-
 class TerminalInterpreter:
     def __init__(self):
         self.gpio_handler = mygpio_handler
         self.sequencesHandler = sequencesHandler
-        self.websocket_listener = websocket_listener
+        self.websocket_client = None
 
         history_path = "~/.python_history"
         self.enableHistory(history_path)
@@ -155,7 +152,7 @@ class TerminalInterpreter:
         print("Start button disabled")
 
     def handle_send_log(self, message):
-        self.websocket_listener.send_log(message)
+        self.websocket_client.send_log(message)
         print("Message sent")
 
     def process_terminal_input(self, input_str):
@@ -181,6 +178,3 @@ class TerminalInterpreter:
                 self.command_handlers[command_str]["handler"]()
             else:
                 print(f"Unknown command {command_str}. Type ? or h for help")
-
-
-terminal_interpreter = TerminalInterpreter()

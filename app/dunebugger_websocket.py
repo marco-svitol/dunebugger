@@ -5,16 +5,13 @@ import socket
 from azure.messaging.webpubsubclient import WebPubSubClient
 from azure.messaging.webpubsubclient.models import CallbackType, WebPubSubDataType
 from dunebuggerlogging import logger
-from dunebugger_auth import AuthClient
-from message_handler import MessageHandler
-
 
 class WebPubSubListener:
-    def __init__(self, auth_client):
-        self.auth_client = auth_client
-        self.message_handler = MessageHandler(self)
+    def __init__(self):
         self.wss_url = ""
         self.client = None
+        self.auth_client = None
+        self.message_handler = None
         self.group_name = os.getenv("WS_GROUP_NAME")
         self.stop_event = threading.Event()
         self.internet_available = True
@@ -121,14 +118,3 @@ class WebPubSubListener:
                 logger.error(f"Failed to send message to group ${self.group_name}: {e}")
         else:
             logger.warning("Cannot send message, WebSocket is disconnected.")
-
-
-# Initialize authentication
-auth_client = AuthClient(
-    client_id=os.getenv("AUTH0_CLIENT_ID"),
-    client_secret=os.getenv("AUTH0_CLIENT_SECRET"),
-    username=os.getenv("AUTH0_USERNAME"),
-    password=os.getenv("AUTH0_PASSWORD"),
-)
-
-websocket_listener = WebPubSubListener(auth_client)

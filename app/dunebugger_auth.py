@@ -2,7 +2,6 @@ from dunebuggerlogging import logger
 import http.client
 import json
 
-
 class AuthClient:
     def __init__(self, client_id, client_secret, username, password):
         self.client_id = client_id

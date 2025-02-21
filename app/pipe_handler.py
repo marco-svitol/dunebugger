@@ -1,12 +1,12 @@
 import os
 import threading
-from terminal_interpreter import terminal_interpreter
 from dunebugger_settings import settings
 import time
 
 
 class PipeListener:
     def __init__(self):
+        self.terminal_interpreter = None
         self.pipe_path = settings.pipePath
         if not os.path.exists(self.pipe_path):
             os.mkfifo(self.pipe_path)
@@ -16,7 +16,7 @@ class PipeListener:
             while True:
                 command = pipe.readline().strip()
                 if command:
-                    terminal_interpreter.process_terminal_input(command)
+                    self.terminal_interpreter.process_terminal_input(command)
                 time.sleep(0.1)  # Sleep for 100 milliseconds to reduce CPU usage
 
     def pipe_listen(self):
@@ -30,6 +30,3 @@ class PipeListener:
     def pipe_send(self, stream):
         with open(self.pipe_path, "w") as pipe:
             pipe.write(stream + "\n")
-
-
-pipe_listener = PipeListener()
