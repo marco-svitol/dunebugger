@@ -2,9 +2,11 @@ import threading
 import time
 import os
 import socket
+import random
 from azure.messaging.webpubsubclient import WebPubSubClient
 from azure.messaging.webpubsubclient.models import CallbackType, WebPubSubDataType
 from dunebuggerlogging import logger
+from dunebugger_settings import settings
 
 class WebPubSubListener:
     def __init__(self):
@@ -13,6 +15,7 @@ class WebPubSubListener:
         self.auth_client = None
         self.message_handler = None
         self.group_name = os.getenv("WS_GROUP_NAME")
+        self.broadcastEnabled = settings.broadcastInitialState
         self.stop_event = threading.Event()
         self.internet_available = True
         self.internet_check_thread = threading.Thread(target=self._monitor_internet, daemon=True)
@@ -99,7 +102,8 @@ class WebPubSubListener:
             self.client.close()
 
     def _on_message_received(self, e):
-        logger.info(f"Message received from group {e.group}: {e.data}")
+        if e.data.get("type") not in ["ping", "pong"]  or random.random() < 0.05:
+            logger.debug(f"Message received from group {e.group}: {e.data}")
         """Handle received messages."""
         self.handle_message(e.data)
 
@@ -108,13 +112,26 @@ class WebPubSubListener:
 
     def send_log(self, message):
         self.message_handler.send_log(message)
+    
+    def enable_broadcast(self):
+        self.broadcastEnabled = True
+
+    def disable_broadcast(self):
+        self.broadcastEnabled = False
 
     def send_message(self, message):
         if self.client and self.client.is_connected:
             try:
-                self.client.send_to_group(self.group_name, message, WebPubSubDataType.JSON, no_echo=True)
-                logger.debug(f"Sending message to group {self.group_name}: {message}")
+                if self.broadcastEnabled == True:
+                    self.client.send_to_group(self.group_name, message, WebPubSubDataType.JSON, no_echo=True)
+                    if message.get("type") not in ["ping", "pong", "gpio_state"] or random.random() < 0.05:
+                        logger.debug(f"Sending message to group {self.group_name}: {message}")
+                else:
+                    logger.debug("Broadcasting is disabled.")
             except Exception as e:
                 logger.error(f"Failed to send message to group ${self.group_name}: {e}")
         else:
-            logger.warning("Cannot send message, WebSocket is disconnected.")
+            if settings.remoteEnabled == True: 
+                logger.warning("Cannot send message, WebSocket is disconnected.")
+            else:
+                logger.debug("Cannot send message, WebSocket is not enabled.")

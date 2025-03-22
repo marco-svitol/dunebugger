@@ -10,7 +10,7 @@ from dunebuggerlogging import logger
 import time
 import atexit
 import threading
-
+from state_tracker import state_tracker
 
 class SequencesHandler:
 
@@ -26,6 +26,8 @@ class SequencesHandler:
         self.cycle_thread_lock = threading.Lock()
         self.cycle_event = threading.Event()
         self.cycle_stop_event = threading.Event()
+        self.state_tracker = state_tracker
+        self.start_button_enabled = False
 
         atexit.register(self.sequence_clean)
 
@@ -57,7 +59,9 @@ class SequencesHandler:
 
     def execute_switch_command(self, device_name, action):
         if action.lower() == "on" or action.lower() == "off":
-            mygpio_handler.gpio_set_output(device_name, action.lower())
+            # Warning: on GPIO the action is inverted: on = 0, off = 1
+            gpio_value = 0 if action.lower() == "on" else 1
+            mygpio_handler.gpio_set_output(device_name, gpio_value)
         else:
             logger.error(f"Unknown action: {action}")
 
@@ -206,12 +210,14 @@ class SequencesHandler:
             self.random_actions_event.clear()
             self.random_actions_thread = threading.Thread(name="_random_actions", target=self.random_actions, daemon=True)
             self.random_actions_thread.start()
+            self.state_tracker.notify_update("random_actions")
 
     def disable_random_actions(self):
         if hasattr(self, "random_actions_event"):
             self.random_actions_event.set()
-
-    def get_random_actions_status(self):
+            self.state_tracker.notify_update("random_actions")
+            
+    def get_random_actions_state(self):
         if hasattr(self, "random_actions_event"):
             if not self.random_actions_event.is_set():
                 return True
@@ -240,12 +246,19 @@ class SequencesHandler:
 
     def enable_start_button(self):
         mygpio_handler.addEventDetect(settings.startButtonGPIOName, lambda channel: self.cycle_trigger(channel))
+        self.start_button_enabled = True
+        self.state_tracker.notify_update("start_button")
 
     def disable_start_button(self):
         try:
             mygpio_handler.removeEventDetect(settings.startButtonGPIOName)
+            self.start_button_enabled = False
+            self.state_tracker.notify_update("start_button")
         except Exception as e:
             logger.debug(f"Error while disabling start button {e}")
+
+    def get_start_button_state(self):
+        return self.start_button_enabled
 
     def cycle_stop(self):
         self.cycle_stop_event.set()
@@ -264,6 +277,11 @@ class SequencesHandler:
             logger.info("Start button pressed")
             threading.Thread(name="_cycle_thread", target=self.cycle, daemon=True).start()
 
+    def get_cycle_state(self):
+        if self.cycle_event.is_set():
+            return True
+        return False
+
     def cycle(self):
         with self.cycle_thread_lock:
             self.cycle_event.clear()
@@ -274,6 +292,12 @@ class SequencesHandler:
             settings.cycleoffset = 0
             self.setStandByMode()
 
+    def get_state(self):
+        return {
+            "random_actions": self.get_random_actions_state(),
+            "cycle_running": self.get_cycle_state(),
+            "start_button_enabled": self.get_start_button_state(),
+        }
 
 try:
     sequencesHandler = SequencesHandler()

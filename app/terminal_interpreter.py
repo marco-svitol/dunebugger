@@ -3,7 +3,7 @@ import os
 import time
 from dunebugger_settings import settings
 import atexit
-from dunebuggerlogging import logger, set_logger_level, get_logging_level_from_name
+from dunebuggerlogging import logger, set_logger_level, get_logging_level_from_name, COLORS
 import motor
 import threading
 import traceback
@@ -36,7 +36,7 @@ class TerminalInterpreter:
             self.help += f"    {command}: {details['description']}\n"
         self.help += f"    <#gpionum or label> on: set gpio status High{help_insert_2}\n"
         self.help += f"    <#gpionum or label> off: set gpio status Low{help_insert_2}\n"
-        self.show_gpio_status = self.gpio_handler.show_gpio_status
+        self.show_gpio_status = self.gpio_handler.get_gpio_status
 
     def load_command_handlers(self):
         self.command_handlers = {}
@@ -85,11 +85,40 @@ class TerminalInterpreter:
         print(self.help)
 
     def handle_show_gpio_status(self):
-        self.show_gpio_status(self.gpio_handler)
+        gpio_status = self.show_gpio_status(self.gpio_handler)
+        print("Current GPIO Status:")
+        for gpio_info in gpio_status:
+            gpio = gpio_info["pin"]
+            label = gpio_info["label"]
+            mode = gpio_info["mode"]
+            state = gpio_info["state"]
+            switchstate = gpio_info["switch"]
+
+            color = COLORS["RESET"]
+            switchcolor = COLORS["RESET"]
+
+            if mode == "INPUT":
+                color = COLORS["BLUE"]
+            elif mode == "OUTPUT":
+                color = COLORS["RESET"]
+
+            if state == "HIGH":
+                switchcolor = COLORS["MAGENTA"]
+            elif state == "LOW":
+                switchcolor = COLORS["GREEN"]
+
+            if state == "ERROR":
+                color = COLORS["RED"]
+                switchcolor = color
+
+            print(
+                f"{color}Pin {gpio} label: {label} \
+mode: {mode}, state: {state}, switch: {COLORS['RESET']}{switchcolor}{switchstate}{COLORS['RESET']}"
+            )
 
     def handle_show_configuration(self):
         settings.show_configuration()
-        random_actions_status = "on" if sequencesHandler.get_random_actions_status() else "off"
+        random_actions_status = "on" if sequencesHandler.get_random_actions_state() else "off"
         print(f"Random actions is now: {random_actions_status}")
 
     def handle_load_configuration(self):
@@ -112,7 +141,9 @@ class TerminalInterpreter:
     def handle_gpio_command(self, command_parts):
         if len(command_parts) == 2 and (command_parts[1] == "on" or command_parts[1] == "off"):
             gpio = int(command_parts[0])
-            self.gpio_handler.gpio_set_output(gpio, command_parts[1])
+            # Warning: on GPIO the action is inverted: on = 0, off = 1
+            gpio_value = 0 if command_parts[1] == "on" else 1
+            self.gpio_handler.gpio_set_output(gpio, gpio_value)
 
     def handle_cycle_start(self):
         print("Cycle started")
@@ -154,6 +185,14 @@ class TerminalInterpreter:
     def handle_send_log(self, message):
         self.websocket_client.send_log(message)
         print("Message sent")
+    
+    def handle_enable_broadcast(self):
+        self.websocket_client.enable_broadcast()
+        print("Broadcast enabled")
+    
+    def handle_disable_broadcast(self):
+        self.websocket_client.disable_broadcast()
+        print("Broadcast disabled")
 
     def process_terminal_input(self, input_str):
 

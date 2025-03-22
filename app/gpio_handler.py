@@ -5,9 +5,10 @@ from dunebugger_settings import settings
 from os import path
 import re
 import atexit
+from state_tracker import state_tracker
 
 if settings.ON_RASPBERRY_PI:
-    import RPi.GPIO as GPIO
+    import RPi.GPIO as GPIO # type: ignore
 else:
     from dunemock import GPIO
 
@@ -36,7 +37,7 @@ class GPIOHandler:
         self.logicalChannels = {}
         self.load_gpio_configuration()
         self.GPIO = GPIO
-
+        self.state_tracker = state_tracker
         # Initialize GPIO
         GPIO.setwarnings(False)
         GPIO.setmode(GPIO.BCM)
@@ -157,6 +158,7 @@ class GPIOHandler:
     def clean_gpios(self):
         logger.debug("Cleanup GPIOs")
         GPIO.cleanup()
+        state_tracker.notify_update("gpios")
 
     def gpio_set_output(self, gpiocast, value):
         if isinstance(gpiocast, int):
@@ -170,10 +172,10 @@ class GPIOHandler:
         if gpiomap is not None:
             if gpiomode == self.GPIO.OUT or (not settings.ON_RASPBERRY_PI):
                 logger.debug(f"{gpiomap} {value}")
-                bit = int(value == "off")
                 if gpiomode == self.GPIO.IN:
-                    bit = int(not bit)
-                GPIO.output(gpio, bit)
+                    value = int(not value)
+                GPIO.output(gpio, value)
+                state_tracker.notify_update("gpios")
             elif gpiomode == self.GPIO.IN and settings.ON_RASPBERRY_PI:
                 logger.error(f"Can't set an input GPIO. (gpio={gpio}, gpiomap={gpiomap})")
         else:
@@ -181,7 +183,7 @@ class GPIOHandler:
 
     def gpiomap_toggle_output(self, gpiomap):
         logger.debug(f"Toggling {gpiomap}")
-        GPIO.output(self.GPIOMap[gpiomap], not GPIO.input(self.GPIOMap[gpiomap]))
+        self.gpio_set_output(gpiomap, not GPIO.input(self.GPIOMap[gpiomap]))
 
     def __gpiomap_get_gpio(self, gpiomap):
         try:
@@ -195,20 +197,22 @@ class GPIOHandler:
         except Exception:
             return None
 
-    def show_gpio_status(self, gpio_handler=None):
+    def get_gpio_status(self, gpio_handler=None):
         gpios = range(0, 28)  # Assuming BCM numbering scheme and 27 available GPIO pins
-        print("Current GPIO Status:")
+        gpio_status = []
+
         for gpio in gpios:
             mode = "UNKNOWN"
             state = "UNKNOWN"
+            switchstate = "UNKNOWN"
+            label = self.getGPIOLabel(gpio) if self.getGPIOLabel(gpio) is not None else "_not_found_"
+
             # Determine mode
             try:
                 if self.GPIO.gpio_function(gpio) == self.GPIO.IN:
                     mode = "INPUT"
-                    color = COLORS["BLUE"]
                 elif self.GPIO.gpio_function(gpio) == self.GPIO.OUT:
                     mode = "OUTPUT"
-                    color = COLORS["RESET"]
             except Exception:
                 mode = "ERROR"
 
@@ -217,16 +221,18 @@ class GPIOHandler:
                 try:
                     state = "HIGH" if self.GPIO.input(gpio) == 1 else "LOW"
                     switchstate = "OFF" if self.GPIO.input(gpio) == 1 else "ON"
-                    switchcolor = COLORS["MAGENTA"] if self.GPIO.input(gpio) == 1 else COLORS["GREEN"]
-
                 except Exception:
                     state = "ERROR"
-                    color = COLORS["RED"]
-                    switchcolor = color
-            print(
-                f"{color}Pin {gpio} label: {self.getGPIOLabel(gpio) if self.getGPIOLabel(gpio) is not None else '_not_found_'} \
-mode: {mode}, state: {state}, switch: {COLORS['RESET']}{switchcolor}{switchstate}{COLORS['RESET']}"
-            )
+                    switchstate = "ERROR"
 
+            gpio_status.append({
+                "pin": gpio,
+                "label": label,
+                "mode": mode,
+                "state": state,
+                "switch": switchstate
+            })
+
+        return gpio_status
 
 mygpio_handler = GPIOHandler()

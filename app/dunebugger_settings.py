@@ -22,13 +22,32 @@ class DunebuggerSettings:
         for attr_name in dir(self):
             if not attr_name.startswith("__") and not callable(getattr(self, attr_name)):
                 print(f"{attr_name}: {getattr(self, attr_name)}")
+        # return {
+        #     "cyclelength": settings.cyclelength,
+        #     "cycleoffset": settings.cycleoffset,
+        #     "randomActionsMinSecs": settings.randomActionsMinSecs,
+        #     "randomActionsMaxSecs": settings.randomActionsMaxSecs,
+        #     "bouncingTreshold": settings.bouncingTreshold,
+        #     "arduinoConnected": settings.arduinoConnected,
+        #     "eastereggEnabled": settings.eastereggEnabled,
+        #     "randomActionsEnabled": settings.randomActionsEnabled,
+        #     "sequenceFolder": settings.sequenceFolder,
+        #     "sequenceFile": settings.sequenceFile,
+        #     "standbyFile": settings.standbyFile,
+        #     "offFile": settings.offFile,
+        #     "randomElementsFile": settings.randomElementsFile,
+        #     "arduinoSerialPort": settings.arduinoSerialPort,
+        #     "startButtonGPIOName": settings.startButtonGPIOName,
+        #     "pipePath": settings.pipePath,
+        #     "initializationCommandsString": settings.initializationCommandsString,
+        # }
 
     def load_configuration(self):
         try:
             dunebuggerConfig = path.join(path.dirname(path.abspath(__file__)), "config/dunebugger.conf")
             self.config.read(dunebuggerConfig)
 
-            for section in ["General", "Audio", "Motors", "Debug", "Log"]:
+            for section in ["General", "Websocket", "Audio", "Motors", "Debug", "Log"]:
                 for option in self.config.options(section):
                     value = self.config.get(section, option)
                     setattr(self, option, self.validate_option(section, option, value))
@@ -36,7 +55,7 @@ class DunebuggerSettings:
 
             self.ON_RASPBERRY_PI = is_raspberry_pi()
             logger.debug(f"ON_RASPBERRY_PI: {self.ON_RASPBERRY_PI}")
-
+            logger.info("Configuration loaded successfully")
         except configparser.Error as e:
             logger.error(f"Error reading {dunebuggerConfig} configuration: {e}")
 
@@ -85,6 +104,11 @@ class DunebuggerSettings:
                     for command in commands:
                         if command not in self.terminal_interpreter_command_handlers:
                             raise ValueError(f"Invalid commands in initializationCommandsString: {command}")
+            elif section == "Websocket":
+                if option in ["remoteEnabled", "broadcastInitialState"]:
+                    return self.config.getboolean(section, option)
+                elif option in ["stateCheckIntervalSecs"]:
+                    return int(value)
             elif section == "Audio":
                 if option in [
                     "normalMusicVolume",

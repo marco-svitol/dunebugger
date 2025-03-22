@@ -1,5 +1,5 @@
 from dunebuggerlogging import logger, COLORS
-
+import json
 
 class MockGPIO:
 
@@ -99,27 +99,5 @@ class MockGPIO:
 
     def get_gpio_state(self, gpio):
         return self.gpio_states.get(gpio)["state"]
-
-    def show_gpio_status(self, gpio_handler):
-        print("Current GPIO Status:")
-        gpios = range(0, 28)  # Assuming BCM numbering scheme and 27 available GPIO pins
-        for gpio in gpios:
-            try:
-                gpioitem = self.gpio_states[gpio]
-                if gpioitem is not None and gpioitem["mode"] == GPIO.OUT:
-                    color = COLORS["RESET"]
-                    state = "OFF" if gpioitem["state"] else "ON"
-                    switchcolor = COLORS["MAGENTA"] if gpioitem["state"] else COLORS["GREEN"]
-                else:
-                    state = "HIGH" if gpioitem["state"] else "LOW"
-                    color = COLORS["BLUE"]
-                    switchcolor = COLORS["MAGENTA"] if gpioitem["state"] else COLORS["GREEN"]
-                print(f"{color}Pin {gpio} label: {gpio_handler.getGPIOLabel(gpio)} mode: {gpioitem['mode']}, state: {COLORS['RESET']}{switchcolor}{state}{COLORS['RESET']}")
-            except Exception:
-                print(
-                    f"{COLORS['RED']}Pin {gpio} label: {gpio_handler.getGPIOLabel(gpio) if gpio_handler.getGPIOLabel(gpio) is not None else '_not_found_'} \
-mode: INPUT, state: ERROR{COLORS['RESET']}"
-                )
-
 
 GPIO = MockGPIO()
