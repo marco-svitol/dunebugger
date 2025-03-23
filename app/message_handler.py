@@ -25,15 +25,18 @@ class MessageHandler:
         connection_id = message.get("connectionId")
         if message_type == "request_gpio_state":
             self.handle_request_gpio_state(connection_id)
-        if message_type == "request_sequence_state":
+        elif message_type == "request_sequence_state":
             self.handle_request_sequence_state(connection_id)
+        elif message_type == "request_sequence":
+            sequence = message.get("body")
+            self.handle_request_sequence(sequence, connection_id)
         elif message_type == "ping":
             self.handle_ping(connection_id)
         elif message_type == "command":
             command = message.get("body")
             self.pipe_listener.pipe_send(command)
         else:
-            logger.warning(f"Unknown message type: {message_type}")
+            logger.warning(f"Unknown messsage type: {message_type}")
 
     def handle_request_gpio_state(self, connection_id = "broadcast"):
         self.dispatch_message(
@@ -45,6 +48,13 @@ class MessageHandler:
         self.dispatch_message(
             self.sequence_handler.get_state(),
             "sequence_state",
+            connection_id
+        )
+
+    def handle_request_sequence(self, sequence, connection_id = "broadcast"):
+        self.dispatch_message(
+            self.sequence_handler.get_sequence(sequence),
+            "sequence",
             connection_id
         )
 

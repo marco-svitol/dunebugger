@@ -299,6 +299,57 @@ class SequencesHandler:
             "start_button_enabled": self.get_start_button_state(),
         }
 
+
+    def get_sequence(self, sequence_name):
+        if sequence_name == "main":
+            file_path = os.path.join(self.sequenceFolder, self.sequence_file)
+        elif sequence_name == "standby":
+            file_path = os.path.join(self.sequenceFolder, self.standby_file)
+        elif sequence_name == "off":
+            file_path = os.path.join(self.sequenceFolder, self.off_file)
+        else:
+            return {"error": "Unknown sequence name"}
+
+        try:
+            sequence_data = self._parse_sequence_file(file_path)
+            return {"sequence": sequence_data}
+        except FileNotFoundError:
+            logger.error(f"Sequence file not found: {file_path}")
+            return {"error": "Sequence file not found"}
+        except Exception as e:
+            logger.error(f"Error reading sequence file {file_path}: {e}")
+            return {"error": str(e)}
+
+    def _parse_sequence_file(self, file_path):
+        sequence_data = []
+        with open(file_path, "r") as file:
+            for line in file:
+                command_line = line.strip()
+
+                # Remove comments
+                command_line = command_line.split("#", 1)[0].strip()
+                command_line = command_line.split("//", 1)[0].strip()
+
+                if not command_line:
+                    continue
+
+                time_mark, command_body = self.extract_time_mark(command_line)
+                if time_mark is not None:
+                    parts = command_body.split()
+                    command = parts[0].lower()
+                    action = parts[1].lower() if len(parts) > 1 else None
+                    parameter = " ".join(parts[2:]) if len(parts) > 2 else None
+
+                    sequence_data.append({
+                        "time": time_mark,
+                        "command": command,
+                        "action": action,
+                        "parameter": parameter
+                    })
+                else:
+                    logger.error(f"Invalid time mark in sequence file: {file_path}")
+        return sequence_data
+
 try:
     sequencesHandler = SequencesHandler()
 except Exception as exc:
