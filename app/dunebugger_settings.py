@@ -107,7 +107,7 @@ class DunebuggerSettings:
             elif section == "Websocket":
                 if option in ["remoteEnabled", "broadcastInitialState"]:
                     return self.config.getboolean(section, option)
-                elif option in ["stateCheckIntervalSecs"]:
+                elif option in ["stateCheckIntervalSecs", "cyclePlayingResolutionSecs"]:
                     return int(value)
             elif section == "Audio":
                 if option in [

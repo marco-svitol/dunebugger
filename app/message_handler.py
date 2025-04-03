@@ -51,6 +51,13 @@ class MessageHandler:
             connection_id
         )
 
+    def handle_request_playing_time(self, connection_id = "broadcast"):
+        self.dispatch_message(
+            self.sequence_handler.get_playing_time(),
+            "playing_time",
+            connection_id
+        )
+        
     def handle_request_sequence(self, sequence, connection_id = "broadcast"):
         self.dispatch_message(
             self.sequence_handler.get_sequence(sequence),
@@ -98,6 +105,9 @@ class MessageHandler:
                     elif state in ["random_actions", "cycle_start_stop", "broadcast", "start_button"]:
                         # Handle random actions state change
                         self.handle_request_sequence_state()
+                    elif state == "playing_time":
+                        # Handle playing time changes
+                        self.handle_request_playing_time()
                     elif state == "config":
                         # Handle configuration changes
                         logger.info("Configuration changed. Reloading settings...")

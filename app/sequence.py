@@ -10,6 +10,7 @@ from dunebuggerlogging import logger
 import time
 import atexit
 import threading
+import random
 from state_tracker import state_tracker
 
 class SequencesHandler:
@@ -28,10 +29,36 @@ class SequencesHandler:
         self.cycle_stop_event = threading.Event()
         self.state_tracker = state_tracker
         self.start_button_enabled = False
+        self.cycle_playing_time = 0
+        self.cycle_time_thread = None
+        self.cycle_time_thread_stop_event = threading.Event()
+        self.cyclePlayingResolutionSecs = int(settings.cyclePlayingResolutionSecs)
 
         atexit.register(self.sequence_clean)
 
         self.sequences = self.validate_all_sequence_files(self.sequenceFolder)
+
+    def update_cycle_time(self):
+        while not self.cycle_time_thread_stop_event.is_set():
+            time.sleep(self.cyclePlayingResolutionSecs)
+            self.cycle_playing_time += self.cyclePlayingResolutionSecs
+            self.state_tracker.notify_update("playing_time")
+            if (random.random() < 0.01):
+                logger.debug(f"Cycle playing time: {self.cycle_playing_time} seconds")
+
+    def start_cycle_time_thread(self):
+        """Start a thread to update the cycle playing time."""
+        self.cycle_playing_time = 0  # Reset playing time
+        self.cycle_time_thread_stop_event.clear()
+        self.cycle_time_thread = threading.Thread(target=self.update_cycle_time, daemon=True)
+        self.cycle_time_thread.start()
+
+    def stop_cycle_time_thread(self):
+        """Stop the cycle time thread."""
+        if self.cycle_time_thread:
+            self.cycle_time_thread_stop_event.set()
+            self.cycle_time_thread.join()
+            self.cycle_time_thread = None
 
     def validate_all_sequence_files(self, directory):
         try:
@@ -287,10 +314,13 @@ class SequencesHandler:
             self.cycle_event.clear()
             self.cycle_stop_event.clear()
             self.disable_random_actions()
+            self.start_cycle_time_thread()
             self.start()
+            self.stop_cycle_time_thread()
             self.enable_random_actions()
             settings.cycleoffset = 0
             self.setStandByMode()
+            
 
     def get_state(self):
         return {
@@ -298,7 +328,9 @@ class SequencesHandler:
             "cycle_running": self.get_cycle_state(),
             "start_button_enabled": self.get_start_button_state(),
         }
-
+    
+    def get_playing_time(self):
+        return self.cycle_playing_time
 
     def get_sequence(self, sequence_name):
         if sequence_name == "main":

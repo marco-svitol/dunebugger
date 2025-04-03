@@ -7,6 +7,7 @@ class StateTracker:
             "cycle_start_stop": False,
             "config": False,
             "start_button": False,
+            "playing_time": False,
         }
 
     def notify_update(self, attribute):
