@@ -7,6 +7,8 @@ import supervisor.InTime as InTime
 from datetime import datetime
 from dunebugger_settings import settings
 from os import path
+import atexit
+
 
 class AudioPlayer:
     def __init__(self):
@@ -17,12 +19,7 @@ class AudioPlayer:
         self.quietMusicVol = settings.quietMusicVol
         self.quietSfxVol = settings.quietSfxVol
         self.ignoreQuietTime = settings.ignoreQuietTime
-        self.fadeoutsec = settings.fadeoutsec
-        self.musicpath = path.join(path.dirname(path.abspath(__file__)), settings.musicpath)
-        self.sfxpath = path.join(path.dirname(path.abspath(__file__)), settings.sfxpath)
-        self.sfxfile = settings.sfxfile
-        self.easteregg = settings.easteregg
-        self.entrysong = settings.entrysong
+        self.eastereggTriggered = False
         self.vlcdevice = settings.vlcdevice
 
         self.vlcinstance = vlc.Instance(self.vlcdevice)
@@ -30,26 +27,50 @@ class AudioPlayer:
         self.sfxplayer = self.vlcinstance.media_player_new()
         self.musicplayer = self.vlcinstance.media_player_new()
 
-        #self.initMusic()
+        atexit.register(self.vstopaudio)
+
+    def get_music_path(self, music_folder):
+        return path.join(path.dirname(path.abspath(__file__)), "..", music_folder)
+
+    def get_sfx_filepath(self, sfx_file):
+        return path.join(path.dirname(path.abspath(__file__)), "..", sfx_file)
 
     def checkaudioext(self, filename):
-        audioext = ['AAC', 'AC3', 'AIFF', 'AMR', 'AU', 'FLAC', 'M4A', 'MIDI', 'MKA', 'MP3', 'OGA', 'RA', 'VOC', 'WAV', 'WMA']
+        audioext = [
+            "AAC",
+            "AC3",
+            "AIFF",
+            "AMR",
+            "AU",
+            "FLAC",
+            "M4A",
+            "MIDI",
+            "MKA",
+            "MP3",
+            "OGA",
+            "RA",
+            "VOC",
+            "WAV",
+            "WMA",
+        ]
         if filename[-3:].upper() in audioext:
             return True
         return False
 
-    def startAudio(self, easterEggOn = False):
-        audioPlayer.vplaymusic(easterEggOn)
-        audioPlayer.vplaysfx()
+    def playMusic(self, music_folder):
+        audioPlayer.vplaymusic(music_folder)
 
-    def vplaymusic(self, easterEggOn):
+    def play_sfx(self, sfx_file):
+        audioPlayer.vplaysfx(sfx_file)
+
+    def vplaymusic(self, music_folder):
 
         self.setVolumeBasedOntime()
 
         playlist = self.vlcinstance.media_list_new()
 
-        fileplaylist = os.listdir(self.musicpath)  # get filenames
-        logger.info("Music: read " + str(len(fileplaylist)) + " files from folder " + self.musicpath)
+        fileplaylist = os.listdir(music_folder)  # get filenames
+        logger.info(f"Music: read {str(len(fileplaylist))} files from folder {music_folder}")
 
         for mfile in fileplaylist:  # keep only if extension is a valid audio file
             if not self.checkaudioext(mfile):
@@ -60,12 +81,14 @@ class AudioPlayer:
         if len(fileplaylist) > 20:
             fileplaylist = fileplaylist[:19]  # get only the first 20 songs
 
-        if easterEggOn:  # easteregg
+        if settings.eastereggEnabled and self.eastereggTriggered:
             logger.info("EasterEgg enabled!!")
-            playlist.add_media(self.vlcinstance.media_new(self.sfxpath + self.easteregg))
+            playlist.add_media(self.vlcinstance.media_new(self.get_sfx_filepath("app_audio_files/ohhche.mp3")))
+            playlist.add_media(self.vlcinstance.media_new(self.get_music_path("app_audio_files/dunebuggy.mp3")))
+            self.eastereggTriggered = False
 
         for song in range(len(fileplaylist)):  # add path to songname
-            playlist.add_media(self.vlcinstance.media_new(self.musicpath + fileplaylist[song]))
+            playlist.add_media(self.vlcinstance.media_new(music_folder + "/" + fileplaylist[song]))
 
         self.musiclistplayer.set_media_list(playlist)
 
@@ -76,31 +99,28 @@ class AudioPlayer:
         time.sleep(0.1)
         logger.info("Setting music volume at " + str(self.musicVolume))
 
-        logger.info("Playing music (first three songs): " + fileplaylist[0] + " " + fileplaylist[1] + " " +
-                    fileplaylist[2])
-        
-        self.musicSetVolume(self.musicVolume)
-        
+        logger.info("Playing music (first three songs): " + fileplaylist[0] + " " + fileplaylist[1] + " " + fileplaylist[2])
 
-    def vplaysfx(self):
-        sfxfile = path.join(self.sfxpath, self.sfxfile)
-        media = self.vlcinstance.media_new(sfxfile)
+        self.musicSetVolume(self.musicVolume)
+
+    def vplaysfx(self, sfx_file):
+        media = self.vlcinstance.media_new(sfx_file)
 
         self.sfxplayer.set_media(media)
         self.sfxSetVolume(self.sfxVolume)
 
         self.sfxplayer.play()
-        logger.info(f"Playing sfx : {sfxfile}")
+        logger.info(f"Playing sfx : {sfx_file}")
 
-    def vstopaudio(self):
+    def vstopaudio(self, fadeout_secs=3):
         try:
             if self.musicVolume > 0 or self.sfxVolume > 0:
                 if self.musicVolume > self.sfxVolume:  # calculate pause interval. Takes higher volume
-                    fadeoutpause = self.fadeoutsec / (self.musicVolume * 1.0)
+                    fadeoutpause = int(fadeout_secs) / (self.musicVolume * 1.0)
                 else:
-                    fadeoutpause = self.fadeoutsec / (self.sfxVolume * 1.0)
+                    fadeoutpause = int(fadeout_secs) / (self.sfxVolume * 1.0)
 
-                logger.info("Fading out in " + str(self.fadeoutsec) + " seconds")
+                logger.info("Fading out in " + str(fadeout_secs) + " seconds")
 
                 mvol = self.musicVolume
                 svol = self.sfxVolume
@@ -112,19 +132,19 @@ class AudioPlayer:
                     if self.sfxplayer is not None and svol > 0:
                         svol -= 1
                         self.sfxplayer.audio_set_volume(svol)
-                    print('.', end="", flush=True)
+                    print(".", end="", flush=True)
                     time.sleep(fadeoutpause)
-                print(f'\n')
+                print("\n")
                 self.musiclistplayer.stop()
                 self.sfxplayer.stop()
-        except:
-            logger.warning("vstopaudio exception, most probably sound was not even playing.")
+        except Exception as e:
+            logger.warning(f"vstopaudio exception: {e}")
             return
 
     def musicSetVolume(self, vol):
         self.musicplayer.audio_set_volume(vol)
         logger.info("Setting music volume at " + str(vol))
-    
+
     def sfxSetVolume(self, vol):
         self.sfxplayer.audio_set_volume(vol)
         logger.debug("Setting sfx volume at " + str(vol))
@@ -144,5 +164,8 @@ class AudioPlayer:
                 self.sfxVolume = self.quietSfxVol
                 logger.info("Siamo durante una celebrazione: vol music=" + str(self.musicVolume) + " vol sfx=" + str(self.sfxVolume))
 
-audioPlayer = AudioPlayer()
+    def setEasterEggTrigger(self, easter_egg_trigger):
+        self.eastereggTriggered = easter_egg_trigger
 
+
+audioPlayer = AudioPlayer()

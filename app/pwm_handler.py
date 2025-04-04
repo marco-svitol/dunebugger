@@ -1,6 +1,7 @@
 from gpio_handler import mygpio_handler, GPIO
 from dunebugger_settings import settings
 
+
 class PWMHandler:
     def __init__(self, GPIOnum, frequency=5000, duty_cycle=100):
         self.GPIOnum = GPIOnum
@@ -17,5 +18,6 @@ class PWMHandler:
     def cleanup(self):
         self.pwm.stop()
 
-pwm_motor1 = PWMHandler(mygpio_handler.GPIOMap["Motor1PWM"],settings.motor1Freq)
-pwm_motor2 = PWMHandler(mygpio_handler.GPIOMap["Motor2PWM"],settings.motor2Freq)
+
+pwm_motor1 = PWMHandler(mygpio_handler.GPIOMap["Motor1PWM"], settings.motor1Freq)
+pwm_motor2 = PWMHandler(mygpio_handler.GPIOMap["Motor2PWM"], settings.motor2Freq)

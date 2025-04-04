@@ -1,94 +1,141 @@
 
-### crontab -e
-```@reboot tmux new -d -s cycle -c '/home/pi/dunebugger/app' 'python /home/pi/dunebugger/app/switchonoff.py''```
+# Dunebugger
 
-### niceToHave:
-- timing random con range di variabilità da aggiungere a funzione sleep
-- cicli multipli scelta random
-- WEBGUI -> velocità + contatori + calendario/orari messe + programciclo...
+Dunebugger is a Python-based software that powers a Raspberry Pi to serve as the central control system for a very specific custom electronic circuit. The circuit consists of the Raspberry Pi and various digitally controlled hardware components, including relay boards, dimmer boards, and motor driver boards. This software is specifically developed to work with this custom hardware setup, enabling flexible configuration, management, and control of GPIO pins and associated components, supporting dynamic behaviors and interactive operation.
 
+---
 
-### install rpi notes (use with care)
-```
-sudo apt update -y; sudo apt upgrade -y
-sudo apt install git tmux speedtest-cli -y    
-git clone https://github.com/marco-svitol/dunebugger.git     
+## Introduction
+Dunebugger is part of a unique project designed to automate the lights, music, and special effects (such as water pumps and mechanical movements) of a nativity scene setup in a public space in Milan. This nativity scene, visited by thousands of people every Christmas season, is located in a Franciscan monastery and serves as a focal point of community celebration. The software and hardware combined enable a dynamic and immersive experience for visitors.
 
-# create key pair for github
-ssh-keygen -t ed25519 -C "marco.cambon@gmail.com"
-# go to GitHub and create pub key for this raspberry
-# test connection with ssh -T git@github.com
+In addition to controlling physical components, the sequence system allows playing background music, randomly chosen from a list of audio files at each startup. It also supports playing single audio files during specific moments in the sequence to enhance the experience. For example, during a sunrise light effect, the system could play environmental sounds like a rooster crowing, dogs barking, or birds chirping.
 
-#Bad experience in upgrading Python to latest verision, I would avoid it. But here's the steps I took:
-				#Python pre-requisites:
-				sudo apt install -y libbz2-dev libffi-dev libncurses-dev libreadline-dev libssl-dev zlib1g-dev
-				sudo apt-get install libsqlite3-dev libdb-dev libgdbm-dev liblzma-dev tk-dev uuid-dev
+---
 
-				#Python replace 3.13.0 with the latest version found at:
-				# https://www.python.org/downloads/
-				export PYTHON_VERSION=3.13.0
-				wget https://www.python.org/ftp/python/$PYTHON_VERSION/Python-$PYTHON_VERSION.tgz
-				tar -xvf Python-$PYTHON_VERSION.tgz
-				cd Python-$PYTHON_VERSION
-				./configure --prefix=/usr/local/Python-$PYTHON_VERSION
-				make
-				sudo make install
+## Features
+- **GPIO Configuration**: Dynamically configure GPIO pins as inputs or outputs, assign descriptive names, and define logical mappings between GPIOs and physical hardware components like switches, relays, dimmers, and motors.
+- **Sequence Management**: Define and execute complex sequences of actions for controlling relays, motors, and other devices using an easy-to-read configuration file.
+- **Audio Integration**: Automatically play background music and trigger sound effects to synchronize with specific events in the sequence.
+- **Terminal Interface**: Observe GPIO statuses, interact with the system, and execute commands via a terminal.
+- **Event-Driven Behavior**: Respond to user inputs like button presses and other configured events to trigger actions or sequences.
 
-				#set python default command
-				sudo rm /usr/local/bin/python3
-				sudo cp /usr/local/Python-$PYTHON_VERSION/* /usr/local/bin
-				cd /usr/local/bin
-				sudo ln -s /usr/local/bin/python3.13 python3
-				sudo ln -s /usr/local/bin/python3.13 python
-				sudo ln -s /usr/local/bin/pip3.13 pip
+---
 
-sudo apt install vlc
+## Hardware Requirements
+1. **Raspberry Pi** (any version with GPIO support)
+2. **Relay Boards** (digitally controlled, for switching high-voltage devices)
+3. **Dimmer Board** (for controlling light brightness)
+4. **Motor Driver Board** (for controlling motor speed and direction)
+5. Various input devices (e.g., switches, sensors)
 
-# run 
-sudo raspi-config
-# and check settings:
-# mandatory: enlarge filesystem in "Advanced Options"
+<img src="docs/images/centr_vqz_2024.jpg" alt="Alt text" width="500" />
+---
 
-#manage network through NetworkManager: nmcli / nmtui
-sudo nmcli connection add type wifi ifname wlan0 con-name Casa ssid "Casa"
-sudo nmcli connection modify Casa wifi-sec.key-mgmt wpa-psk wifi-sec.psk "D0ntW0rry2016!"
-sudo nmcli connection modify Casa +ipv4.addresses 192.168.1.225
-sudo nmcli connection modify Casa +ipv4.gateway 192.168.1.254
-sudo nmcli connection modify Casa +ipv4.dns "192.168.1.254"
-sudo nmcli connection modify Casa +ipv4.dhcp-timeout 20
-sudo nmcli connection modify Casa ipv6.method "disabled"
+## Configuration Files
+Dunebugger uses configuration files to manage GPIO settings, logical mappings, and action sequences.
 
-sudo nmcli connection add type wifi ifname wlan0 con-name Rosetum ssid "Rosetum"
-sudo nmcli connection modify Rosetum wifi-sec.key-mgmt wpa-psk wifi-sec.psk "mozart@19A"
-sudo nmcli connection modify Rosetum +ipv4.addresses 10.10.10.20
-sudo nmcli connection modify Rosetum +ipv4.gateway 10.10.10.1
-sudo nmcli connection modify Rosetum +ipv4.dns "8.8.8.8 8.8.4.4"
-sudo nmcli connection modify Rosetum +ipv4.dhcp-timeout 20
-sudo nmcli connection modify Rosetum ipv6.method "disabled"
+### GPIO Configuration
+Below is an example configuration for GPIO pin setup:
 
-# optional : add your id_rsa.pub to authorized_keys to access to ssh without password
+```ini
+[Channels]
+chan_out_releA = 5,11,9,10,22,27,17,4
+chan_out_releB = 21,20,16,12,7,8,25,24
+chan_out_motor_1 = 18,1,23
+chan_out_motor_2 = 13,3,2
+chan_in_contr = 6
+chan_in_limitswitch_motor1 = 0,26
+chan_in_limitswitch_motor2 = 14,15
 
-# to fix keyboard arrows
-sudo apt install vim 
+[ChannelsSetup]
+chan_out_releA = OUT, HIGH
+chan_out_releB = OUT, HIGH
+chan_out_motor_1 = OUT, LOW
+chan_out_motor_2 = OUT, LOW
+chan_in_contr = IN, DOWN
+chan_in_limitswitch_motor1 = IN, DOWN
+chan_in_limitswitch_motor2 = IN, DOWN
 
-# copy .vimrc
-
-
-#Troubleshoot 
-apt install shows  "apt_pkg" missing
-solution:
-sudo ln -s apt_pkg.cpython-311-arm-linux-gnueabihf.so apt_pkg.so
-
-#create ~/.config/pip/pip.conf :
-[global]
-break-system-packages = true
-
-
-#AP
-sudo nmcli con add con-name hotspot ifname wlan1 type wifi ssid "dunebugger"
-sudo nmcli con modify hotspot wifi-sec.key-mgmt wpa-psk
-sudo nmcli con modify hotspot wifi-sec.psk "Shish2018"
-sudo nmcli con modify hotspot 802-11-wireless.mode ap 802-11-wireless.band bg ipv4.method shared
+[LogicalChannels]
+Rele1 = chan_out_releA[0]
+Rele2 = chan_out_releA[1]
+Motor1PWM = chan_out_motor_1[0]
+Motor1In1 = chan_out_motor_1[1]
+Motor1In2 = chan_out_motor_1[2]
+In_StartButton = chan_in_contr[0]
 ```
 
+### Action Sequences
+Define sequences of events and actions in a configuration file:
 
+```ini
+0 switch LuceStartButton Off
+0 switch PompaAcqua On
+10 switch Case1 Off
+17 switch Case2 Off
+
+1:23 switch Case1 On
+1:25 switch Case2 On
+2:07 motor start 1 ccw 92
+2:08 switch Ombre1 On
+2:23 motor start 2 ccw 85
+2:50 switch Ombre2 Off
+4:00 switch DimGiorno On
+4:16 switch Case2 Off
+```
+
+---
+
+## Terminal Commands
+Interact with the system using terminal commands to observe statuses, reload configurations, or trigger actions. Examples:
+
+```ini
+[Commands]
+h = handle_help, "help"
+s = handle_show_gpio_status, "show GPIO status"
+t = handle_show_configuration, "show dunebugger conf"
+l = handle_load_configuration, "reload dunebugger conf"
+quit = handle_quit, "quit"
+c = handle_cycle_start, "cycle start"
+cs = handle_cycle_stop, "cycle stop (send stop signal)"
+mi = handle_initialize_motor_limits, "motor init"
+```
+
+---
+
+## Installation
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/your-repo/dunebugger.git
+   ```
+2. Install required Python libraries:
+   ```bash
+   pip install -r requirements.txt
+   ```
+3. Connect the Raspberry Pi to the hardware components as per your circuit design.
+
+---
+
+## Usage
+1. Set up the GPIO configuration file based on your hardware.
+2. Define your action sequences in the appropriate file.
+3. Start the application:
+   ```bash
+   python dunebugger.py
+   ```
+4. Interact with the system using the terminal or wait for configured events to trigger actions.
+
+---
+
+## Contribution
+Contributions are welcome! Feel free to open an issue or submit a pull request.
+
+---
+
+## License
+This project is licensed under the MIT License. See the `LICENSE` file for details.
+
+---
+
+## Acknowledgments
+Special thanks to the open-source community and contributors who helped make this project possible!
