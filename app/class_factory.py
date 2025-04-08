@@ -26,3 +26,5 @@ mqueue_sender = ZeroMQComm(
 )
 
 mqueue_handler.mqueue_sender = mqueue_sender
+terminal_interpreter.mqueue_handler = mqueue_handler
+mqueue_handler.monitor_thread.start()

@@ -2,6 +2,7 @@ import zmq
 import threading
 import atexit
 import json
+from dunebugger_logging import logger
 
 class ZeroMQComm:
     def __init__(self, mode, address, mqueue_handler, topic=""):
@@ -21,6 +22,7 @@ class ZeroMQComm:
         self.listener_thread = None
         self.mqueue_handler = mqueue_handler
         self.stop_event = threading.Event()
+        self.send_lock = threading.Lock()  # Lock to ensure thread safety
         atexit.register(self.close)
 
     def connect(self):
@@ -33,19 +35,34 @@ class ZeroMQComm:
         else:
             raise ValueError("Invalid mode. Use 'REQ' or 'REP'.")
 
-    def send(self, message):
+    def send(self, message, timeout=5000):
         """
-        Send a request and wait for a reply (REQ mode).
+        Send a request and wait for a reply (REQ mode) with a timeout.
+
+        :param message: The message to send.
+        :param timeout: Timeout in milliseconds to wait for a reply (default: 5000ms).
+        :return: The reply received from the server.
+        :raises: RuntimeError if the mode is not REQ, if a timeout occurs, or if the socket is not ready.
         """
         if self.mode != "REQ":
             raise RuntimeError("send is only supported in REQ mode.")
-        
-        compact_message = json.dumps(message, separators=(",", ":"))
-        print(f"Sending message: {compact_message}")  # Debug log
-        self.socket.send_string(compact_message)
-        reply = self.socket.recv_string()
-        print(f"Received reply: {reply}")  # Debug log
-        return reply
+
+        with self.send_lock:  # Ensure thread safety
+            # Set the receive timeout
+            self.socket.setsockopt(zmq.RCVTIMEO, timeout)
+
+            compact_message = json.dumps(message, separators=(",", ":"))
+            logger.debug(f"Sending message: {compact_message}")  # Debug log
+
+            try:
+                self.socket.send_string(compact_message)
+                reply = self.socket.recv_string()  # Wait for a reply with the specified timeout
+                logger.debug(f"Received reply: {reply}")  # Debug log
+                return reply
+            except zmq.error.Again:
+                #raise RuntimeError(f"Timeout occurred after {timeout}ms while waiting for a reply.")
+                logger.error(f"Timeout occurred after {timeout}ms while waiting for a reply.")
+                self._reset_socket()
     
     def listen(self):
         """
@@ -61,7 +78,8 @@ class ZeroMQComm:
                 message = self.socket.recv_string()
                 print(f"Received message: {message}")  # Debug log
                 # Process the message and generate a reply
-                reply = self.mqueue_handler.process_message(message)
+                json_message = json.loads(message)
+                reply = self.mqueue_handler.process_message(json_message)
                 # Send the reply
                 self.socket.send_string(reply)
                 print(f"Sent reply: {reply}")  # Debug log
@@ -87,6 +105,15 @@ class ZeroMQComm:
         if self.listener_thread:
             self.listener_thread.join()
 
+    def _reset_socket(self):
+        """
+        Reset the ZeroMQ socket after an error or timeout.
+        """
+        logger.warning("Resetting the ZeroMQ socket...")
+        if self.socket:
+            self.socket.close()  # Close the current socket
+        self.connect()  # Recreate and reconnect the socket
+        
     def close(self):
         """Close the ZeroMQ socket and terminate the context."""
         self.stop_listener()

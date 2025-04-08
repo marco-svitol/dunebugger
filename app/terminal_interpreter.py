@@ -13,7 +13,7 @@ class TerminalInterpreter:
         self.gpio_handler = mygpio_handler
         self.sequence_handler = sequence_handler
         self.motor_handler = motor_handler
-
+        self.mqueue_handler = None
         history_path = "~/.python_history"
         self.enableHistory(history_path)
         atexit.register(self.save_history, history_path)
@@ -182,16 +182,8 @@ mode: {mode}, state: {state}, switch: {COLORS['RESET']}{switchcolor}{switchstate
         print("Start button disabled")
 
     def handle_send_log(self, message):
-        self.websocket_client.send_log(message)
+        self.mqueue_handler.dispatch_message(message, "log")
         print("Message sent")
-    
-    def handle_enable_broadcast(self):
-        self.websocket_client.enable_broadcast()
-        print("Broadcast enabled")
-    
-    def handle_disable_broadcast(self):
-        self.websocket_client.disable_broadcast()
-        print("Broadcast disabled")
 
     def process_terminal_input(self, input_str):
 

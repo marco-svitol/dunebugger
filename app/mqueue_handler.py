@@ -18,17 +18,16 @@ class MessagingQueueHandler:
         self.monitor_thread = threading.Thread(target=self._monitor_states, daemon=True)
         
     def process_message(self, message):
-        json_message = json.loads(message)
-        message_type = json_message.get("type")
+        message_type = message.get("type")
         if message_type == "request_gpio_state":
             self.handle_request_gpio_state()
         elif message_type == "request_sequence_state":
             self.handle_request_sequence_state()
         elif message_type == "request_sequence":
-            sequence = json_message.get("body")
+            sequence = message.get("body")
             self.handle_request_sequence(sequence)
         elif message_type == "command":
-            command = json_message.get("body")
+            command = message.get("body")
             self.terminal_interpreter.process_terminal_input(command)
         else:
             logger.warning(f"Unknown message type: {message_type}")
@@ -65,14 +64,6 @@ class MessagingQueueHandler:
             "destination": "dunebugger-remote",
         }
         self.mqueue_sender.send(message)
-
-    # def send_log(self, log_message):
-    #     data = {
-    #         "body": log_message,
-    #         "type": "log",
-    #         "source": "dunebugger-core"
-    #     }
-    #     self.mqueue_client.send_message(data)
     
     def _monitor_states(self):
         """
