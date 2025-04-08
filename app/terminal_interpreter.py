@@ -1,19 +1,18 @@
 import readline
 import os
 import time
-from dunebugger_settings import settings
 import atexit
-from dunebuggerlogging import logger, set_logger_level, get_logging_level_from_name, COLORS
-import motor
 import threading
 import traceback
-from sequence import sequencesHandler
-from gpio_handler import mygpio_handler
+
+from dunebugger_settings import settings
+from dunebugger_logging import logger, set_logger_level, get_logging_level_from_name, COLORS
+
 class TerminalInterpreter:
-    def __init__(self):
+    def __init__(self, mygpio_handler, sequence_handler, motor_handler):
         self.gpio_handler = mygpio_handler
-        self.sequencesHandler = sequencesHandler
-        self.websocket_client = None
+        self.sequence_handler = sequence_handler
+        self.motor_handler = motor_handler
 
         history_path = "~/.python_history"
         self.enableHistory(history_path)
@@ -118,7 +117,7 @@ mode: {mode}, state: {state}, switch: {COLORS['RESET']}{switchcolor}{switchstate
 
     def handle_show_configuration(self):
         settings.show_configuration()
-        random_actions_status = "on" if sequencesHandler.get_random_actions_state() else "off"
+        random_actions_status = "on" if self.sequence_handler.get_random_actions_state() else "off"
         print(f"Random actions is now: {random_actions_status}")
 
     def handle_load_configuration(self):
@@ -129,13 +128,13 @@ mode: {mode}, state: {state}, switch: {COLORS['RESET']}{switchcolor}{switchstate
 
     def handle_enable_random_actions(self):
         if settings.randomActionsEnabled:
-            sequencesHandler.enable_random_actions()
+            self.sequence_handler.enable_random_actions()
             print("Random actions enabled")
         else:
             print("Random actions is disabled in the configuration")
 
     def handle_disable_random_actions(self):
-        sequencesHandler.disable_random_actions()
+        self.sequence_handler.disable_random_actions()
         print("Random actions disabled")
 
     def handle_gpio_command(self, command_parts):
@@ -147,11 +146,11 @@ mode: {mode}, state: {state}, switch: {COLORS['RESET']}{switchcolor}{switchstate
 
     def handle_cycle_start(self):
         print("Cycle started")
-        sequencesHandler.cycle_trigger()
+        self.sequence_handler.cycle_trigger()
 
     def handle_cycle_stop(self):
         print("Stopping cycle")
-        sequencesHandler.cycle_stop()
+        self.sequence_handler.cycle_stop()
 
     def handle_set_logger_debug(self):
         set_logger_level("dunebuggerLog", get_logging_level_from_name("DEBUG"))
@@ -160,26 +159,26 @@ mode: {mode}, state: {state}, switch: {COLORS['RESET']}{switchcolor}{switchstate
         set_logger_level("dunebuggerLog", get_logging_level_from_name("INFO"))
 
     def handle_set_standby_mode(self):
-        self.sequencesHandler.setStandByMode()
+        self.sequence_handler.setStandByMode()
         print("Standby mode state set")
 
     def handle_set_off_mode(self):
-        self.sequencesHandler.setOffMode()
+        self.sequence_handler.setOffMode()
         print("Off mode state set")
 
     def handle_initialize_motor_limits(self):
         if settings.motorEnabled:
             print("Initializing motor limits")
-            motor.initMotorLimits()
+            self.motor_handler.initMotorLimits()
         else:
             print("Motor module is disabled")
 
     def handle_enable_start_button(self):
-        self.sequencesHandler.enable_start_button()
+        self.sequence_handler.enable_start_button()
         print("Start button enabled")
 
     def handle_disable_start_button(self):
-        self.sequencesHandler.disable_start_button()
+        self.sequence_handler.disable_start_button()
         print("Start button disabled")
 
     def handle_send_log(self, message):

@@ -1,7 +1,7 @@
 from os import path
 import configparser
 from dotenv import load_dotenv
-from dunebuggerlogging import logger, get_logging_level_from_name, set_logger_level
+from dunebugger_logging import logger, get_logging_level_from_name, set_logger_level
 from utils import is_raspberry_pi
 
 
@@ -22,32 +22,13 @@ class DunebuggerSettings:
         for attr_name in dir(self):
             if not attr_name.startswith("__") and not callable(getattr(self, attr_name)):
                 print(f"{attr_name}: {getattr(self, attr_name)}")
-        # return {
-        #     "cyclelength": settings.cyclelength,
-        #     "cycleoffset": settings.cycleoffset,
-        #     "randomActionsMinSecs": settings.randomActionsMinSecs,
-        #     "randomActionsMaxSecs": settings.randomActionsMaxSecs,
-        #     "bouncingTreshold": settings.bouncingTreshold,
-        #     "arduinoConnected": settings.arduinoConnected,
-        #     "eastereggEnabled": settings.eastereggEnabled,
-        #     "randomActionsEnabled": settings.randomActionsEnabled,
-        #     "sequenceFolder": settings.sequenceFolder,
-        #     "sequenceFile": settings.sequenceFile,
-        #     "standbyFile": settings.standbyFile,
-        #     "offFile": settings.offFile,
-        #     "randomElementsFile": settings.randomElementsFile,
-        #     "arduinoSerialPort": settings.arduinoSerialPort,
-        #     "startButtonGPIOName": settings.startButtonGPIOName,
-        #     "pipePath": settings.pipePath,
-        #     "initializationCommandsString": settings.initializationCommandsString,
-        # }
 
     def load_configuration(self):
         try:
             dunebuggerConfig = path.join(path.dirname(path.abspath(__file__)), "config/dunebugger.conf")
             self.config.read(dunebuggerConfig)
 
-            for section in ["General", "Websocket", "Audio", "Motors", "Debug", "Log"]:
+            for section in ["General",  "MessageQueue", "Audio", "Motors", "Debug", "Log"]:
                 for option in self.config.options(section):
                     value = self.config.get(section, option)
                     setattr(self, option, self.validate_option(section, option, value))
@@ -96,7 +77,6 @@ class DunebuggerSettings:
                     "randomElementsFile",
                     "arduinoSerialPort",
                     "startButtonGPIOName",
-                    "pipePath",
                 ]:
                     return str(value)
                 elif option == "initializationCommandsString":
@@ -104,10 +84,10 @@ class DunebuggerSettings:
                     for command in commands:
                         if command not in self.terminal_interpreter_command_handlers:
                             raise ValueError(f"Invalid commands in initializationCommandsString: {command}")
-            elif section == "Websocket":
-                if option in ["remoteEnabled", "broadcastInitialState"]:
-                    return self.config.getboolean(section, option)
-                elif option in ["stateCheckIntervalSecs", "cyclePlayingResolutionSecs"]:
+            elif section == "MessageQueue":
+                if option in ["mQueueListenerAddress", "mQueueSenderAddress"]:
+                    return str(value)
+                elif option in ["mQueueStateCheckIntervalSecs","mQueueCyclePlayingResolutionSecs"]:
                     return int(value)
             elif section == "Audio":
                 if option in [

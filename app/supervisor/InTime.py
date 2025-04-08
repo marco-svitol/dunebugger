@@ -4,7 +4,7 @@ from datetime import time as dtime
 from datetime import timedelta
 import sys
 from os import path
-from dunebuggerlogging import logger
+from dunebugger_logging import logger
 import subprocess
 
 # Get parent directory

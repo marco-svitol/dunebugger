@@ -1,7 +1,7 @@
 import os
 import serial
 from dunebugger_settings import settings
-from dunebuggerlogging import logger
+from dunebugger_logging import logger
 
 
 class ArduinoHandler:

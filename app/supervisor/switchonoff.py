@@ -8,7 +8,7 @@ from itertools import tee, islice, chain
 from InTime import check_ntp_sync  # , getNTPTime
 import sys
 from os import path
-from dunebuggerlogging import logger
+from dunebugger_logging import logger
 
 parentDir = path.join(path.dirname(path.abspath(__file__)), "..")
 # Add the parent directory to sys.path

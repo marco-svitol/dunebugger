@@ -1,4 +1,4 @@
-from dunebuggerlogging import logger
+from dunebugger_logging import logger
 import os
 
 

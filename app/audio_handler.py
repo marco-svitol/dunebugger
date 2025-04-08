@@ -1,13 +1,15 @@
-from dunebuggerlogging import logger
+
 import os
 import random
 import vlc
 import time
 import supervisor.InTime as InTime
 from datetime import datetime
-from dunebugger_settings import settings
 from os import path
 import atexit
+
+from dunebugger_settings import settings
+from dunebugger_logging import logger
 
 
 class AudioPlayer:
@@ -58,10 +60,10 @@ class AudioPlayer:
         return False
 
     def playMusic(self, music_folder):
-        audioPlayer.vplaymusic(music_folder)
+        self.vplaymusic(music_folder)
 
     def play_sfx(self, sfx_file):
-        audioPlayer.vplaysfx(sfx_file)
+        self.vplaysfx(sfx_file)
 
     def vplaymusic(self, music_folder):
 
@@ -166,6 +168,3 @@ class AudioPlayer:
 
     def setEasterEggTrigger(self, easter_egg_trigger):
         self.eastereggTriggered = easter_egg_trigger
-
-
-audioPlayer = AudioPlayer()
