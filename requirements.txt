@@ -4,4 +4,4 @@ schedule
 dotenv
 load_dotenv
 schedule
-pyzmq
+nats-py

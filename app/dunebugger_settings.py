@@ -28,7 +28,7 @@ class DunebuggerSettings:
             dunebuggerConfig = path.join(path.dirname(path.abspath(__file__)), "config/dunebugger.conf")
             self.config.read(dunebuggerConfig)
 
-            for section in ["General",  "MessageQueue", "Audio", "Motors", "Debug", "Log"]:
+            for section in ["General", "MessageQueue", "Audio", "Motors", "Debug", "Log"]:
                 for option in self.config.options(section):
                     value = self.config.get(section, option)
                     setattr(self, option, self.validate_option(section, option, value))
@@ -85,9 +85,9 @@ class DunebuggerSettings:
                         if command not in self.terminal_interpreter_command_handlers:
                             raise ValueError(f"Invalid commands in initializationCommandsString: {command}")
             elif section == "MessageQueue":
-                if option in ["mQueueListenerAddress", "mQueueSenderAddress"]:
+                if option in ["mQueueServers", "mQueueClientID", "mQueueSubjectRoot"]:
                     return str(value)
-                elif option in ["mQueueStateCheckIntervalSecs","mQueueCyclePlayingResolutionSecs"]:
+                elif option in ["mQueueStateCheckIntervalSecs", "mQueueCyclePlayingResolutionSecs"]:
                     return int(value)
             elif section == "Audio":
                 if option in [

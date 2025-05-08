@@ -1,12 +1,12 @@
 import readline
 import os
-import time
+import asyncio
 import atexit
-import threading
 import traceback
 
 from dunebugger_settings import settings
 from dunebugger_logging import logger, set_logger_level, get_logging_level_from_name, COLORS
+
 
 class TerminalInterpreter:
     def __init__(self, mygpio_handler, sequence_handler, motor_handler):
@@ -17,7 +17,7 @@ class TerminalInterpreter:
         history_path = "~/.python_history"
         self.enableHistory(history_path)
         atexit.register(self.save_history, history_path)
-        self.stop_terminal_event = threading.Event()
+        self.running = True
         self.command_handlers = {}
         # Load command handlers from configuration file
         self.load_command_handlers()
@@ -45,30 +45,40 @@ class TerminalInterpreter:
                 "description": details["description"],
             }
 
-    def terminal_listen(self):
-        # Start a separate thread for processing terminal input
-        terminal_thread = threading.Thread(target=self.terminal_input_thread, daemon=True)
-        terminal_thread.start()
+    async def terminal_listen(self):
+        # Create asyncio tasks for terminal input
+        terminal_task = asyncio.create_task(self.terminal_input_loop())
 
         try:
-            while not self.stop_terminal_event.is_set():
-                time.sleep(0.1)
+            # Wait for tasks to complete
+            await terminal_task
         except KeyboardInterrupt:
-            self.stop_terminal_event.set()
-            logger.debug("Stopping main thread...")
+            self.running = False
+            logger.debug("Stopping main task...")
         except Exception as exc:
             traceback.print_exc()
             logger.critical("Exception: " + str(exc) + ". Exiting.")
+        finally:
+            self.running = False
 
-    def terminal_input_thread(self):
-        while not self.stop_terminal_event.is_set():
+    async def terminal_input_loop(self):
+        # Create an event loop for the stdin reader
+        loop = asyncio.get_event_loop()
+
+        while self.running:
             try:
-                # Wait for user input and process commands
-                user_input = input("Enter command: ")
-                self.process_terminal_input(user_input)
+                # Use run_in_executor to handle blocking input() in a non-blocking way
+                print("Enter command: ", end="", flush=True)
+                user_input = await loop.run_in_executor(None, input)
+
+                if user_input:
+                    await self.process_terminal_input(user_input)
             except KeyboardInterrupt:
-                self.stop_terminal_event.set()
-                logger.debug("Stopping terminal input thread...")
+                self.running = False
+                logger.debug("Stopping terminal input loop...")
+            except asyncio.CancelledError:
+                self.running = False
+                break
 
     def enableHistory(self, historyPath):
         history_file = os.path.expanduser(historyPath)
@@ -124,7 +134,7 @@ mode: {mode}, state: {state}, switch: {COLORS['RESET']}{switchcolor}{switchstate
         settings.load_configuration()
 
     def handle_quit(self):
-        self.stop_terminal_event.set()
+        self.running = False
 
     def handle_enable_random_actions(self):
         if settings.randomActionsEnabled:
@@ -181,12 +191,11 @@ mode: {mode}, state: {state}, switch: {COLORS['RESET']}{switchcolor}{switchstate
         self.sequence_handler.disable_start_button()
         print("Start button disabled")
 
-    def handle_send_log(self, message):
-        self.mqueue_handler.dispatch_message(message, "log")
+    async def handle_send_log(self, message):
+        await self.mqueue_handler.dispatch_message(message, "log", "remote")
         print("Message sent")
 
-    def process_terminal_input(self, input_str):
-
+    async def process_terminal_input(self, input_str):
         # Process commands received through the terminal
         command_strs = input_str.split(",")
 
@@ -201,10 +210,15 @@ mode: {mode}, state: {state}, switch: {COLORS['RESET']}{switchcolor}{switchstate
 
             if command_str.startswith("sm"):
                 message = command_str[2:].strip()
-                self.handle_send_log(message)
+                await self.handle_send_log(message)
                 continue
 
             if command_str in self.command_handlers:
-                self.command_handlers[command_str]["handler"]()
+                handler = self.command_handlers[command_str]["handler"]
+                # Check if the handler is a coroutine function
+                if asyncio.iscoroutinefunction(handler):
+                    await handler()
+                else:
+                    handler()
             else:
                 print(f"Unknown command {command_str}. Type ? or h for help")

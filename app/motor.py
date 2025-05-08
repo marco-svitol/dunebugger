@@ -5,6 +5,7 @@ from dunebugger_logging import logger
 from dunebugger_settings import settings
 from pwm_handler import PWMHandler
 
+
 class MotorController:
     def __init__(self, mygpio_handler, GPIO):
         self.mygpio_handler = mygpio_handler
@@ -16,8 +17,7 @@ class MotorController:
         logger.debug(f"motor {motornum} start with rotation {rotation} and speed {speed}")
 
         # Crash prevention
-        if (rotation == "cw" and self.mygpio_handler.GPIOMap[f"In_Motor{motornum}LimitCW"] == self.GPIO.HIGH) or \
-           (rotation == "ccw" and self.mygpio_handler.GPIOMap[f"In_Motor{motornum}LimitCCW"] == self.GPIO.HIGH):
+        if (rotation == "cw" and self.mygpio_handler.GPIOMap[f"In_Motor{motornum}LimitCW"] == self.GPIO.HIGH) or (rotation == "ccw" and self.mygpio_handler.GPIOMap[f"In_Motor{motornum}LimitCCW"] == self.GPIO.HIGH):
             logger.warning("Start command aborted to prevent motor crash")
             return
 
@@ -46,8 +46,7 @@ class MotorController:
 
         GPIOLabel = self.mygpio_handler.getGPIOLabel(channel)
         logger.debug(f"Limit touched on channel {GPIOLabel}")
-        motornum = 1 if channel in (self.mygpio_handler.GPIOMap["In_Motor1LimitCCW"],
-                                    self.mygpio_handler.GPIOMap["In_Motor1LimitCW"]) else 2
+        motornum = 1 if channel in (self.mygpio_handler.GPIOMap["In_Motor1LimitCCW"], self.mygpio_handler.GPIOMap["In_Motor1LimitCW"]) else 2
         self.stop(motornum)
 
         if channel == self.mygpio_handler.GPIOMap[f"In_Motor{motornum}LimitCCW"]:

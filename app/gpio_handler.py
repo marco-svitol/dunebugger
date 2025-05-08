@@ -3,11 +3,11 @@ from ast import literal_eval
 from os import path
 import re
 import atexit
-from dunebugger_logging import logger, COLORS
+from dunebugger_logging import logger
 from dunebugger_settings import settings
 
 if settings.ON_RASPBERRY_PI:
-    import RPi.GPIO as GPIO # type: ignore
+    import RPi.GPIO as GPIO  # type: ignore
 else:
     from dunemock import GPIO
 
@@ -224,12 +224,6 @@ class GPIOHandler:
                     state = "ERROR"
                     switchstate = "ERROR"
 
-            gpio_status.append({
-                "pin": gpio,
-                "label": label,
-                "mode": mode,
-                "state": state,
-                "switch": switchstate
-            })
+            gpio_status.append({"pin": gpio, "label": label, "mode": mode, "state": state, "switch": switchstate})
 
         return gpio_status

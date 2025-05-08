@@ -1,8 +1,6 @@
-
 import time
 import atexit
 import threading
-import random
 import random
 import os
 from os import path
@@ -16,7 +14,7 @@ class SequencesHandler:
 
     lastTimeMark = 0
 
-    def __init__(self, mygpio_handler, GPIO,  audio_handler, state_tracker, motor_handler):
+    def __init__(self, mygpio_handler, GPIO, audio_handler, state_tracker, motor_handler):
         self.sequenceFolder = path.join(path.dirname(path.abspath(__file__)), f"../sequences/{settings.sequenceFolder}")
         self.random_elements = {}
         self.random_elements_file = settings.randomElementsFile
@@ -46,7 +44,7 @@ class SequencesHandler:
             time.sleep(self.mQueueCyclePlayingResolutionSecs)
             self.cycle_playing_time += self.mQueueCyclePlayingResolutionSecs
             self.state_tracker.notify_update("playing_time")
-            if (random.random() < 0.01):
+            if random.random() < 0.01:
                 logger.debug(f"Cycle playing time: {self.cycle_playing_time} seconds")
 
     def start_cycle_time_thread(self):
@@ -246,7 +244,7 @@ class SequencesHandler:
         if hasattr(self, "random_actions_event"):
             self.random_actions_event.set()
             self.state_tracker.notify_update("random_actions")
-            
+
     def get_random_actions_state(self):
         if hasattr(self, "random_actions_event"):
             if not self.random_actions_event.is_set():
@@ -323,7 +321,6 @@ class SequencesHandler:
             self.enable_random_actions()
             settings.cycleoffset = 0
             self.setStandByMode()
-            
 
     def get_state(self):
         return {
@@ -331,7 +328,7 @@ class SequencesHandler:
             "cycle_running": self.get_cycle_state(),
             "start_button_enabled": self.get_start_button_state(),
         }
-    
+
     def get_playing_time(self):
         return self.cycle_playing_time
 
@@ -357,7 +354,7 @@ class SequencesHandler:
 
     def _parse_sequence_file(self, file_path):
         sequence_data = []
-        with open(file_path, "r") as file:
+        with open(file_path) as file:
             for line in file:
                 command_line = line.strip()
 
@@ -375,15 +372,11 @@ class SequencesHandler:
                     action = parts[1].lower() if len(parts) > 1 else None
                     parameter = " ".join(parts[2:]) if len(parts) > 2 else None
 
-                    sequence_data.append({
-                        "time": time_mark,
-                        "command": command,
-                        "action": action,
-                        "parameter": parameter
-                    })
+                    sequence_data.append({"time": time_mark, "command": command, "action": action, "parameter": parameter})
                 else:
                     logger.error(f"Invalid time mark in sequence file: {file_path}")
         return sequence_data
+
 
 # try:
 #     sequencesHandler = SequencesHandler()

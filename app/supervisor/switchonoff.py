@@ -169,7 +169,7 @@ def main():
         # if not isinstance(nettime,int):
         if not check_ntp_sync():
             logger.warning("time not synced at startup: scheduling timesyncjob with random frequency between " + str(timesyncmin) + " secs and " + str(timesyncmax) + " secs")
-            timesyncJob = schedule.every(timesyncmin).to(timesyncmax).seconds.do(checkTimeSync)
+            # timesyncJob = schedule.every(timesyncmin).to(timesyncmax).seconds.do(checkTimeSync)
             # fo = open(installfolder+"timenotsynced", "wb") #tells dunebugger that syncing is not working....
             # fo.close()
     # if isinstance(nettime,int):

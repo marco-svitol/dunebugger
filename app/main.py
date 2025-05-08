@@ -1,13 +1,19 @@
 #!/usr/bin/env python3
+import asyncio
 from dunebugger_settings import settings
-from class_factory import terminal_interpreter, mqueue_listener
+from class_factory import terminal_interpreter, mqueue, mqueue_handler
 
-def main():
-    mqueue_listener.start_listener()
-    
+
+async def main():
+    await mqueue.start()
+
+    # Start the mqueue monitoring task
+    await mqueue_handler.start_monitoring()
+
     # comment lines below to make a real server
-    terminal_interpreter.process_terminal_input(settings.initializationCommandsString)
-    terminal_interpreter.terminal_listen()
+    await terminal_interpreter.process_terminal_input(settings.initializationCommandsString)
+    await terminal_interpreter.terminal_listen()
+
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

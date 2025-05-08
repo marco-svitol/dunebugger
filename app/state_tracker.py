@@ -8,6 +8,7 @@ class StateTracker:
             "config": False,
             "start_button": False,
             "playing_time": False,
+            "sequence": False,
         }
 
     def notify_update(self, attribute):
@@ -17,7 +18,11 @@ class StateTracker:
     def clear_update(self, attribute):
         if attribute in self.state_changes:
             self.state_changes[attribute] = False
-            
+
+    def force_update(self):
+        for key in self.state_changes:
+            self.state_changes[key] = True
+
     def has_changes(self):
         return any(self.state_changes.values())
 
@@ -27,5 +32,6 @@ class StateTracker:
     def reset_changes(self):
         for key in self.state_changes:
             self.state_changes[key] = False
+
 
 state_tracker = StateTracker()

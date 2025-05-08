@@ -1,5 +1,5 @@
-from dunebugger_logging import logger, COLORS
-import json
+from dunebugger_logging import logger
+
 
 class MockGPIO:
 
@@ -98,5 +98,6 @@ class MockGPIO:
 
     def get_gpio_state(self, gpio):
         return self.gpio_states.get(gpio)["state"]
+
 
 GPIO = MockGPIO()
