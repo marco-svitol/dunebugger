@@ -11,9 +11,11 @@ class DunebuggerSettings:
         self.config = configparser.ConfigParser()
         # Set optionxform to lambda x: x to preserve case
         self.config.optionxform = lambda x: x
-        self.terminal_interpreter_command_handlers = {}
-        self.load_terminal_interpreter_commands()
-        self.load_configuration()
+        self.dunebugger_config = path.join(path.dirname(path.abspath(__file__)), "config/dunebugger.conf")
+        self.command_handlers = {}
+        self.commands_config_path = path.join(path.dirname(path.abspath(__file__)), "config/commands.conf")
+        self.load_commands(self.commands_config_path)
+        self.load_configuration(self.dunebugger_config)
         self.override_configuration()
         set_logger_level("dunebuggerLog", self.dunebuggerLogLevel)
 
@@ -23,11 +25,9 @@ class DunebuggerSettings:
             if not attr_name.startswith("__") and not callable(getattr(self, attr_name)):
                 print(f"{attr_name}: {getattr(self, attr_name)}")
 
-    def load_configuration(self):
+    def load_configuration(self, dunebugger_config):
         try:
-            dunebuggerConfig = path.join(path.dirname(path.abspath(__file__)), "config/dunebugger.conf")
-            self.config.read(dunebuggerConfig)
-
+            self.config.read(dunebugger_config)
             for section in ["General", "MessageQueue", "Audio", "Motors", "Debug", "Log"]:
                 for option in self.config.options(section):
                     value = self.config.get(section, option)
@@ -38,21 +38,23 @@ class DunebuggerSettings:
             logger.debug(f"ON_RASPBERRY_PI: {self.ON_RASPBERRY_PI}")
             logger.info("Configuration loaded successfully")
         except configparser.Error as e:
-            logger.error(f"Error reading {dunebuggerConfig} configuration: {e}")
+            logger.error(f"Error reading {dunebugger_config} configuration: {e}")
 
-    def load_terminal_interpreter_commands(self):
+    def load_commands(self, commands_config_path):
         try:
-            commandsConfig = path.join(path.dirname(path.abspath(__file__)), "config/commands.conf")
-            self.config.read(commandsConfig)
+            self.config.read(commands_config_path)
             for command, value in self.config.items("Commands"):
-                handler, description = value.split(", ")
-                self.terminal_interpreter_command_handlers[command] = {
+                parts = value.split(", ")
+                handler = parts[0]
+                description = parts[1].strip('"')
+                
+                self.command_handlers[command] = {
                     "handler": handler,
-                    "description": description.strip('"'),
+                    "description": description
                 }
 
         except configparser.Error as e:
-            logger.error(f"Error reading {commandsConfig} configuration: {e}")
+            logger.error(f"Error reading {commands_config_path} configuration: {e}")
 
     def validate_option(self, section, option, value):
         # Validation for specific options
@@ -82,7 +84,7 @@ class DunebuggerSettings:
                 elif option == "initializationCommandsString":
                     commands = value.split(",")
                     for command in commands:
-                        if command not in self.terminal_interpreter_command_handlers:
+                        if command not in self.command_handlers:
                             raise ValueError(f"Invalid commands in initializationCommandsString: {command}")
             elif section == "MessageQueue":
                 if option in ["mQueueServers", "mQueueClientID", "mQueueSubjectRoot"]:

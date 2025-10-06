@@ -196,7 +196,7 @@ class GPIOHandler:
         except Exception:
             return None
 
-    def get_gpio_status(self, gpio_handler=None):
+    def get_gpio_status(self):
         gpios = range(0, 28)  # Assuming BCM numbering scheme and 27 available GPIO pins
         gpio_status = []
 

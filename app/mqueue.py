@@ -42,7 +42,8 @@ class NATSComm:
 
     async def _handler(self, mqueue_message):
         try:
-            await self.mqueue_handler.process_mqueue_message(mqueue_message)
+            command_reply_message = await self.mqueue_handler.process_mqueue_message(mqueue_message)
+            logger.debug(command_reply_message)
         except Exception as e:
             logger.error(f"Error processing message: {e}")
 

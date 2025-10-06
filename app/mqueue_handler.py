@@ -7,12 +7,12 @@ from dunebugger_settings import settings
 class MessagingQueueHandler:
     """Class to handle messaging queue operations."""
 
-    def __init__(self, state_tracker, sequence_handler, mygpio_handler, terminal_interpreter):
+    def __init__(self, state_tracker, sequence_handler, mygpio_handler, command_interpreter):
         self.mqueue_sender = None
         self.state_tracker = state_tracker
         self.sequence_handler = sequence_handler
         self.mygpio_handler = mygpio_handler
-        self.terminal_interpreter = terminal_interpreter
+        self.terminal_interpreter = command_interpreter
         self.check_interval = int(settings.mQueueStateCheckIntervalSecs)
         self.running = True
         self.monitor_task = None
@@ -36,7 +36,7 @@ class MessagingQueueHandler:
 
             if subject in ["dunebugger_set"]:
                 command = message_json["body"]
-                return await self.terminal_interpreter.process_terminal_input(command)
+                return (await self.command_interpreter.process_command(command))
             elif subject in ["refresh"]:
                 self.state_tracker.force_update()
             else:
@@ -102,7 +102,7 @@ class MessagingQueueHandler:
                         await self.send_sequence()
                     elif state == "config":
                         # Handle configuration changes
-                        logger.info("Configuration changed. Reloading settings...")
+                        logger.debug("Configuration changed. Reloading settings...")
                 # Reset the state tracker after handling changes
                 self.state_tracker.reset_changes()
             await asyncio.sleep(self.check_interval)

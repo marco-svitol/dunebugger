@@ -1,3 +1,4 @@
+from command_interpreter import CommandInterpreter
 from terminal_interpreter import TerminalInterpreter
 from state_tracker import state_tracker
 from sequence import SequencesHandler
@@ -12,8 +13,9 @@ mygpio_handler = GPIOHandler(state_tracker)
 audio_handler = AudioPlayer()
 motor_handler = MotorController(mygpio_handler, GPIO)
 sequence_handler = SequencesHandler(mygpio_handler, GPIO, audio_handler, state_tracker, motor_handler)
-terminal_interpreter = TerminalInterpreter(mygpio_handler, sequence_handler, motor_handler)
-mqueue_handler = MessagingQueueHandler(state_tracker, sequence_handler, mygpio_handler, terminal_interpreter)
+command_interpreter = CommandInterpreter(mygpio_handler, sequence_handler)
+terminal_interpreter = TerminalInterpreter(command_interpreter)
+mqueue_handler = MessagingQueueHandler(state_tracker, sequence_handler, mygpio_handler, command_interpreter)
 mqueue = NATSComm(
     nat_servers=settings.mQueueServers,
     client_id=settings.mQueueClientID,

@@ -11,7 +11,7 @@ async def main():
     await mqueue_handler.start_monitoring()
 
     # comment lines below to make a real server
-    await terminal_interpreter.process_terminal_input(settings.initializationCommandsString)
+    # await terminal_interpreter.process_terminal_input(settings.initializationCommandsString)
     await terminal_interpreter.terminal_listen()
 
 

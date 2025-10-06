@@ -20,8 +20,10 @@ class StateTracker:
             self.state_changes[attribute] = False
 
     def force_update(self):
-        for key in self.state_changes:
-            self.state_changes[key] = True
+        self.notify_update("gpios")
+        self.notify_update("random_actions")
+        self.notify_update("sequence")
+        self.notify_update("config")
 
     def has_changes(self):
         return any(self.state_changes.values())

@@ -60,6 +60,8 @@ class SequencesHandler:
             self.cycle_time_thread_stop_event.set()
             self.cycle_time_thread.join()
             self.cycle_time_thread = None
+            self.cycle_playing_time = 0  # Reset playing time
+            self.state_tracker.notify_update("playing_time")
 
     def validate_all_sequence_files(self, directory):
         try:
