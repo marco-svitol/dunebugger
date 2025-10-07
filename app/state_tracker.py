@@ -5,6 +5,7 @@ class StateTracker:
             "gpios": False,
             "random_actions": False,
             "cycle_start_stop": False,
+            "sequences_validated": False,
             "config": False,
             "start_button": False,
             "playing_time": False,

@@ -2,6 +2,7 @@ import os
 import subprocess
 from dunebugger_logging import logger
 
+
 def ArduinoSend(command):
     global Arduino
     ccommand = command.replace("\n", "")
@@ -30,6 +31,7 @@ def validate_path(path):
         return True
     else:
         return False
+
 
 def check_ntp_sync():
     try:

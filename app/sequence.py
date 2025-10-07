@@ -21,6 +21,7 @@ class SequencesHandler:
         self.sequence_file = settings.sequenceFile
         self.standby_file = settings.standbyFile
         self.off_file = settings.offFile
+        self.sequences_validated = False
         self.cycle_thread_lock = threading.Lock()
         self.cycle_event = threading.Event()
         self.cycle_stop_event = threading.Event()
@@ -37,7 +38,7 @@ class SequencesHandler:
 
         atexit.register(self.sequence_clean)
 
-        self.sequences = self.validate_all_sequence_files(self.sequenceFolder)
+        self.set_sequences_validated(self.validate_all_sequence_files(self.sequenceFolder))
 
     def update_cycle_time(self):
         while not self.cycle_time_thread_stop_event.is_set():
@@ -63,24 +64,120 @@ class SequencesHandler:
             self.cycle_playing_time = 0  # Reset playing time
             self.state_tracker.notify_update("playing_time")
 
+    def validate_timestamps_order(self, file_path):
+        """
+        Validate that all timestamps in a sequence file are in consecutive order.
+        Returns True if valid, False otherwise.
+        """
+        try:
+            timestamps = []
+            with open(file_path) as file:
+                for line_num, line in enumerate(file, start=1):
+                    command_line = line.strip()
+
+                    # Remove everything after #, treating it as a comment
+                    command_line = command_line.split("#", 1)[0].strip()
+                    command_line = command_line.split("//", 1)[0].strip()
+
+                    if not command_line:
+                        # If the line is empty after removing the comment, skip it
+                        continue
+
+                    time_mark_seconds, command_body = self.extract_time_mark(command_line)
+                    if time_mark_seconds is not None:
+                        try:
+                            # Convert time_mark_seconds to int if it's a string
+                            if isinstance(time_mark_seconds, str):
+                                time_mark_seconds = int(time_mark_seconds)
+                            timestamps.append((time_mark_seconds, line_num))
+                        except ValueError:
+                            logger.error(f"Invalid timestamp format in {file_path} at line {line_num}: {time_mark_seconds}")
+                            return False
+                    else:
+                        logger.error(f"Missing or invalid timestamp in {file_path} at line {line_num}")
+                        return False
+
+            # Check if timestamps are in consecutive order
+            for i in range(1, len(timestamps)):
+                current_time, current_line = timestamps[i]
+                previous_time, previous_line = timestamps[i-1]
+                
+                if current_time < previous_time:
+                    logger.error(f"Timestamp order error in {file_path}: "
+                               f"Line {current_line} has timestamp {current_time}s which is less than "
+                               f"line {previous_line} timestamp {previous_time}s")
+                    return False
+
+            logger.debug(f"Timestamp validation passed for {file_path}")
+            return True
+
+        except FileNotFoundError:
+            logger.error(f"File not found during timestamp validation: {file_path}")
+            return False
+        except Exception as e:
+            logger.error(f"Error during timestamp validation for {file_path}: {e}")
+            return False
+
+    def set_sequences_validated(self, value: bool):
+        if isinstance(value, bool):
+            if self.sequences_validated != value:
+                self.sequences_validated = value
+                self.state_tracker.notify_update("sequences_validated")
+        else:
+            logger.error(f"Invalid value for sequences_validated: {value}. Must be a boolean.")
+
     def validate_all_sequence_files(self, directory):
         try:
+            # First, validate that required configuration files exist
+            required_files = [
+                self.sequence_file,
+                self.standby_file,
+                self.off_file,
+                self.random_elements_file
+            ]
+            
+            missing_files = []
+            for required_file in required_files:
+                file_path = os.path.join(directory, required_file)
+                if not os.path.exists(file_path):
+                    missing_files.append(required_file)
+                    logger.error(f"Required sequence file not found: {file_path}")
+            
+            if missing_files:
+                logger.error(f"Missing required sequence files in {directory}: {', '.join(missing_files)}")
+                return False
+            
+            # Then validate all .seq files for syntax and timestamp order
+            validation_failed = False
             for filename in os.listdir(directory):
                 if filename.endswith(".seq"):
                     file_path = os.path.join(directory, filename)
                     logger.debug(f"Validating sequence {file_path}")
-                    self.read_sequence_file(file_path, dry_run=True)
-
+                    try:
+                        # First validate syntax
+                        self.read_sequence_file(file_path, dry_run=True)
+                        # Then validate timestamp order
+                        if not self.validate_timestamps_order(file_path):
+                            validation_failed = True
+                    except Exception as e:
+                        logger.error(f"Validation failed for {file_path}: {e}")
+                        validation_failed = True
+            
+            if not validation_failed:
+                logger.info(f"All sequence files validated successfully in {directory}")
+                return True
+            else:
+                return False
+            
         except OSError as e:
             logger.error(f"Error validating sequence files in {directory}: {e}")
+            return False
 
-    def process_sequence_file(self, sequenceFile):
-        try:
-            file_path = os.path.join(self.sequenceFolder, sequenceFile)
-            self.read_sequence_file(file_path)
-            logger.info(f"Processing sequence {file_path}")
-        except OSError as e:
-            logger.error(f"Error processing sequence file {file_path}: {e}")
+    def revalidate_sequences(self):
+        """Re-validate all sequence files. Useful after configuration changes."""
+        logger.info("Re-validating sequence files...")
+        self.set_sequences_validated(self.validate_all_sequence_files(self.sequenceFolder))
+        return self.sequences_validated
 
     def execute_motor_command(self, motor_number, direction, speed):
         motor_enabled = getattr(settings, f"motor{motor_number}Enabled", False)
@@ -117,43 +214,83 @@ class SequencesHandler:
         # TODO: motor stop
         if verb == "motor" and settings.motorEnabled:
             if parts[1].lower() == "start":
-                motor_number = int(parts[2])
-                direction = parts[3].lower()
-                speed = int(parts[4])
-                if not dry_run:
-                    self.execute_motor_command(motor_number, direction, speed)
-        else:
+                try:
+                    motor_number = int(parts[2])
+                    direction = parts[3].lower()
+                    speed = int(parts[4])
 
-            # TODO verify switch works
+                    # Validate motor number
+                    if not isinstance(motor_number, int) or motor_number < 1 :
+                        logger.error(f"Invalid motor number: {motor_number}")
+                        return False
+
+                    # Validate direction
+                    if direction not in ["ccw", "cw"]:
+                        logger.error(f"Invalid motor direction: {direction}")
+                        return False
+
+                    # Validate speed
+                    if  not isinstance(speed, int) or speed < 1:
+                        logger.error(f"Invalid motor speed: {speed}")
+                        return False
+
+                    if not dry_run:
+                        self.execute_motor_command(motor_number, direction, speed)
+                        
+                except (ValueError, IndexError) as e:
+                    logger.error(f"Error parsing motor command: {e}")
+                    return False
+        else:
+            # Verify switch command
             if verb == "switch":
                 device_name = parts[1]
-                action = parts[2]
+                action = parts[2].lower()
+
+                # Validate device name
+                if device_name not in self.mygpio_handler.GPIOMap:
+                    logger.error(f"Invalid device name: {device_name}")
+                    return False
+
+                # Validate action
+                if action not in ["on", "off"]:
+                    logger.error(f"Invalid action: {action}. Action must be 'on' or 'off'.")
+                    return False
+
                 if not dry_run:
                     self.execute_switch_command(device_name, action)
 
             elif verb == "audio" and len(parts) >= 2:
                 action = parts[1].lower()
                 parameter = parts[2].lower()
+
                 if action == "fadeout":
                     fadeout_secs = int(parameter)
+                    if  not isinstance(fadeout_secs, int) or fadeout_secs < 0:
+                        logger.error(f"Invalid fadeout seconds: {fadeout_secs}")
+                        return False
                     if not dry_run:
                         self.execute_audio_fadeout_command(fadeout_secs)
+
                 elif action == "playmusic":
                     music_folder = self.audio_handler.get_music_path(parameter)
-                    if dry_run:
-                        if not validate_path(music_folder):
-                            logger.error(f"Music folder {music_folder} does not exist")
-                            return False
+                    if not validate_path(music_folder):
+                        logger.error(f"Music folder {music_folder} does not exist")
+                        return False
                     else:
-                        self.execute_playmusic_command(music_folder)
+                        if not dry_run:
+                            self.execute_playmusic_command(music_folder)
+                            
                 elif action == "playsfx":
                     sfx_file = self.audio_handler.get_sfx_filepath(parameter)
-                    if dry_run:
-                        if not validate_path(sfx_file):
-                            logger.error(f"Sfx file {sfx_file} does not exist")
-                            return False
+                    if not validate_path(sfx_file):
+                        logger.error(f"Sfx file {sfx_file} does not exist")
+                        return False
                     else:
-                        self.execute_play_sfx_command(sfx_file)
+                        if not dry_run:
+                            self.execute_play_sfx_command(sfx_file)
+                else:
+                    logger.error(f"Unknown audio action: {action}")
+                    return False
             else:
                 logger.error(f"Unknown command: {command_body}")
                 return False
@@ -295,6 +432,11 @@ class SequencesHandler:
 
     def cycle_trigger(self, channel=False):
         with self.cycle_thread_lock:
+            # Check if sequences are validated before starting cycle
+            if not self.sequences_validated:
+                logger.error("Cannot start cycle: sequence files are not properly validated. Please check sequence files configuration.")
+                return
+            
             if channel is not False:
                 # TODO : fix bouncing
                 # start_time = time.time()
@@ -329,6 +471,7 @@ class SequencesHandler:
             "random_actions": self.get_random_actions_state(),
             "cycle_running": self.get_cycle_state(),
             "start_button_enabled": self.get_start_button_state(),
+            "sequences_validated": self.sequences_validated,
         }
 
     def get_playing_time(self):

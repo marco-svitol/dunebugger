@@ -10,7 +10,7 @@ from dunebugger_logging import logger, COLORS
 
 class TerminalInterpreter:
     def __init__(self, command_interpreter):
-        
+
         history_path = "~/.python_history"
         self.enableHistory(history_path)
         atexit.register(self.save_history, history_path)
@@ -30,10 +30,10 @@ class TerminalInterpreter:
             self.help += f"    {command}: {details['description']}\n"
         self.help += f"    <#gpionum or label> on: set gpio status High{help_insert_2}\n"
         self.help += f"    <#gpionum or label> off: set gpio status Low{help_insert_2}\n"
-        self.help += f"    h, ?: show this help\n"
-        self.help += f"    s: show GPIO status\n"
-        self.help += f"    t: show dunebugger configuration\n"
-        self.help += f"    q, quit, exit: exit the program\n"
+        self.help += "    h, ?: show this help\n"
+        self.help += "    s: show GPIO status\n"
+        self.help += "    t: show dunebugger configuration\n"
+        self.help += "    q, quit, exit: exit the program\n"
 
     async def terminal_listen(self):
         # Create asyncio tasks for terminal input
@@ -58,8 +58,8 @@ class TerminalInterpreter:
         while self.running:
             try:
                 # Use run_in_executor to handle blocking input() in a non-blocking way
-                print("Enter command: ", end="", flush=True)
-                user_input = await loop.run_in_executor(None, input)
+                # Pass the prompt directly to input() so readline can handle it properly
+                user_input = await loop.run_in_executor(None, lambda: input("Enter command: "))
 
                 if user_input:
                     # Split user_input by ";" to handle multiple commands
@@ -76,10 +76,10 @@ class TerminalInterpreter:
                         elif command.lower() in ["t"]:
                             self.handle_show_configuration()
                         else:
-                            command_reply_message = (await self.command_interpreter.process_command(command))
+                            command_reply_message = await self.command_interpreter.process_command(command)
                             print(command_reply_message)
                 else:
-                    print(f"\r")
+                    print("\r")
             except KeyboardInterrupt:
                 self.running = False
                 logger.debug("Stopping terminal input loop...")
@@ -96,13 +96,13 @@ class TerminalInterpreter:
         history_file = os.path.expanduser(historyPath)
         readline.write_history_file(history_file)
 
-    # terminal input command handlers
     def handle_help(self):
         print(self.help)
 
     def handle_show_gpio_status(self):
         gpio_status = self.command_interpreter.gpio_handler.get_gpio_status()
-        print("Current GPIO Status:")
+        color_red = COLORS["RED"]
+        print(f"{color_red}Current GPIO Status:")
         for gpio_info in gpio_status:
             gpio = gpio_info["pin"]
             label = gpio_info["label"]
@@ -133,8 +133,16 @@ mode: {mode}, state: {state}, switch: {COLORS['RESET']}{switchcolor}{switchstate
             )
 
     def handle_show_configuration(self):
-        settings.show_configuration()
+
+        # Print DunebuggerSettings configuration
+        color_blue = COLORS["BLUE"]
+        color_red = COLORS["RED"]
+        print(f"{color_red}Current Configuration:")
+        for attr_name in dir(settings):
+            if not attr_name.startswith("__") and not callable(getattr(settings, attr_name)):
+                print(f"{color_blue}{attr_name}: {COLORS['RESET']}{getattr(settings, attr_name)}")
+
         random_actions_status = "on" if self.command_interpreter.sequence_handler.get_random_actions_state() else "off"
-        print(f"Random actions is now: {random_actions_status}")
-        print(f"Music is now: {self.command_interpreter.sequence_handler.audio_handler.get_music_volume()}")
-        print(f"SFX is now: {self.command_interpreter.sequence_handler.audio_handler.get_sfx_volume()}")
+        print(f"{color_blue}Random actions is now: {COLORS['RESET']}{random_actions_status}")
+        print(f"{color_blue}Music is now: {COLORS['RESET']}{self.command_interpreter.sequence_handler.audio_handler.get_music_volume()}")
+        print(f"{color_blue}SFX is now: {COLORS['RESET']}{self.command_interpreter.sequence_handler.audio_handler.get_sfx_volume()}")

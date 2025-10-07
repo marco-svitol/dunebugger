@@ -2,6 +2,7 @@ import os
 import random
 import vlc
 import time
+
 # import supervisor.InTime as InTime
 # from datetime import datetime
 from os import path
@@ -31,10 +32,10 @@ class AudioPlayer:
             self.musicSetVolume(volume)
         else:
             logger.warning(f"Invalid music volume level: {volume}. Must be between 0-100.")
-    
+
     def get_music_volume(self):
         return self.musicVolume
-    
+
     def get_sfx_volume(self):
         return self.sfxVolume
 
@@ -81,7 +82,7 @@ class AudioPlayer:
 
     def vplaymusic(self, music_folder):
 
-        self.setVolumeBasedOntime()
+        # self.setVolumeBasedOntime()
 
         playlist = self.vlcinstance.media_list_new()
 

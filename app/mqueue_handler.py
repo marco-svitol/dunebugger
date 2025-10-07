@@ -12,7 +12,7 @@ class MessagingQueueHandler:
         self.state_tracker = state_tracker
         self.sequence_handler = sequence_handler
         self.mygpio_handler = mygpio_handler
-        self.terminal_interpreter = command_interpreter
+        self.command_interpreter = command_interpreter
         self.check_interval = int(settings.mQueueStateCheckIntervalSecs)
         self.running = True
         self.monitor_task = None
@@ -36,7 +36,7 @@ class MessagingQueueHandler:
 
             if subject in ["dunebugger_set"]:
                 command = message_json["body"]
-                return (await self.command_interpreter.process_command(command))
+                return await self.command_interpreter.process_command(command)
             elif subject in ["refresh"]:
                 self.state_tracker.force_update()
             else:
@@ -91,7 +91,7 @@ class MessagingQueueHandler:
                     if state == "gpios":
                         # React to GPIO state changes
                         await self.send_gpio_state()
-                    elif state in ["random_actions", "cycle_start_stop", "start_button"]:
+                    elif state in ["random_actions", "cycle_start_stop", "start_button", "sequences_validated"]:
                         # Handle random actions state change
                         await self.send_sequence_state()
                     elif state == "playing_time":

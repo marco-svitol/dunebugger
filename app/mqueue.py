@@ -13,7 +13,6 @@ class NATSComm:
         self.mqueue_handler = mqueue_handler
 
         self.nc.on_connect = lambda nc: logger.info(f"Connected to NATS server: {self.servers}")
-        atexit.register(self.close)
 
     async def disconnected_cb(self):
         logger.warning("Disconnected from NATS server")
@@ -25,8 +24,13 @@ class NATSComm:
         logger.error(f"Error occurred: {error}")
 
     async def close(self):
-        await self.nc.drain()
-        logger.debug("NATS connection closed")
+        """Async method to properly close NATS connection"""
+        try:
+            if self.nc.is_connected:
+                await self.nc.drain()
+                logger.debug("NATS connection closed")
+        except Exception as e:
+            logger.error(f"Error closing NATS connection: {e}")
 
     async def connect(self):
         await self.nc.connect(

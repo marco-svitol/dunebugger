@@ -19,13 +19,10 @@ class DunebuggerSettings:
         self.override_configuration()
         set_logger_level("dunebuggerLog", self.dunebuggerLogLevel)
 
-    def show_configuration(self):
-        print("Current Configuration:")
-        for attr_name in dir(self):
-            if not attr_name.startswith("__") and not callable(getattr(self, attr_name)):
-                print(f"{attr_name}: {getattr(self, attr_name)}")
+    def load_configuration(self, dunebugger_config=None):
+        if dunebugger_config is None:
+            dunebugger_config = self.dunebugger_config
 
-    def load_configuration(self, dunebugger_config):
         try:
             self.config.read(dunebugger_config)
             for section in ["General", "MessageQueue", "Audio", "Motors", "Debug", "Log"]:
@@ -40,18 +37,18 @@ class DunebuggerSettings:
         except configparser.Error as e:
             logger.error(f"Error reading {dunebugger_config} configuration: {e}")
 
-    def load_commands(self, commands_config_path):
+    def load_commands(self, commands_config_path=None):
+        if commands_config_path is None:
+            commands_config_path = self.commands_config_path
+
         try:
             self.config.read(commands_config_path)
             for command, value in self.config.items("Commands"):
                 parts = value.split(", ")
                 handler = parts[0]
                 description = parts[1].strip('"')
-                
-                self.command_handlers[command] = {
-                    "handler": handler,
-                    "description": description
-                }
+
+                self.command_handlers[command] = {"handler": handler, "description": description}
 
         except configparser.Error as e:
             logger.error(f"Error reading {commands_config_path} configuration: {e}")
