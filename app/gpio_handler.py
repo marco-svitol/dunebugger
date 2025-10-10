@@ -1,14 +1,13 @@
-from dunebuggerlogging import logger, COLORS
 import configparser
 from ast import literal_eval
-from dunebugger_settings import settings
 from os import path
 import re
 import atexit
-from state_tracker import state_tracker
+from dunebugger_logging import logger
+from dunebugger_settings import settings
 
 if settings.ON_RASPBERRY_PI:
-    import RPi.GPIO as GPIO # type: ignore
+    import RPi.GPIO as GPIO  # type: ignore
 else:
     from dunemock import GPIO
 
@@ -29,7 +28,7 @@ else:
 
 
 class GPIOHandler:
-    def __init__(self):
+    def __init__(self, state_tracker):
         # Load GPIO configuration from gpio_config.conf
         self.GPIOMap = {}
         self.channelsSetup = {}
@@ -158,7 +157,7 @@ class GPIOHandler:
     def clean_gpios(self):
         logger.debug("Cleanup GPIOs")
         GPIO.cleanup()
-        state_tracker.notify_update("gpios")
+        self.state_tracker.notify_update("gpios")
 
     def gpio_set_output(self, gpiocast, value):
         if isinstance(gpiocast, int):
@@ -175,7 +174,7 @@ class GPIOHandler:
                 if gpiomode == self.GPIO.IN:
                     value = int(not value)
                 GPIO.output(gpio, value)
-                state_tracker.notify_update("gpios")
+                self.state_tracker.notify_update("gpios")
             elif gpiomode == self.GPIO.IN and settings.ON_RASPBERRY_PI:
                 logger.error(f"Can't set an input GPIO. (gpio={gpio}, gpiomap={gpiomap})")
         else:
@@ -197,7 +196,7 @@ class GPIOHandler:
         except Exception:
             return None
 
-    def get_gpio_status(self, gpio_handler=None):
+    def get_gpio_status(self):
         gpios = range(0, 28)  # Assuming BCM numbering scheme and 27 available GPIO pins
         gpio_status = []
 
@@ -225,14 +224,6 @@ class GPIOHandler:
                     state = "ERROR"
                     switchstate = "ERROR"
 
-            gpio_status.append({
-                "pin": gpio,
-                "label": label,
-                "mode": mode,
-                "state": state,
-                "switch": switchstate
-            })
+            gpio_status.append({"pin": gpio, "label": label, "mode": mode, "state": state, "switch": switchstate})
 
         return gpio_status
-
-mygpio_handler = GPIOHandler()

@@ -43,9 +43,9 @@ def set_logger_level(logger_name, level):
     try:
         logger = logging.getLogger(logger_name)
         logger.setLevel(level)
-        print(f"Logger {logger_name} level set to {logging.getLevelName(level)}")
+        logging.getLogger(logger_name).debug(f"Logger {logger_name} level set to {logging.getLevelName(logger.level)}")
     except Exception as exc:
-        print(f"Error while setting logger ${logger_name} level to {logging.getLevelName(level)}: ${str(exc)}")
+        logging.getLogger(logger_name).error(f"Error while setting logger ${logger_name} level to {logging.getLevelName(logger.level)}: ${str(exc)}")
 
 
 # Get the console handler and set the custom formatter

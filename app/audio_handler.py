@@ -1,24 +1,21 @@
-from dunebuggerlogging import logger
 import os
 import random
 import vlc
 import time
-import supervisor.InTime as InTime
-from datetime import datetime
-from dunebugger_settings import settings
+
+# import supervisor.InTime as InTime
+# from datetime import datetime
 from os import path
 import atexit
+
+from dunebugger_settings import settings
+from dunebugger_logging import logger
 
 
 class AudioPlayer:
     def __init__(self):
-        self.normalMusicVolume = settings.normalMusicVolume
-        self.normalSfxVolume = settings.normalSfxVolume
-        self.musicVolume = self.normalMusicVolume
-        self.sfxVolume = self.normalSfxVolume
-        self.quietMusicVol = settings.quietMusicVol
-        self.quietSfxVol = settings.quietSfxVol
-        self.ignoreQuietTime = settings.ignoreQuietTime
+        self.musicVolume = settings.normalMusicVolume
+        self.sfxVolume = settings.normalSfxVolume
         self.eastereggTriggered = False
         self.vlcdevice = settings.vlcdevice
 
@@ -28,6 +25,26 @@ class AudioPlayer:
         self.musicplayer = self.vlcinstance.media_player_new()
 
         atexit.register(self.vstopaudio)
+
+    def set_music_volume(self, volume):
+        if 0 <= volume <= 100:
+            self.musicVolume = volume
+            self.musicSetVolume(volume)
+        else:
+            logger.warning(f"Invalid music volume level: {volume}. Must be between 0-100.")
+
+    def get_music_volume(self):
+        return self.musicVolume
+
+    def get_sfx_volume(self):
+        return self.sfxVolume
+
+    def set_sfx_volume(self, volume):
+        if 0 <= volume <= 100:
+            self.sfxVolume = volume
+            self.sfxSetVolume(volume)
+        else:
+            logger.warning(f"Invalid SFX volume level: {volume}. Must be between 0-100.")
 
     def get_music_path(self, music_folder):
         return path.join(path.dirname(path.abspath(__file__)), "..", music_folder)
@@ -58,14 +75,14 @@ class AudioPlayer:
         return False
 
     def playMusic(self, music_folder):
-        audioPlayer.vplaymusic(music_folder)
+        self.vplaymusic(music_folder)
 
     def play_sfx(self, sfx_file):
-        audioPlayer.vplaysfx(sfx_file)
+        self.vplaysfx(sfx_file)
 
     def vplaymusic(self, music_folder):
 
-        self.setVolumeBasedOntime()
+        # self.setVolumeBasedOntime()
 
         playlist = self.vlcinstance.media_list_new()
 
@@ -149,23 +166,20 @@ class AudioPlayer:
         self.sfxplayer.audio_set_volume(vol)
         logger.debug("Setting sfx volume at " + str(vol))
 
-    def setVolumeBasedOntime(self):
-        # check current date against calendar delle messe per impostare volume
-        self.musicVolume = self.normalMusicVolume
-        self.sfxVolume = self.normalSfxVolume
-        logger.debug("MusicVolume: " + str(self.musicVolume) + " SfxVolume: " + str(self.sfxVolume))
-        if not self.ignoreQuietTime:
-            if not isinstance(InTime.getNTPTime(), int):  # time not synced
-                self.musicVolume = self.quietMusicVol
-                self.sfxVolume = self.quietSfxVol
-                logger.info("Orario non sincronizzato: vol musica=" + str(self.musicVolume) + " vol sfx=" + str(self.sfxVolume))
-            elif InTime.duranteCelebrazioni(datetime.now(), 372):
-                self.musicVolume = self.quietMusicVol
-                self.sfxVolume = self.quietSfxVol
-                logger.info("Siamo durante una celebrazione: vol music=" + str(self.musicVolume) + " vol sfx=" + str(self.sfxVolume))
+    # def setVolumeBasedOntime(self):
+    #     # check current date against calendar delle messe per impostare volume
+    #     self.musicVolume = self.normalMusicVolume
+    #     self.sfxVolume = self.normalSfxVolume
+    #     logger.debug("MusicVolume: " + str(self.musicVolume) + " SfxVolume: " + str(self.sfxVolume))
+    #     if not self.ignoreQuietTime:
+    #         if not isinstance(InTime.getNTPTime(), int):  # time not synced
+    #             self.musicVolume = self.quietMusicVol
+    #             self.sfxVolume = self.quietSfxVol
+    #             logger.info("Orario non sincronizzato: vol musica=" + str(self.musicVolume) + " vol sfx=" + str(self.sfxVolume))
+    #         elif InTime.duranteCelebrazioni(datetime.now(), 372):
+    #             self.musicVolume = self.quietMusicVol
+    #             self.sfxVolume = self.quietSfxVol
+    #             logger.info("Siamo durante una celebrazione: vol music=" + str(self.musicVolume) + " vol sfx=" + str(self.sfxVolume))
 
     def setEasterEggTrigger(self, easter_egg_trigger):
         self.eastereggTriggered = easter_egg_trigger
-
-
-audioPlayer = AudioPlayer()

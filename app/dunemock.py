@@ -1,5 +1,5 @@
-from dunebuggerlogging import logger, COLORS
-import json
+from dunebugger_logging import logger
+
 
 class MockGPIO:
 
@@ -13,7 +13,6 @@ class MockGPIO:
         self.PUD_UP = 1
         self.RISING = "RISING"
         self.FALLING = "FALLING"
-        # self.myPWM = PWM()
 
         # Dictionary to store GPIO states and associated callbacks
         self.gpio_states = {}
@@ -99,5 +98,6 @@ class MockGPIO:
 
     def get_gpio_state(self, gpio):
         return self.gpio_states.get(gpio)["state"]
+
 
 GPIO = MockGPIO()

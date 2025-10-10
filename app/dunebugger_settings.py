@@ -1,7 +1,7 @@
 from os import path
 import configparser
 from dotenv import load_dotenv
-from dunebuggerlogging import logger, get_logging_level_from_name, set_logger_level
+from dunebugger_logging import logger, get_logging_level_from_name, set_logger_level
 from utils import is_raspberry_pi
 
 
@@ -11,43 +11,21 @@ class DunebuggerSettings:
         self.config = configparser.ConfigParser()
         # Set optionxform to lambda x: x to preserve case
         self.config.optionxform = lambda x: x
-        self.terminal_interpreter_command_handlers = {}
-        self.load_terminal_interpreter_commands()
-        self.load_configuration()
+        self.dunebugger_config = path.join(path.dirname(path.abspath(__file__)), "config/dunebugger.conf")
+        self.command_handlers = {}
+        self.commands_config_path = path.join(path.dirname(path.abspath(__file__)), "config/commands.conf")
+        self.load_commands(self.commands_config_path)
+        self.load_configuration(self.dunebugger_config)
         self.override_configuration()
         set_logger_level("dunebuggerLog", self.dunebuggerLogLevel)
 
-    def show_configuration(self):
-        print("Current Configuration:")
-        for attr_name in dir(self):
-            if not attr_name.startswith("__") and not callable(getattr(self, attr_name)):
-                print(f"{attr_name}: {getattr(self, attr_name)}")
-        # return {
-        #     "cyclelength": settings.cyclelength,
-        #     "cycleoffset": settings.cycleoffset,
-        #     "randomActionsMinSecs": settings.randomActionsMinSecs,
-        #     "randomActionsMaxSecs": settings.randomActionsMaxSecs,
-        #     "bouncingTreshold": settings.bouncingTreshold,
-        #     "arduinoConnected": settings.arduinoConnected,
-        #     "eastereggEnabled": settings.eastereggEnabled,
-        #     "randomActionsEnabled": settings.randomActionsEnabled,
-        #     "sequenceFolder": settings.sequenceFolder,
-        #     "sequenceFile": settings.sequenceFile,
-        #     "standbyFile": settings.standbyFile,
-        #     "offFile": settings.offFile,
-        #     "randomElementsFile": settings.randomElementsFile,
-        #     "arduinoSerialPort": settings.arduinoSerialPort,
-        #     "startButtonGPIOName": settings.startButtonGPIOName,
-        #     "pipePath": settings.pipePath,
-        #     "initializationCommandsString": settings.initializationCommandsString,
-        # }
+    def load_configuration(self, dunebugger_config=None):
+        if dunebugger_config is None:
+            dunebugger_config = self.dunebugger_config
 
-    def load_configuration(self):
         try:
-            dunebuggerConfig = path.join(path.dirname(path.abspath(__file__)), "config/dunebugger.conf")
-            self.config.read(dunebuggerConfig)
-
-            for section in ["General", "Websocket", "Audio", "Motors", "Debug", "Log"]:
+            self.config.read(dunebugger_config)
+            for section in ["General", "MessageQueue", "Audio", "Motors", "Debug", "Log"]:
                 for option in self.config.options(section):
                     value = self.config.get(section, option)
                     setattr(self, option, self.validate_option(section, option, value))
@@ -57,21 +35,23 @@ class DunebuggerSettings:
             logger.debug(f"ON_RASPBERRY_PI: {self.ON_RASPBERRY_PI}")
             logger.info("Configuration loaded successfully")
         except configparser.Error as e:
-            logger.error(f"Error reading {dunebuggerConfig} configuration: {e}")
+            logger.error(f"Error reading {dunebugger_config} configuration: {e}")
 
-    def load_terminal_interpreter_commands(self):
+    def load_commands(self, commands_config_path=None):
+        if commands_config_path is None:
+            commands_config_path = self.commands_config_path
+
         try:
-            commandsConfig = path.join(path.dirname(path.abspath(__file__)), "config/commands.conf")
-            self.config.read(commandsConfig)
+            self.config.read(commands_config_path)
             for command, value in self.config.items("Commands"):
-                handler, description = value.split(", ")
-                self.terminal_interpreter_command_handlers[command] = {
-                    "handler": handler,
-                    "description": description.strip('"'),
-                }
+                parts = value.split(", ")
+                handler = parts[0]
+                description = parts[1].strip('"')
+
+                self.command_handlers[command] = {"handler": handler, "description": description}
 
         except configparser.Error as e:
-            logger.error(f"Error reading {commandsConfig} configuration: {e}")
+            logger.error(f"Error reading {commands_config_path} configuration: {e}")
 
     def validate_option(self, section, option, value):
         # Validation for specific options
@@ -96,18 +76,17 @@ class DunebuggerSettings:
                     "randomElementsFile",
                     "arduinoSerialPort",
                     "startButtonGPIOName",
-                    "pipePath",
                 ]:
                     return str(value)
                 elif option == "initializationCommandsString":
                     commands = value.split(",")
                     for command in commands:
-                        if command not in self.terminal_interpreter_command_handlers:
+                        if command not in self.command_handlers:
                             raise ValueError(f"Invalid commands in initializationCommandsString: {command}")
-            elif section == "Websocket":
-                if option in ["remoteEnabled", "broadcastInitialState"]:
-                    return self.config.getboolean(section, option)
-                elif option in ["stateCheckIntervalSecs", "cyclePlayingResolutionSecs"]:
+            elif section == "MessageQueue":
+                if option in ["mQueueServers", "mQueueClientID", "mQueueSubjectRoot"]:
+                    return str(value)
+                elif option in ["mQueueStateCheckIntervalSecs", "mQueueCyclePlayingResolutionSecs"]:
                     return int(value)
             elif section == "Audio":
                 if option in [

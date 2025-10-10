@@ -1,34 +1,28 @@
-import os
-from dunebugger_auth import AuthClient
-from dunebugger_websocket import WebPubSubListener
-from message_handler import MessageHandler
+from command_interpreter import CommandInterpreter
 from terminal_interpreter import TerminalInterpreter
-from pipe_handler import PipeListener
 from state_tracker import state_tracker
-from sequence import sequencesHandler
+from sequence import SequencesHandler
 from dunebugger_settings import settings
+from mqueue import NATSComm
+from mqueue_handler import MessagingQueueHandler
+from gpio_handler import GPIOHandler, GPIO
+from audio_handler import AudioPlayer
+from motor import MotorController
 
-auth_client = AuthClient(
-    client_id=os.getenv("AUTH0_CLIENT_ID"),
-    client_secret=os.getenv("AUTH0_CLIENT_SECRET"),
-    username=os.getenv("AUTH0_USERNAME"),
-    password=os.getenv("AUTH0_PASSWORD"),
+mygpio_handler = GPIOHandler(state_tracker)
+audio_handler = AudioPlayer()
+motor_handler = MotorController(mygpio_handler, GPIO)
+sequence_handler = SequencesHandler(mygpio_handler, GPIO, audio_handler, state_tracker, motor_handler)
+command_interpreter = CommandInterpreter(mygpio_handler, sequence_handler)
+terminal_interpreter = TerminalInterpreter(command_interpreter)
+mqueue_handler = MessagingQueueHandler(state_tracker, sequence_handler, mygpio_handler, command_interpreter)
+mqueue = NATSComm(
+    nat_servers=settings.mQueueServers,
+    client_id=settings.mQueueClientID,
+    subject_root=settings.mQueueSubjectRoot,
+    mqueue_handler=mqueue_handler,
 )
 
-websocket_client = WebPubSubListener()
-message_handler = MessageHandler()
-terminal_interpreter = TerminalInterpreter()
-pipe_listener = PipeListener()
-sequence_handler = sequencesHandler
-
-message_handler.websocket_client = websocket_client
-message_handler.pipe_listener = pipe_listener
-message_handler.state_tracker = state_tracker
-message_handler.sequence_handler = sequence_handler
-websocket_client.auth_client = auth_client
-websocket_client.message_handler = message_handler
-terminal_interpreter.websocket_client = websocket_client
-pipe_listener.terminal_interpreter = terminal_interpreter
-
-if settings.remoteEnabled == True: 
-    message_handler.monitor_thread.start()
+mqueue_handler.mqueue_sender = mqueue
+terminal_interpreter.mqueue_handler = mqueue_handler
+# Monitor will be started asynchronously in main.py

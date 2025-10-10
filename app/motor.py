@@ -1,116 +1,109 @@
-from gpio_handler import mygpio_handler, GPIO
 import time
-from dunebuggerlogging import logger
-from pwm_handler import pwm_motor1, pwm_motor2
-from dunebugger_settings import settings
 import atexit
 import threading
+from dunebugger_logging import logger
+from dunebugger_settings import settings
+from pwm_handler import PWMHandler
 
 
-def start(motornum, rotation="cw", speed=100):
-    logger.debug("motor " + str(motornum) + " start with rotation " + rotation + " and speed " + str(speed))
+class MotorController:
+    def __init__(self, mygpio_handler, GPIO):
+        self.mygpio_handler = mygpio_handler
+        self.GPIO = GPIO
+        self.pwm_motor1 = PWMHandler(GPIO, mygpio_handler.GPIOMap["Motor1PWM"], settings.motor1Freq)
+        self.pwm_motor2 = PWMHandler(GPIO, mygpio_handler.GPIOMap["Motor2PWM"], settings.motor2Freq)
 
-    # Crashprevention
-    if rotation == "cw" and mygpio_handler.GPIOMap["In_Motor" + str(motornum) + "LimitCW"] == GPIO.HIGH or rotation == "ccw" and mygpio_handler.GPIOMap["In_Motor" + str(motornum) + "LimitCCW"] == GPIO.HIGH:
-        logger.warning("Start command aborted to prevent motor crash")
-        return
-    ######
+    def start(self, motornum, rotation="cw", speed=100):
+        logger.debug(f"motor {motornum} start with rotation {rotation} and speed {speed}")
 
-    if rotation == "cw":
-        GPIO.output(mygpio_handler.GPIOMap["Motor" + str(motornum) + "In1"], GPIO.HIGH)
-        GPIO.output(mygpio_handler.GPIOMap["Motor" + str(motornum) + "In2"], GPIO.LOW)
-    else:
-        GPIO.output(mygpio_handler.GPIOMap["Motor" + str(motornum) + "In1"], GPIO.LOW)
-        GPIO.output(mygpio_handler.GPIOMap["Motor" + str(motornum) + "In2"], GPIO.HIGH)
-    if motornum == 1:
-        pwm_motor1.set_duty_cycle(speed)
-    if motornum == 2:
-        pwm_motor2.set_duty_cycle(speed)
+        # Crash prevention
+        if (rotation == "cw" and self.mygpio_handler.GPIOMap[f"In_Motor{motornum}LimitCW"] == self.GPIO.HIGH) or (rotation == "ccw" and self.mygpio_handler.GPIOMap[f"In_Motor{motornum}LimitCCW"] == self.GPIO.HIGH):
+            logger.warning("Start command aborted to prevent motor crash")
+            return
 
+        if rotation == "cw":
+            self.GPIO.output(self.mygpio_handler.GPIOMap[f"Motor{motornum}In1"], self.GPIO.HIGH)
+            self.GPIO.output(self.mygpio_handler.GPIOMap[f"Motor{motornum}In2"], self.GPIO.LOW)
+        else:
+            self.GPIO.output(self.mygpio_handler.GPIOMap[f"Motor{motornum}In1"], self.GPIO.LOW)
+            self.GPIO.output(self.mygpio_handler.GPIOMap[f"Motor{motornum}In2"], self.GPIO.HIGH)
 
-def stop(motornum):
-    logger.debug("motor " + str(motornum) + " stopping")
-    GPIO.output(mygpio_handler.GPIOMap["Motor" + str(motornum) + "In1"], GPIO.LOW)
-    GPIO.output(mygpio_handler.GPIOMap["Motor" + str(motornum) + "In2"], GPIO.LOW)
-    GPIO.output(mygpio_handler.GPIOMap["Motor" + str(motornum) + "PWM"], GPIO.LOW)
+        if motornum == 1:
+            self.pwm_motor1.set_duty_cycle(speed)
+        elif motornum == 2:
+            self.pwm_motor2.set_duty_cycle(speed)
 
+    def stop(self, motornum):
+        logger.debug(f"motor {motornum} stopping")
+        self.GPIO.output(self.mygpio_handler.GPIOMap[f"Motor{motornum}In1"], self.GPIO.LOW)
+        self.GPIO.output(self.mygpio_handler.GPIOMap[f"Motor{motornum}In2"], self.GPIO.LOW)
+        self.GPIO.output(self.mygpio_handler.GPIOMap[f"Motor{motornum}PWM"], self.GPIO.LOW)
 
-def limitTouch(channel, event=None):
-    time.sleep(settings.bouncingTreshold + 0.23)  # avoid catching a bouncing
-    if GPIO.input(channel) != 1:
-        # logger.debug ("Warning! Limit touch: below treshold of "+str(settings.bouncingTreshold)+" on channel"+str(channel))
-        return
+    def limitTouch(self, channel, event=None):
+        time.sleep(settings.bouncingTreshold + 0.23)  # avoid catching a bouncing
+        if self.GPIO.input(channel) != 1:
+            return
 
-    GPIOLabel = mygpio_handler.getGPIOLabel(channel)
-    logger.debug("Limit touched on channel " + GPIOLabel)
-    motornum = 0
-    if channel == mygpio_handler.GPIOMap["In_Motor1LimitCCW"] or channel == mygpio_handler.GPIOMap["In_Motor1LimitCW"]:
-        motornum = 1
-    else:
-        motornum = 2
-    stop(motornum)
+        GPIOLabel = self.mygpio_handler.getGPIOLabel(channel)
+        logger.debug(f"Limit touched on channel {GPIOLabel}")
+        motornum = 1 if channel in (self.mygpio_handler.GPIOMap["In_Motor1LimitCCW"], self.mygpio_handler.GPIOMap["In_Motor1LimitCW"]) else 2
+        self.stop(motornum)
 
-    if channel == mygpio_handler.GPIOMap["In_Motor" + str(motornum) + "LimitCCW"]:
-        time.sleep(0.2)
-        start(motornum, "cw", speed=100)
-    elif event is not None:
-        start(motornum, "ccw", speed=85)
-        time.sleep(3)
-        stop(motornum)
-        logger.debug("Event set")
-        event.set()
+        if channel == self.mygpio_handler.GPIOMap[f"In_Motor{motornum}LimitCCW"]:
+            time.sleep(0.2)
+            self.start(motornum, "cw", speed=100)
+        elif event is not None:
+            self.start(motornum, "ccw", speed=85)
+            time.sleep(3)
+            self.stop(motornum)
+            logger.debug("Event set")
+            event.set()
 
+    def reset(self, motornum):
+        pos = ""
+        if self.GPIO.input(self.mygpio_handler.GPIOMap[f"In_Motor{motornum}LimitCW"]) == self.GPIO.HIGH:
+            pos = "CW limit touch"
+            logger.debug(f"Motor {motornum} position is {pos}. Short CCW and then CW.")
+            self.start(motornum, "ccw", 100)
+            time.sleep(0.5)
+            return
+        elif self.GPIO.input(self.mygpio_handler.GPIOMap[f"In_Motor{motornum}LimitCCW"]) == self.GPIO.HIGH:
+            pos = "CCW limit touch"
+        else:
+            pos = "floating"
+        logger.debug(f"Motor {motornum} position is {pos}. Reaching CW limit.")
+        self.start(motornum, "cw", 100)
 
-def reset(motornum):
-    pos = ""
-    if GPIO.input(mygpio_handler.GPIOMap["In_Motor" + str(motornum) + "LimitCW"]) == GPIO.HIGH:
-        pos = "CW limit touch"
-        logger.debug("Motor " + str(motornum) + " position is " + pos + ". Short CCW and then CW.")
-        start(motornum, "ccw", 100)
-        time.sleep(0.5)
-        return
-    elif GPIO.input(mygpio_handler.GPIOMap["In_Motor" + str(motornum) + "LimitCCW"]) == GPIO.HIGH:
-        pos = "CCW limit touch"
-    else:
-        pos = "floating"
-    logger.debug("Motor " + str(motornum) + " position is " + pos + ". Reaching CW limit.")
-    start(motornum, "cw", 100)
+    def motor_clean(self):
+        logger.info("Motor remove events detect")
+        self.mygpio_handler.removeEventDetect("In_Motor1LimitCCW")
+        self.mygpio_handler.removeEventDetect("In_Motor1LimitCW")
+        self.mygpio_handler.removeEventDetect("In_Motor2LimitCCW")
+        self.mygpio_handler.removeEventDetect("In_Motor2LimitCW")
 
+    def initMotorLimits(self):
+        atexit.register(self.motor_clean)
+        motor1_reset_event = threading.Event()
 
-def motor_clean():
-    logger.info("Motor remove events detect")
-    mygpio_handler.removeEventDetect("In_Motor1LimitCCW")
-    mygpio_handler.removeEventDetect("In_Motor1LimitCW")
-    mygpio_handler.removeEventDetect("In_Motor2LimitCCW")
-    mygpio_handler.removeEventDetect("In_Motor2LimitCW")
+        def motor1_callback_with_params(channel):
+            self.limitTouch(channel, motor1_reset_event)
 
+        self.mygpio_handler.addEventDetect("In_Motor1LimitCCW", self.limitTouch, 5)
+        self.mygpio_handler.addEventDetect("In_Motor1LimitCW", motor1_callback_with_params, 5)
 
-def initMotorLimits():
-    # Start button available only after motor reset:
-    #  we put an event in the motor.limitTouch callback of MotorXLimitCCW
-    #  so that execution continues only when event is set on both motors
-    atexit.register(motor_clean)
-    motor1_reset_event = threading.Event()
+        motor2_reset_event = threading.Event()
 
-    def motor1_callback_with_params(channel):
-        limitTouch(channel, motor1_reset_event)
+        def motor2_callback_with_params(channel):
+            self.limitTouch(channel, motor2_reset_event)
 
-    mygpio_handler.addEventDetect("In_Motor1LimitCCW", limitTouch, 5)
-    mygpio_handler.addEventDetect("In_Motor1LimitCW", motor1_callback_with_params, 5)
+        self.mygpio_handler.addEventDetect("In_Motor2LimitCCW", self.limitTouch, 5)
+        self.mygpio_handler.addEventDetect("In_Motor2LimitCW", motor2_callback_with_params, 5)
 
-    motor2_reset_event = threading.Event()
-
-    def motor2_callback_with_params(channel):
-        limitTouch(channel, motor2_reset_event)
-
-    mygpio_handler.addEventDetect("In_Motor2LimitCCW", limitTouch, 5)
-    mygpio_handler.addEventDetect("In_Motor2LimitCW", motor2_callback_with_params, 5)
-
-    if settings.motor1Enabled:
-        reset(1)
-    if settings.motor1Enabled:
-        motor1_reset_event.wait()
-    if settings.motor2Enabled:
-        reset(2)
-    if settings.motor2Enabled:
-        motor2_reset_event.wait()
+        if settings.motor1Enabled:
+            self.reset(1)
+        if settings.motor1Enabled:
+            motor1_reset_event.wait()
+        if settings.motor2Enabled:
+            self.reset(2)
+        if settings.motor2Enabled:
+            motor2_reset_event.wait()
