@@ -15,7 +15,7 @@ class SequencesHandler:
     lastTimeMark = 0
 
     def __init__(self, mygpio_handler, GPIO, audio_handler, state_tracker, motor_handler):
-        self.sequenceFolder = path.join(path.dirname(path.abspath(__file__)), f"../sequences/{settings.sequenceFolder}")
+        self.sequenceFolder = path.join(path.dirname(path.abspath(__file__)), f"/etc/dunebugger/sequences/{settings.sequenceFolder}")
         self.random_elements = {}
         self.random_elements_file = settings.randomElementsFile
         self.sequence_file = settings.sequenceFile
@@ -34,6 +34,7 @@ class SequencesHandler:
         self.cycle_playing_time = 0
         self.cycle_time_thread = None
         self.cycle_time_thread_stop_event = threading.Event()
+        self.cycle_offset = 0
         self.mQueueCyclePlayingResolutionSecs = int(settings.mQueueCyclePlayingResolutionSecs)
 
         atexit.register(self.sequence_clean)
@@ -403,9 +404,9 @@ class SequencesHandler:
         self.read_sequence_file(file_path)
 
     def waituntil(self, sec):
-        logger.debug("Waiting: " + str(sec - settings.cycleoffset))
-        self.cycle_event.wait((sec - settings.cycleoffset) * settings.cyclespeed)
-        settings.cycleoffset = sec
+        logger.debug("Waiting: " + str(sec - self.cycle_offset))
+        self.cycle_event.wait((sec - self.cycle_offset) * settings.cyclespeed)
+        self.cycle_offset = sec
 
     def sequence_clean(self):
         logger.debug("Sequence clean")
@@ -463,7 +464,7 @@ class SequencesHandler:
             self.start()
             self.stop_cycle_time_thread()
             self.enable_random_actions()
-            settings.cycleoffset = 0
+            self.cycle_offset = 0
             self.setStandByMode()
 
     def get_state(self):

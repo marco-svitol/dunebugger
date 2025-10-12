@@ -18,11 +18,29 @@ class AudioPlayer:
         self.sfxVolume = settings.normalSfxVolume
         self.eastereggTriggered = False
         self.vlcdevice = settings.vlcdevice
+        self.audio_available = True
 
-        self.vlcinstance = vlc.Instance(self.vlcdevice)
-        self.musiclistplayer = self.vlcinstance.media_list_player_new()
-        self.sfxplayer = self.vlcinstance.media_player_new()
-        self.musicplayer = self.vlcinstance.media_player_new()
+        try:
+            # Try to initialize VLC with ALSA audio output
+            vlc_args = []
+            if self.vlcdevice:
+                vlc_args.append(self.vlcdevice)
+            
+            self.vlcinstance = vlc.Instance(vlc_args)
+            self.musiclistplayer = self.vlcinstance.media_list_player_new()
+            self.sfxplayer = self.vlcinstance.media_player_new()
+            self.musicplayer = self.vlcinstance.media_player_new()
+            
+            logger.info("Audio system initialized successfully")
+        except Exception as e:
+            logger.warning(f"Audio initialization failed: {e}")
+            logger.warning("Running in audio-disabled mode")
+            self.audio_available = False
+            # Initialize dummy objects to prevent crashes
+            self.vlcinstance = None
+            self.musiclistplayer = None
+            self.sfxplayer = None
+            self.musicplayer = None
 
         atexit.register(self.vstopaudio)
 
@@ -47,10 +65,10 @@ class AudioPlayer:
             logger.warning(f"Invalid SFX volume level: {volume}. Must be between 0-100.")
 
     def get_music_path(self, music_folder):
-        return path.join(path.dirname(path.abspath(__file__)), "..", music_folder)
+        return path.join(path.dirname(path.abspath(__file__)), "/etc/dunebugger/music", music_folder)
 
     def get_sfx_filepath(self, sfx_file):
-        return path.join(path.dirname(path.abspath(__file__)), "..", sfx_file)
+        return path.join(path.dirname(path.abspath(__file__)), "/etc/dunebugger/sfx", sfx_file)
 
     def checkaudioext(self, filename):
         audioext = [
@@ -75,37 +93,51 @@ class AudioPlayer:
         return False
 
     def playMusic(self, music_folder):
-        self.vplaymusic(music_folder)
+        if not self.audio_available:
+            logger.debug("Audio not available - skipping music playback")
+            return
+        music_files = self.get_music_files(music_folder)
+        self.vplaymusic(music_files)
 
     def play_sfx(self, sfx_file):
+        if not self.audio_available:
+            logger.debug("Audio not available - skipping SFX playback")
+            return
         self.vplaysfx(sfx_file)
 
-    def vplaymusic(self, music_folder):
+    def get_music_files(self, music_folder, max_files=20):
+        music_files = [os.path.join(music_folder, f) for f in os.listdir(music_folder)]  # get complete file paths
+        # Filter to keep only valid audio files
+        music_files = [f for f in music_files if self.checkaudioext(f)]
+        logger.info(f"Added {str(len(music_files))} music files from folder {music_folder}")
+
+        random.shuffle(music_files)  # shuffle list
+
+        if len(music_files) > max_files:
+            music_files = music_files[:max_files-1]  # get only the first max_files songs
+
+        if settings.eastereggEnabled and self.eastereggTriggered:
+            logger.info("EasterEgg enabled!!")
+            easter_egg_folder = self.get_music_path("easteregg")
+            easter_egg_files = [os.path.join(easter_egg_folder, f) for f in os.listdir(easter_egg_folder)]  # get complete file paths
+            # Filter easter egg files to only include valid audio files
+            easter_egg_files = [f for f in easter_egg_files if self.checkaudioext(f)]
+            # Add easter egg files at the beginning of the music files list
+            music_files = easter_egg_files + music_files
+            self.eastereggTriggered = False
+
+        return music_files
+
+    def vplaymusic(self, music_files):
+        if not self.audio_available:
+            logger.debug("Audio not available - skipping music playback")
+            return
 
         # self.setVolumeBasedOntime()
 
         playlist = self.vlcinstance.media_list_new()
-
-        fileplaylist = os.listdir(music_folder)  # get filenames
-        logger.info(f"Music: read {str(len(fileplaylist))} files from folder {music_folder}")
-
-        for mfile in fileplaylist:  # keep only if extension is a valid audio file
-            if not self.checkaudioext(mfile):
-                fileplaylist.remove(mfile)
-
-        random.shuffle(fileplaylist)  # shuffle list
-
-        if len(fileplaylist) > 20:
-            fileplaylist = fileplaylist[:19]  # get only the first 20 songs
-
-        if settings.eastereggEnabled and self.eastereggTriggered:
-            logger.info("EasterEgg enabled!!")
-            playlist.add_media(self.vlcinstance.media_new(self.get_sfx_filepath("app_audio_files/ohhche.mp3")))
-            playlist.add_media(self.vlcinstance.media_new(self.get_music_path("app_audio_files/dunebuggy.mp3")))
-            self.eastereggTriggered = False
-
-        for song in range(len(fileplaylist)):  # add path to songname
-            playlist.add_media(self.vlcinstance.media_new(music_folder + "/" + fileplaylist[song]))
+        for song in range(len(music_files)):
+            playlist.add_media(self.vlcinstance.media_new(music_files[song]))
 
         self.musiclistplayer.set_media_list(playlist)
 
@@ -116,11 +148,15 @@ class AudioPlayer:
         time.sleep(0.1)
         logger.info("Setting music volume at " + str(self.musicVolume))
 
-        logger.info("Playing music (first three songs): " + fileplaylist[0] + " " + fileplaylist[1] + " " + fileplaylist[2])
+        logger.info("Playing music (first three songs): " + music_files[0] + " " + music_files[1] + " " + music_files[2])
 
         self.musicSetVolume(self.musicVolume)
 
     def vplaysfx(self, sfx_file):
+        if not self.audio_available:
+            logger.debug("Audio not available - skipping SFX playback")
+            return
+            
         media = self.vlcinstance.media_new(sfx_file)
 
         self.sfxplayer.set_media(media)
@@ -159,10 +195,16 @@ class AudioPlayer:
             return
 
     def musicSetVolume(self, vol):
+        if not self.audio_available or not self.musicplayer:
+            logger.debug("Audio not available - skipping music volume set")
+            return
         self.musicplayer.audio_set_volume(vol)
         logger.info("Setting music volume at " + str(vol))
 
     def sfxSetVolume(self, vol):
+        if not self.audio_available or not self.sfxplayer:
+            logger.debug("Audio not available - skipping SFX volume set")
+            return
         self.sfxplayer.audio_set_volume(vol)
         logger.debug("Setting sfx volume at " + str(vol))
 

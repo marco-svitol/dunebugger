@@ -3,6 +3,7 @@ import os
 import asyncio
 import atexit
 import traceback
+import sys
 
 from dunebugger_settings import settings
 from dunebugger_logging import logger, COLORS
@@ -52,6 +53,14 @@ class TerminalInterpreter:
             self.running = False
 
     async def terminal_input_loop(self):
+        # Check if we're in an interactive environment
+        if not sys.stdin.isatty():
+            logger.info("No interactive terminal available (running in container/background). Terminal input disabled.")
+            # Keep the loop alive but don't try to read input
+            while self.running:
+                await asyncio.sleep(1)
+            return
+
         # Create an event loop for the stdin reader
         loop = asyncio.get_event_loop()
 
@@ -80,6 +89,10 @@ class TerminalInterpreter:
                             print(command_reply_message)
                 else:
                     print("\r")
+            except EOFError:
+                logger.info("EOF encountered - terminal input not available (container environment)")
+                self.running = False
+                break
             except KeyboardInterrupt:
                 self.running = False
                 logger.debug("Stopping terminal input loop...")
