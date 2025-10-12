@@ -58,8 +58,6 @@ class DunebuggerSettings:
         try:
             if section == "General":
                 if option in [
-                    "cyclelength",
-                    "cycleoffset",
                     "randomActionsMinSecs",
                     "randomActionsMaxSecs",
                 ]:

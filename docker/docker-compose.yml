@@ -1,0 +1,93 @@
+version: '3.8'
+
+services:
+  nats-server:
+    image: nats:latest
+    container_name: nats-server
+    restart: unless-stopped
+    
+    # NATS server ports
+    ports:
+      - "4222:4222"  # NATS client port
+      - "8222:8222"  # HTTP monitoring port
+    
+    # NATS server command with monitoring and debug/verbose flags
+    command: ["-m", "8222", "-DV"]
+    
+    # Add to shared network
+    networks:
+      - dunebugger-network
+
+  dunebugger:
+    build: .
+    container_name: dunebugger-app
+    restart: unless-stopped
+    
+    # Run as root for GPIO access
+    user: "0:0"
+    
+    # Wait for NATS server to be ready
+    depends_on:
+      - nats-server
+    
+    # Enable privileged mode for GPIO access on Raspberry Pi
+    privileged: true
+    
+    # Mount GPIO and device access
+    devices:
+      - "/dev/gpiomem:/dev/gpiomem"
+      - "/dev/mem:/dev/mem"
+      - "/dev/gpiochip0:/dev/gpiochip0"
+    
+    # Volume mounts for local Raspberry Pi paths
+    volumes:
+      # Mount local config directory
+      - /etc/dunebugger/config:/app/app/config:rw
+      # Mount local music directory  
+      - /etc/dunebugger/music:/app/music:rw
+      # Mount local sound effects directory
+      - /etc/dunebugger/sfx:/app/sfx:rw
+      # Mount local sequences directory
+      - /etc/dunebugger/sequences:/app/sequences:rw
+      # Mount extra audio files directory
+      - /etc/dunebugger/app_audio_files:/app/app_audio_files:rw
+      # Mount ALSA for audio access
+      - /dev/snd:/dev/snd
+      # Mount ALSA config
+      - /usr/share/alsa:/usr/share/alsa:ro
+      - /etc/asound.conf:/etc/asound.conf:ro
+    
+    # Environment variables
+    environment:
+      - PULSE_RUNTIME_PATH=/run/user/1000/pulse
+      - DISPLAY=${DISPLAY:-:0}
+      # Force VLC to use ALSA instead of PulseAudio
+      - VLC_VERBOSE=2
+      - ALSA_CARD=0
+    
+    # Network configuration for sharing with other containers
+    networks:
+      - dunebugger-network
+    
+    # Expose ports if needed (uncomment and adjust as necessary)
+    # ports:
+    #   - "8080:8080"
+    
+    # Capabilities for GPIO access
+    cap_add:
+      - SYS_RAWIO
+      - SYS_ADMIN
+      - DAC_OVERRIDE
+    
+    # Security options
+    security_opt:
+      - seccomp:unconfined
+
+# Create a custom network that other containers can join
+networks:
+  dunebugger-network:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.20.0.0/16
