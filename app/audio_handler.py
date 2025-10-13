@@ -167,7 +167,7 @@ class AudioPlayer:
 
     def vstopaudio(self, fadeout_secs=3):
         try:
-            if self.musicVolume > 0 or self.sfxVolume > 0:
+            if self.audio_available and (self.musicVolume > 0 or self.sfxVolume > 0):
                 if self.musicVolume > self.sfxVolume:  # calculate pause interval. Takes higher volume
                     fadeoutpause = int(fadeout_secs) / (self.musicVolume * 1.0)
                 else:
