@@ -47,7 +47,8 @@ class NATSComm:
     async def _handler(self, mqueue_message):
         try:
             command_reply_message = await self.mqueue_handler.process_mqueue_message(mqueue_message)
-            logger.debug(command_reply_message)
+            if command_reply_message:
+                logger.debug(command_reply_message)
         except Exception as e:
             logger.error(f"Error processing message: {e}")
 
@@ -76,7 +77,5 @@ class NATSComm:
                 await self.nc.publish(f"{self.subject_root}.{recipient}.{subject}", message_json.encode(), reply_to=reply_subject)
             else:
                 await self.nc.publish(f"{self.subject_root}.{recipient}.{subject}", message_json.encode())
-            # TODO: Debug remove
-            logger.debug(f"Sent message: {str(message)[:20]}")
         except Exception as e:
             logger.error(f"Error sending message: {e}")

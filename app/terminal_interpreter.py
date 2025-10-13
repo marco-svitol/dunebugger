@@ -20,10 +20,10 @@ class TerminalInterpreter:
 
         if not settings.ON_RASPBERRY_PI:
             help_insert_1 = "not "
-            help_insert_2 = " (OUTPUT gpios only)"
+            help_insert_2 = " (OUTPUT & INPUT gpios)"
         else:
             help_insert_1 = ""
-            help_insert_2 = ""
+            help_insert_2 = " (OUTPUT gpios only)"
 
         # Dynamically create the help string
         self.help = f"I am {help_insert_1}a Raspberry. You can ask me to:\n"
@@ -147,13 +147,15 @@ mode: {mode}, state: {state}, switch: {COLORS['RESET']}{switchcolor}{switchstate
 
     def handle_show_configuration(self):
 
+        settings_list = settings.get_settings()
         # Print DunebuggerSettings configuration
         color_blue = COLORS["BLUE"]
         color_red = COLORS["RED"]
         print(f"{color_red}Current Configuration:")
-        for attr_name in dir(settings):
-            if not attr_name.startswith("__") and not callable(getattr(settings, attr_name)):
-                print(f"{color_blue}{attr_name}: {COLORS['RESET']}{getattr(settings, attr_name)}")
+        
+        for setting in settings_list:
+            for key, value in setting.items():
+                print(f"{color_blue}{key}: {COLORS['RESET']}{value}")
 
         random_actions_status = "on" if self.command_interpreter.sequence_handler.get_random_actions_state() else "off"
         print(f"{color_blue}Random actions is now: {COLORS['RESET']}{random_actions_status}")

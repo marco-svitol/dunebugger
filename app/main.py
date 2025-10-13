@@ -3,10 +3,14 @@ import asyncio
 
 # from dunebugger_settings import settings
 from class_factory import terminal_interpreter, mqueue, mqueue_handler
+from dunebugger_logging import update_queue_logging_handler_loop
 
 
 async def main():
     try:
+        # Update queue handler with the current event loop
+        update_queue_logging_handler_loop()
+        
         await mqueue.start()
 
         # Start the mqueue monitoring task
