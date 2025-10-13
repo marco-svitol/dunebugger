@@ -24,5 +24,4 @@ mqueue = NATSComm(
 )
 
 mqueue_handler.mqueue_sender = mqueue
-terminal_interpreter.mqueue_handler = mqueue_handler
-# Monitor will be started asynchronously in main.py
+command_interpreter.mqueue_handler = mqueue_handler

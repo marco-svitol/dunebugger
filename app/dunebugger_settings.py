@@ -106,11 +106,14 @@ class DunebuggerSettings:
                 if option == "cyclespeed":
                     return float(value)
             elif section == "Log":
-                logLevel = get_logging_level_from_name(value)
-                if logLevel == "":
-                    return get_logging_level_from_name("INFO")
-                else:
-                    return logLevel
+                if option == "dunebuggerLogLevel":
+                    logLevel = get_logging_level_from_name(value)
+                    if logLevel == "":
+                        return get_logging_level_from_name("INFO")
+                    else:
+                        return logLevel
+                elif option == "sendLogsToQueue":
+                    return self.config.getboolean(section, option)
 
         except (configparser.NoOptionError, ValueError) as e:
             raise ValueError(f"Invalid configuration: Section={section}, Option={option}, Value={value}. Error: {e}")
@@ -121,6 +124,26 @@ class DunebuggerSettings:
     def override_configuration(self):
         if not self.ON_RASPBERRY_PI:
             self.vlcdevice = ""
+
+    def get_settings(self):
+        settings_list = []
+        # Exclude non-serializable attributes
+        excluded_attrs = {
+            'config', 'command_handlers', 'dunebugger_config', 
+            'commands_config_path', 'load_configuration', 'load_commands',
+            'validate_option', 'override_configuration', 'get_settings'
+        }
+        
+        for attr_name in dir(self):
+            if (not attr_name.startswith("__") and 
+                not callable(getattr(self, attr_name)) and 
+                attr_name not in excluded_attrs):
+                
+                attr_value = getattr(self, attr_name)
+                # Only include JSON-serializable types
+                if isinstance(attr_value, (str, int, float, bool, type(None))):
+                    settings_list.append({attr_name: attr_value})
+        return settings_list
 
 
 settings = DunebuggerSettings()

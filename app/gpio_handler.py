@@ -171,8 +171,6 @@ class GPIOHandler:
         if gpiomap is not None:
             if gpiomode == self.GPIO.OUT or (not settings.ON_RASPBERRY_PI):
                 logger.debug(f"{gpiomap} {value}")
-                if gpiomode == self.GPIO.IN:
-                    value = int(not value)
                 GPIO.output(gpio, value)
                 self.state_tracker.notify_update("gpios")
             elif gpiomode == self.GPIO.IN and settings.ON_RASPBERRY_PI:

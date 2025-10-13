@@ -1,7 +1,7 @@
 import asyncio
 
 from dunebugger_settings import settings
-from dunebugger_logging import set_logger_level, get_logging_level_from_name
+from dunebugger_logging import set_logger_level, get_logging_level_from_name, enable_queue_logging, disable_queue_logging
 
 
 class CommandInterpreter:
@@ -85,6 +85,14 @@ class CommandInterpreter:
     def handle_set_logger_info(self):
         set_logger_level("dunebuggerLog", get_logging_level_from_name("INFO"))
         return "Logger level set to INFO"
+
+    def handle_set_logger_queuing(self):
+        enable_queue_logging(self.mqueue_handler)
+        return "Logger set to queue mode"
+
+    def handle_disable_logger_queuing(self):
+        disable_queue_logging()
+        return "Logger queue mode disabled"
 
     def handle_set_standby_mode(self):
         self.sequence_handler.setStandByMode()

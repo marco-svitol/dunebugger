@@ -1,6 +1,6 @@
 import asyncio
 import json
-from dunebugger_logging import logger
+from dunebugger_logging import enable_queue_logging, logger
 from dunebugger_settings import settings
 
 
@@ -17,6 +17,9 @@ class MessagingQueueHandler:
         self.running = True
         self.monitor_task = None
 
+        if settings.sendLogsToQueue:
+            enable_queue_logging(self)
+            
     async def process_mqueue_message(self, mqueue_message):
         """Callback method to process received messages."""
         # Parse the JSON string back into a dictionary
@@ -32,13 +35,31 @@ class MessagingQueueHandler:
 
         try:
             subject = (mqueue_message.subject).split(".")[2]
-            logger.debug(f"Processing message: {str(message_json)[:20]}. Subject: {subject}. Reply to: {mqueue_message.reply}")
+            #TODO: too much verbosity
+            # logger.debug(f"Processing message: {str(message_json)[:20]}. Subject: {subject}. Reply to: {mqueue_message.reply}")
 
             if subject in ["dunebugger_set"]:
                 command = message_json["body"]
                 return await self.command_interpreter.process_command(command)
             elif subject in ["refresh"]:
                 self.state_tracker.force_update()
+            elif subject in ["terminal_command"]:
+                command = message_json["body"]
+                if command in ["s"]:
+                    gpio_status = self.command_interpreter.gpio_handler.get_gpio_status()
+                    await self.dispatch_message(gpio_status, "show_gpio_status", "terminal") #TODO , mqueue_message.reply)
+                elif command in ["t"]:
+                    settings_list = settings.get_settings()
+                    random_actions_status = True if self.command_interpreter.sequence_handler.get_random_actions_state() else False
+                    music_volume_status = self.command_interpreter.sequence_handler.audio_handler.get_music_volume()
+                    sfx_volume_status = self.command_interpreter.sequence_handler.audio_handler.get_sfx_volume()
+                    settings_list.append ({'random_actions_status':random_actions_status})
+                    settings_list.append ({'music_volume_status':music_volume_status})
+                    settings_list.append ({'sfx_volume_status':sfx_volume_status})
+                    await self.dispatch_message(settings_list, "show_configuration", "terminal") #TODO , mqueue_message.reply)
+                else:
+                    reply_message = await self.command_interpreter.process_command(command)
+                    await self.dispatch_message(reply_message, "terminal_command_reply", "terminal") #TODO , mqueue_message.reply)
             else:
                 logger.warning(f"Unknown subjcet: {subject}. Ignoring message.")
         except KeyError as key_error:
