@@ -372,13 +372,12 @@ class SequencesHandler:
             self.random_action()
 
     def enable_random_actions(self):
-        if settings.randomActionsEnabled:
-            self.random_sequence_from_file(self.random_elements_file)
-            self.random_actions_event = threading.Event()
-            self.random_actions_event.clear()
-            self.random_actions_thread = threading.Thread(name="_random_actions", target=self.random_actions, daemon=True)
-            self.random_actions_thread.start()
-            self.state_tracker.notify_update("random_actions")
+        self.random_sequence_from_file(self.random_elements_file)
+        self.random_actions_event = threading.Event()
+        self.random_actions_event.clear()
+        self.random_actions_thread = threading.Thread(name="_random_actions", target=self.random_actions, daemon=True)
+        self.random_actions_thread.start()
+        self.state_tracker.notify_update("random_actions")
 
     def disable_random_actions(self):
         if hasattr(self, "random_actions_event"):

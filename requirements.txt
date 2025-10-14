@@ -1,4 +1,4 @@
-RPi.GPIO
+rpi-lgpio
 python-vlc
 schedule
 dotenv

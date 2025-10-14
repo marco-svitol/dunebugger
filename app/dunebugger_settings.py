@@ -64,7 +64,7 @@ class DunebuggerSettings:
                     return int(value)
                 elif option == "bouncingTreshold":
                     return float(value)
-                elif option in ["arduinoConnected", "eastereggEnabled", "randomActionsEnabled"]:
+                elif option in ["arduinoConnected", "eastereggEnabled"]:
                     return self.config.getboolean(section, option)
                 elif option in [
                     "sequenceFolder",
