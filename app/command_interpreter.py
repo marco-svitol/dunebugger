@@ -51,11 +51,9 @@ class CommandInterpreter:
         return "Configuration reloaded"
 
     def handle_enable_random_actions(self):
-        if settings.randomActionsEnabled:
-            self.sequence_handler.enable_random_actions()
-            return "Random actions enabled"
-        else:
-            return "Random actions is disabled in the configuration"
+        self.sequence_handler.enable_random_actions()
+        return "Random actions enabled"
+
 
     def handle_disable_random_actions(self):
         self.sequence_handler.disable_random_actions()
