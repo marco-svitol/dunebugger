@@ -7,16 +7,12 @@ from dunebugger_settings import settings
 class MessagingQueueHandler:
     """Class to handle messaging queue operations."""
 
-    def __init__(self, state_tracker, sequence_handler, mygpio_handler, command_interpreter):
+    def __init__(self, sequence_handler, mygpio_handler, command_interpreter):
         self.mqueue_sender = None
-        self.state_tracker = state_tracker
         self.sequence_handler = sequence_handler
         self.mygpio_handler = mygpio_handler
         self.command_interpreter = command_interpreter
-        self.check_interval = int(settings.mQueueStateCheckIntervalSecs)
-        self.running = True
-        self.monitor_task = None
-
+        
         if settings.sendLogsToQueue:
             enable_queue_logging(self)
             
@@ -42,7 +38,7 @@ class MessagingQueueHandler:
                 command = message_json["body"]
                 return await self.command_interpreter.process_command(command)
             elif subject in ["refresh"]:
-                self.state_tracker.force_update()
+                self.sequence_handler.state_tracker.force_update()
             elif subject in ["terminal_command"]:
                 command = message_json["body"]
                 if command in ["s"]:
@@ -86,44 +82,3 @@ class MessagingQueueHandler:
             "source": settings.mQueueClientID,
         }
         await self.mqueue_sender.send(message, recipient, reply_subject)
-
-    async def start_monitoring(self):
-        """Start the state monitoring task"""
-        self.monitor_task = asyncio.create_task(self._monitor_states())
-
-    async def stop_monitoring(self):
-        """Stop the state monitoring task"""
-        self.running = False
-        if self.monitor_task:
-            self.monitor_task.cancel()
-            try:
-                await self.monitor_task
-            except asyncio.CancelledError:
-                pass
-
-    async def _monitor_states(self):
-        """
-        Monitor the state tracker for changes and react accordingly.
-        """
-        while self.running:
-            if self.state_tracker.has_changes():
-                changed_states = self.state_tracker.get_changes()
-                for state in changed_states:
-                    if state == "gpios":
-                        # React to GPIO state changes
-                        await self.send_gpio_state()
-                    elif state in ["random_actions", "cycle_start_stop", "start_button", "sequences_validated"]:
-                        # Handle random actions state change
-                        await self.send_sequence_state()
-                    elif state == "playing_time":
-                        # Handle playing time changes
-                        await self.send_playing_time()
-                    elif state == "sequence":
-                        # Handle sequence changes
-                        await self.send_sequence()
-                    elif state == "config":
-                        # Handle configuration changes
-                        logger.debug("Configuration changed. Reloading settings...")
-                # Reset the state tracker after handling changes
-                self.state_tracker.reset_changes()
-            await asyncio.sleep(self.check_interval)

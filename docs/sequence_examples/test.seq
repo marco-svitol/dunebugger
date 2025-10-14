@@ -1,0 +1,5 @@
+# Usefull for testing GPIOs without waiting for the full sequence
+
+0 switch LuceStartButton off
+1 audio playMusic onair
+30 audio fadeout 2

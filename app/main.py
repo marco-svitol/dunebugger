@@ -2,22 +2,27 @@
 import asyncio
 
 # from dunebugger_settings import settings
-from class_factory import terminal_interpreter, mqueue, mqueue_handler
+from class_factory import terminal_interpreter, mqueue, state_tracker, initialization_handler
 from dunebugger_logging import update_queue_logging_handler_loop
 
 
 async def main():
     try:
-        # Update queue handler with the current event loop
+        # Queue logging helper: update queue handler with the current event loop
         update_queue_logging_handler_loop()
         
-        await mqueue.start()
+        await mqueue.start_listener()
 
         # Start the mqueue monitoring task
-        await mqueue_handler.start_monitoring()
+        await state_tracker.start_state_monitoring()
 
-        # comment lines below to make a real server
-        # await terminal_interpreter.process_terminal_input(settings.initializationCommandsString)
+        # Execute initialization commands if any
+        await initialization_handler.execute_initialization_commands()
+
+        # Terminal listener (blocking) will keep the program running
+        # If you want to run other tasks, create them before this line
+        # The listener will detect if an interactive terminal is available
+        # and disable itself if not (e.g., running in a container or background)
         await terminal_interpreter.terminal_listen()
     
     finally:
@@ -26,13 +31,13 @@ async def main():
         
         # Stop the monitoring task
         try:
-            await mqueue_handler.stop_monitoring()
-            print("Message queue monitoring stopped.")
+            await state_tracker.stop_state_monitoring()
+            print("State monitoring stopped.")
         except Exception as e:
-            print(f"Error stopping mqueue monitoring: {e}")
-        
+            print(f"Error stopping state monitoring: {e}")
+
         # Close NATS connection
-        await mqueue.close()
+        await mqueue.close_listener()
  
         print("Cleanup completed.")
 

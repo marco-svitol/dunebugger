@@ -1,0 +1,17 @@
+# When out of working hours, the Dunebugger needs to rest a bit. Switch off all unneeded stuff
+0 switch LuceStartButton off
+0 switch Dim1GM off
+0 switch Dim2Sole off
+0 switch Dim3Libero Off
+0 switch Dim4AlbaTramonto off
+0 switch Dim5Giorno off
+0 switch SchedaMotori off
+0 switch Led1Goccia off
+0 switch Led2ReteStelle off
+0 switch Case1 Off
+0 switch Case2 Off
+0 switch Fuochi Off
+0 switch GesuAlways off
+0 switch PompaAcqua Off
+0 switch Cometa Off
+0 switch GrottaFuochi off
