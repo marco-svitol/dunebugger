@@ -11,6 +11,7 @@ async def main():
         # Queue logging helper: update queue handler with the current event loop
         update_queue_logging_handler_loop()
         
+        # Start NATS connection manager (non-blocking)
         await mqueue.start_listener()
 
         # Start the mqueue monitoring task

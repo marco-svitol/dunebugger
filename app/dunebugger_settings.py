@@ -86,6 +86,8 @@ class DunebuggerSettings:
                     return str(value)
                 elif option in ["mQueueStateCheckIntervalSecs", "mQueueCyclePlayingResolutionSecs"]:
                     return int(value)
+                elif option == "mQueueEnabled":
+                    return self.config.getboolean(section, option)
             elif section == "Audio":
                 if option in [
                     "normalMusicVolume",

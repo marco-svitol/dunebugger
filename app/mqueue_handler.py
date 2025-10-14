@@ -13,7 +13,8 @@ class MessagingQueueHandler:
         self.mygpio_handler = mygpio_handler
         self.command_interpreter = command_interpreter
         
-        if settings.sendLogsToQueue:
+        # Only enable queue logging if both sendLogsToQueue and mQueueEnabled are True
+        if settings.sendLogsToQueue and settings.mQueueEnabled:
             enable_queue_logging(self)
             
     async def process_mqueue_message(self, mqueue_message):
@@ -76,6 +77,11 @@ class MessagingQueueHandler:
         await self.dispatch_message(self.sequence_handler.get_sequence(sequence), "sequence", "remote")
 
     async def dispatch_message(self, message_body, subject, recipient, reply_subject=None):
+        # Only send message if mqueue_sender is available (NATS is enabled)
+        if self.mqueue_sender is None:
+            logger.debug(f"NATS disabled - not sending message. Subject: {subject}, Recipient: {recipient}")
+            return
+            
         message = {
             "body": message_body,
             "subject": subject,
