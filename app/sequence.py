@@ -1,3 +1,4 @@
+import asyncio
 import time
 import atexit
 import threading
@@ -14,7 +15,7 @@ class SequencesHandler:
 
     lastTimeMark = 0
 
-    def __init__(self, mygpio_handler, GPIO, audio_handler, state_tracker, motor_handler):
+    def __init__(self, mygpio_handler, GPIO, audio_handler, state_tracker, motor_handler, dmx_handler):
         self.sequenceFolder = path.join(path.dirname(path.abspath(__file__)), f"/etc/dunebugger/sequences/{settings.sequenceFolder}")
         self.random_elements = {}
         self.random_elements_file = settings.randomElementsFile
@@ -29,6 +30,7 @@ class SequencesHandler:
         self.mygpio_handler = mygpio_handler
         self.audio_handler = audio_handler
         self.motor_handler = motor_handler
+        self.dmx_handler = dmx_handler
         self.GPIO = GPIO
         self.start_button_enabled = False
         self.cycle_playing_time = 0
@@ -184,6 +186,15 @@ class SequencesHandler:
         motor_enabled = getattr(settings, f"motor{motor_number}Enabled", False)
         if motor_enabled:
             self.motor_handler.start(motor_number, direction, speed)
+
+    def execute_dmx_command(self, command, channel, scene):
+        if not self.dmx_handler:
+            logger.error("DMX module is disabled")
+            return
+        if command == "fade":
+            self.dmx_handler.fade_to_scene(scene, start_channel=channel, duration=2.0)
+        elif command == "set":
+            self.dmx_handler.set_scene(scene, start_channel=channel)
 
     def execute_switch_command(self, device_name, action):
         if action.lower() == "on" or action.lower() == "off":

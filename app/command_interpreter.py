@@ -31,6 +31,20 @@ class CommandInterpreter:
             elif cmd == "sv":
                 return self.handle_set_sfx_volume(param)
 
+        #todo: refactor to avoid duplication with dmx_handler
+        if command.startswith("dmx "):
+            parts = command.split()
+            if len(parts) == 4:
+                try:
+                    command = parts[1]
+                    channel = int(parts[2])
+                    scene = parts[3]
+                    return self.handle_dmx(command, channel, scene)
+                except Exception as e:
+                    return f"Invalid DMX command: {e}"
+            else:
+                return "Usage: dmx <command> <channel> <scene>. Commands: fade, set. Scenes: warm_white, cool_white, red, green, blue"
+
         if command in self.command_handlers:
             handler = self.command_handlers[command]["handler"]
             # Check if the handler is a coroutine function
@@ -106,6 +120,10 @@ class CommandInterpreter:
             return "Initializing motor limits"
         else:
             return "Motor module is disabled"
+
+    def handle_dmx(self, command = None, channel = None, scene = None):
+        self.sequence_handler.execute_dmx_command(command, channel, scene)
+        return f"DMX command '{command}' executed on channel {channel} with scene '{scene}'"
 
     def handle_set_music_volume(self, volume=None):
         if volume is None:
