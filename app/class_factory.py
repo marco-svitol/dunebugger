@@ -14,7 +14,7 @@ from initialization_handler import InitializationHandler
 mygpio_handler = GPIOHandler(state_tracker)
 audio_handler = AudioPlayer()
 motor_handler = MotorController(mygpio_handler, GPIO)
-dmx_handler = DMXController(settings.dmxSerialPort) if settings.dmxEnabled else None
+dmx_handler = DMXController('/dev/ttyUSB0') if settings.dmxEnabled else None
 sequence_handler = SequencesHandler(mygpio_handler, GPIO, audio_handler, state_tracker, motor_handler, dmx_handler)
 command_interpreter = CommandInterpreter(mygpio_handler, sequence_handler)
 initialization_handler = InitializationHandler(command_interpreter)

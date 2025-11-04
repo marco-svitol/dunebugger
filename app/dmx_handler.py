@@ -5,6 +5,8 @@ DMX controller for ENTTEC DMX USB Pro (for Raspberry Pi)
 Features:
 - set_rgb(channel, r, g, b): Set RGB values for a PAR starting at channel
 - fade_to_rgb(channel, r, g, b, duration): Fade RGB to target over duration (seconds)
+- set_dimmer(channel, intensity): Set dimmer intensity (0.0-1.0) while maintaining color ratios
+- fade_to_dimmer(channel, intensity, duration): Fade to dimmer intensity over time
 - set_scene(scene_name): Set predefined scenes
 - Non-blocking fades using threading
 
@@ -13,6 +15,8 @@ Example usage:
     dmx.connect()
     dmx.set_rgb(1, 255, 100, 50)
     dmx.fade_to_rgb(1, 0, 0, 255, 2.0)
+    dmx.set_dimmer(1, 0.5)  # 50% brightness
+    dmx.fade_to_dimmer(1, 0.8, 3.0)  # Fade to 80% over 3 seconds
     dmx.set_scene('warm_white')
 """
 import time
@@ -35,6 +39,7 @@ class DMXController:
         self.serial_conn = None
         self._fade_tasks = {}
         self._lock = threading.Lock()
+        self.connect()
 
     def connect(self):
         try:
@@ -96,6 +101,87 @@ class DMXController:
         rgb = SCENES.get(scene_name)
         if rgb:
             self.set_rgb(start_channel, *rgb)
+
+    def set_dimmer(self, start_channel, intensity):
+        """
+        Set the dimmer intensity for RGB channels while maintaining color ratios.
+        
+        Args:
+            start_channel (int): Starting DMX channel (1-based)
+            intensity (float): Intensity level from 0.0 (off) to 1.0 (full brightness)
+        """
+        intensity = max(0.0, min(1.0, intensity))  # Clamp between 0 and 1
+        
+        with self._lock:
+            current_rgb = list(self.universe[start_channel-1:start_channel+2])
+            # Apply intensity scaling to current RGB values
+            dimmed_rgb = [int(value * intensity) for value in current_rgb]
+            self.universe[start_channel-1:start_channel+2] = bytes(dimmed_rgb)
+            self._send_dmx()
+
+    def fade_to_dimmer(self, start_channel, intensity, duration):
+        """
+        Fade to a specific dimmer intensity over time.
+        
+        Args:
+            start_channel (int): Starting DMX channel (1-based)
+            intensity (float): Target intensity level from 0.0 to 1.0
+            duration (float): Fade duration in seconds
+        """
+        intensity = max(0.0, min(1.0, intensity))  # Clamp between 0 and 1
+        
+        # Stop any existing fade for this channel
+        fade_key = f"dimmer_fade_{start_channel}"
+        if fade_key in self._fade_tasks:
+            self._fade_tasks[fade_key] = False  # Signal to stop
+        
+        # Start new dimmer fade in background thread
+        self._fade_tasks[fade_key] = True
+        fade_thread = threading.Thread(
+            target=self._dimmer_fade_worker, 
+            args=(start_channel, intensity, duration, fade_key),
+            daemon=True
+        )
+        fade_thread.start()
+
+    def _dimmer_fade_worker(self, start_channel, target_intensity, duration, fade_key):
+        """Worker thread for dimmer fading."""
+        with self._lock:
+            current_rgb = list(self.universe[start_channel-1:start_channel+2])
+        
+        # Calculate current intensity (max of RGB values normalized to 0-1)
+        max_current = max(current_rgb) if max(current_rgb) > 0 else 1
+        current_intensity = max_current / 255.0
+        
+        # Store the original color ratios
+        if max_current > 0:
+            color_ratios = [value / max_current for value in current_rgb]
+        else:
+            color_ratios = [1.0, 1.0, 1.0]  # Default to white if all zeros
+        
+        steps = int(duration * 30)  # 30 FPS
+        
+        for i in range(1, steps+1):
+            if not self._fade_tasks.get(fade_key, False):  # Check if cancelled
+                break
+                
+            # Interpolate intensity
+            intermediate_intensity = current_intensity + (target_intensity - current_intensity) * i / steps
+            
+            # Apply intensity to color ratios
+            intermediate_rgb = [
+                int(ratio * intermediate_intensity * 255)
+                for ratio in color_ratios
+            ]
+            
+            with self._lock:
+                self.universe[start_channel-1:start_channel+2] = bytes(intermediate_rgb)
+                self._send_dmx()
+            time.sleep(duration / steps)
+        
+        # Clean up
+        if fade_key in self._fade_tasks:
+            del self._fade_tasks[fade_key]
 
     def _send_dmx(self):
         if not self.serial_conn:

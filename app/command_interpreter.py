@@ -34,16 +34,25 @@ class CommandInterpreter:
         #todo: refactor to avoid duplication with dmx_handler
         if command.startswith("dmx "):
             parts = command.split()
-            if len(parts) == 4:
+            if len(parts) >= 4:
                 try:
-                    command = parts[1]
+                    dmx_command = parts[1]
                     channel = int(parts[2])
-                    scene = parts[3]
-                    return self.handle_dmx(command, channel, scene)
+                    scene_or_value = parts[3]
+                    duration = 2.0  # default duration
+                    
+                    # Check for optional duration parameter
+                    if len(parts) >= 5 and dmx_command in ["fade", "fade_dimmer"]:
+                        try:
+                            duration = float(parts[4])
+                        except ValueError:
+                            return f"Invalid duration value: {parts[4]}"
+                    
+                    return self.handle_dmx(dmx_command, channel, scene_or_value, duration)
                 except Exception as e:
                     return f"Invalid DMX command: {e}"
             else:
-                return "Usage: dmx <command> <channel> <scene>. Commands: fade, set. Scenes: warm_white, cool_white, red, green, blue"
+                return "Usage: dmx <command> <channel> <scene_or_value> [duration]. Commands: set, fade, dimmer, fade_dimmer. Scenes: warm_white, cool_white, red, green, blue. Dimmer values: 0.0-1.0"
 
         if command in self.command_handlers:
             handler = self.command_handlers[command]["handler"]
@@ -121,9 +130,46 @@ class CommandInterpreter:
         else:
             return "Motor module is disabled"
 
-    def handle_dmx(self, command = None, channel = None, scene = None):
-        self.sequence_handler.execute_dmx_command(command, channel, scene)
-        return f"DMX command '{command}' executed on channel {channel} with scene '{scene}'"
+    def handle_dmx(self, command=None, channel=None, scene_or_value=None, duration=2.0):
+        if command is None or channel is None or scene_or_value is None:
+            return "Usage: dmx <command> <channel> <scene_or_value> [duration]. Commands: set, fade, dimmer, fade_dimmer"
+        
+        # Validate command
+        if command not in ["set", "fade", "dimmer", "fade_dimmer"]:
+            return f"Invalid DMX command: {command}. Must be 'set', 'fade', 'dimmer', or 'fade_dimmer'"
+        
+        # Validate channel
+        try:
+            channel = int(channel)
+            if channel < 1 or channel > 512:
+                return f"DMX channel must be between 1 and 512, got: {channel}"
+        except (ValueError, TypeError):
+            return f"Invalid channel value: {channel}"
+        
+        # For dimmer commands, validate intensity value
+        if command in ["dimmer", "fade_dimmer"]:
+            try:
+                intensity = float(scene_or_value)
+                if not (0.0 <= intensity <= 1.0):
+                    return f"DMX dimmer intensity must be between 0.0 and 1.0, got: {intensity}"
+            except ValueError:
+                return f"Invalid dimmer intensity value: {scene_or_value}"
+        
+        # Validate duration for fade commands
+        if command in ["fade", "fade_dimmer"]:
+            try:
+                duration = float(duration)
+                if duration < 0:
+                    return f"Duration must be positive, got: {duration}"
+            except (ValueError, TypeError):
+                return f"Invalid duration value: {duration}"
+        
+        self.sequence_handler.execute_dmx_command(command, channel, scene_or_value, duration)
+        
+        if command in ["fade", "fade_dimmer"]:
+            return f"DMX command '{command}' executed on channel {channel} with value '{scene_or_value}' over {duration}s"
+        else:
+            return f"DMX command '{command}' executed on channel {channel} with value '{scene_or_value}'"
 
     def handle_set_music_volume(self, volume=None):
         if volume is None:
