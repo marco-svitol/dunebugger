@@ -20,17 +20,13 @@ class TerminalInterpreter:
 
         if not settings.ON_RASPBERRY_PI:
             help_insert_1 = "not "
-            help_insert_2 = " (OUTPUT & INPUT gpios)"
         else:
             help_insert_1 = ""
-            help_insert_2 = " (OUTPUT gpios only)"
 
         # Dynamically create the help string
         self.help = f"I am {help_insert_1}a Raspberry. You can ask me to:\n"
         for command, details in self.command_interpreter.command_handlers.items():
             self.help += f"    {command}: {details['description']}\n"
-        self.help += f"    <#gpionum or label> on: set gpio status High{help_insert_2}\n"
-        self.help += f"    <#gpionum or label> off: set gpio status Low{help_insert_2}\n"
         self.help += "    h, ?: show this help\n"
         self.help += "    s: show GPIO status\n"
         self.help += "    t: show dunebugger configuration\n"

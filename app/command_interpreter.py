@@ -1,5 +1,7 @@
 import asyncio
 
+from schedule import logger
+
 from dunebugger_settings import settings
 from dunebugger_logging import set_logger_level, get_logging_level_from_name, enable_queue_logging, disable_queue_logging
 
@@ -13,56 +15,27 @@ class CommandInterpreter:
         self.load_command_handlers()
 
     async def process_command(self, command):
-        if command.startswith("#"):
-            command_parts = command[1:].split()  # Remove "#" from the beginning
-            return self.handle_gpio_command(command_parts)
+        # if command.startswith("sm"):
+        #     message = command[2:].strip()
+        #     return await self.handle_send_log(message)
 
-        if command.startswith("sm"):
-            message = command[2:].strip()
-            return await self.handle_send_log(message)
-
-        # Handle volume commands with parameters
-        if command.startswith("mv ") or command.startswith("sv "):
-            parts = command.split(" ", 1)
-            cmd = parts[0]
-            param = parts[1] if len(parts) > 1 else None
-            if cmd == "mv":
-                return self.handle_set_music_volume(param)
-            elif cmd == "sv":
-                return self.handle_set_sfx_volume(param)
-
-        #todo: refactor to avoid duplication with dmx_handler
-        if command.startswith("dmx "):
-            parts = command.split()
-            if len(parts) >= 4:
-                try:
-                    dmx_command = parts[1]
-                    channel = int(parts[2])
-                    scene_or_value = parts[3]
-                    duration = 2.0  # default duration
-                    
-                    # Check for optional duration parameter
-                    if len(parts) >= 5 and dmx_command in ["fade", "fade_dimmer"]:
-                        try:
-                            duration = float(parts[4])
-                        except ValueError:
-                            return f"Invalid duration value: {parts[4]}"
-                    
-                    return self.handle_dmx(dmx_command, channel, scene_or_value, duration)
-                except Exception as e:
-                    return f"Invalid DMX command: {e}"
-            else:
-                return "Usage: dmx <command> <channel> <scene_or_value> [duration]. Commands: set, fade, dimmer, fade_dimmer. Scenes: warm_white, cool_white, red, green, blue. Dimmer values: 0.0-1.0"
-
-        if command in self.command_handlers:
-            handler = self.command_handlers[command]["handler"]
+        command_verb = command.split()[0]
+        command_args = command.split()[1:]
+        
+        if command_verb in self.command_handlers:
+            handler = self.command_handlers[command_verb]["handler"]
             # Check if the handler is a coroutine function
             if asyncio.iscoroutinefunction(handler):
-                await handler()
+                if command_args:
+                    await handler(command_args)
+                else:
+                    await handler()
             else:
+                if command_args:
+                    return handler(command_args)
                 return handler()
         else:
-            return f"Unknown command {command}. Type ? or h for help"
+            return f"Unknown command {command_verb}. Type ? or h for help"
 
     def load_command_handlers(self):
         self.command_handlers = {}
@@ -130,46 +103,23 @@ class CommandInterpreter:
         else:
             return "Motor module is disabled"
 
-    def handle_dmx(self, command=None, channel=None, scene_or_value=None, duration=2.0):
-        if command is None or channel is None or scene_or_value is None:
-            return "Usage: dmx <command> <channel> <scene_or_value> [duration]. Commands: set, fade, dimmer, fade_dimmer"
+    def handle_dmx(self, args = []):
+        if not settings.dmxEnabled:
+            logger.error("DMX module is disabled")
+            return
         
-        # Validate command
-        if command not in ["set", "fade", "dimmer", "fade_dimmer"]:
-            return f"Invalid DMX command: {command}. Must be 'set', 'fade', 'dimmer', or 'fade_dimmer'"
+        parsed_dmx_command_args = self.sequence_handler.dmx_handler.validate_dmx_command_args(args) 
+        if isinstance(parsed_dmx_command_args, str):
+            return parsed_dmx_command_args  # Return error message if validation failed
+
+        _, dmx_command, channel, scene_or_value, duration = parsed_dmx_command_args
+
+        self.sequence_handler.execute_dmx_command(dmx_command, channel, scene_or_value, duration)
         
-        # Validate channel
-        try:
-            channel = int(channel)
-            if channel < 1 or channel > 512:
-                return f"DMX channel must be between 1 and 512, got: {channel}"
-        except (ValueError, TypeError):
-            return f"Invalid channel value: {channel}"
-        
-        # For dimmer commands, validate intensity value
-        if command in ["dimmer", "fade_dimmer"]:
-            try:
-                intensity = float(scene_or_value)
-                if not (0.0 <= intensity <= 1.0):
-                    return f"DMX dimmer intensity must be between 0.0 and 1.0, got: {intensity}"
-            except ValueError:
-                return f"Invalid dimmer intensity value: {scene_or_value}"
-        
-        # Validate duration for fade commands
-        if command in ["fade", "fade_dimmer"]:
-            try:
-                duration = float(duration)
-                if duration < 0:
-                    return f"Duration must be positive, got: {duration}"
-            except (ValueError, TypeError):
-                return f"Invalid duration value: {duration}"
-        
-        self.sequence_handler.execute_dmx_command(command, channel, scene_or_value, duration)
-        
-        if command in ["fade", "fade_dimmer"]:
-            return f"DMX command '{command}' executed on channel {channel} with value '{scene_or_value}' over {duration}s"
+        if dmx_command in ["fade", "fade_dimmer"]:
+            return f"DMX command '{dmx_command}' executed on channel {channel} with value '{scene_or_value}' over {duration}s"
         else:
-            return f"DMX command '{command}' executed on channel {channel} with value '{scene_or_value}'"
+            return f"DMX command '{dmx_command}' executed on channel {channel} with value '{scene_or_value}'"
 
     def handle_set_music_volume(self, volume=None):
         if volume is None:
@@ -217,9 +167,9 @@ class CommandInterpreter:
         self.sequence_handler.disable_start_button()
         return "Start button disabled"
 
-    async def handle_send_log(self, message):
-        await self.mqueue_handler.dispatch_message(message, "log", "remote")
-        return "Message sent"
+    # async def handle_send_log(self, message):
+    #     await self.mqueue_handler.dispatch_message(message, "log", "remote")
+    #     return "Message sent"
 
     def handle_validate_sequences(self):
         if self.sequence_handler.revalidate_sequences():

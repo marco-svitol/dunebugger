@@ -33,8 +33,9 @@ SCENES = {
 }
 
 class DMXController:
-    def __init__(self, port, universe_size=512):
+    def __init__(self, port, baudrate=57600, universe_size=512):
         self.port = port
+        self.baudrate = baudrate
         self.universe = bytearray([0] * universe_size)
         self.serial_conn = None
         self._fade_tasks = {}
@@ -43,7 +44,7 @@ class DMXController:
 
     def connect(self):
         try:
-            self.serial_conn = serial.Serial(self.port, baudrate=57600, timeout=1)
+            self.serial_conn = serial.Serial(self.port, self.baudrate, timeout=1)
             self._send_dmx()
             logger.info(f"DMX connected to {self.port}")
         except Exception as e:
@@ -102,7 +103,7 @@ class DMXController:
         if rgb:
             self.set_rgb(start_channel, *rgb)
 
-    def set_dimmer(self, start_channel, intensity):
+    def set_dimmer(self, intensity, start_channel):
         """
         Set the dimmer intensity for RGB channels while maintaining color ratios.
         
@@ -119,7 +120,7 @@ class DMXController:
             self.universe[start_channel-1:start_channel+2] = bytes(dimmed_rgb)
             self._send_dmx()
 
-    def fade_to_dimmer(self, start_channel, intensity, duration):
+    def fade_to_dimmer(self, intensity, start_channel, duration):
         """
         Fade to a specific dimmer intensity over time.
         
@@ -200,3 +201,75 @@ class DMXController:
             self.serial_conn.close()
             self.serial_conn = None
             logger.info("DMX disconnected")
+    
+    def __del__(self):
+        self.disconnect()
+
+    def validate_dmx_command_args(self, args):
+        if not args or len(args) == 0:
+            return ("Usage: dmx <command> <channel> <scene_or_value> [duration]\n"
+                "Commands:\n"
+                "  set <channel> <scene>\n"
+                "  fade <channel> <scene> [duration]\n"
+                "  dimmer <channel> <value 0.0-1.0>\n"
+                "  fade_dimmer <channel> <value 0.0-1.0> [duration]\n"
+                "Scenes: warm_white, cool_white, red, green, blue")
+        
+        dmx_command = args[0].lower()
+        valid_commands = {"set", "fade", "dimmer", "fade_dimmer"}
+        if dmx_command not in valid_commands:
+            return (f"Invalid DMX command: {dmx_command}. Valid commands: set, fade, dimmer, fade_dimmer.\n"
+                "Usage: dmx <command> <channel> <scene_or_value> [duration]")
+        
+        # Command present but missing further arguments
+        if len(args) == 1:
+            if dmx_command in ("set", "fade"):
+                return f"Missing arguments. Usage: dmx {dmx_command} <channel> <scene>{' [duration]' if dmx_command == 'fade' else ''}. Scenes: warm_white, cool_white, red, green, blue"
+            elif dmx_command == "dimmer":
+                return "Missing arguments. Usage: dmx dimmer <channel> <value 0.0-1.0>"
+            elif dmx_command == "fade_dimmer":
+                return "Missing arguments. Usage: dmx fade_dimmer <channel> <value 0.0-1.0> [duration]"
+        
+        if len(args) == 2:
+            channel = args[1]
+            if not channel.isdigit() or not (1 <= int(channel) <= 512):
+                return f"Invalid or missing channel: {channel}. Channel must be an integer 1-512."
+            if dmx_command in ("set", "fade"):
+                return f"Missing scene. Usage: dmx {dmx_command} {channel} <scene>{' [duration]' if dmx_command == 'fade' else ''}. Scenes: warm_white, cool_white, red, green, blue"
+            elif dmx_command == "dimmer":
+                return f"Missing dimmer value. Usage: dmx dimmer {channel} <value 0.0-1.0>"
+            elif dmx_command == "fade_dimmer":
+                return f"Missing dimmer value. Usage: dmx fade_dimmer {channel} <value 0.0-1.0> [duration]"
+            
+        if len(args) == 3 and dmx_command in ("fade", "fade_dimmer"):
+            # Third arg present; duration optional, handled later (defaults)
+            pass
+
+        # Validate channel: args[1] must be an integer between 1 and 512
+        channel = args[1]
+        if not channel.isdigit() or not (1 <= int(channel) <= 512):
+            return f"Invalid DMX channel: {channel}. Must be an integer between 1 and 512"
+        channel = int(channel)
+
+        # Validate scene_or_value: args[2] must be a valid scene name or a float between 0.0 and 1.0
+        scene_or_value = args[2]
+        if dmx_command in ["set", "fade"]:
+            if scene_or_value not in ["warm_white", "cool_white", "red", "green", "blue"]:
+                return f"Invalid DMX scene: {scene_or_value}. Must be one of 'warm_white', 'cool_white', 'red', 'green', 'blue'"
+        elif dmx_command in ["dimmer", "fade_dimmer"]:
+            try:
+                scene_or_value = float(scene_or_value)
+                if not (0.0 <= scene_or_value <= 1.0):
+                    return f"Invalid DMX dimmer value: {scene_or_value}. Must be a float between 0.0 and 1.0"
+            except ValueError:
+                return f"Invalid DMX dimmer value: {scene_or_value}. Must be a float between 0.0 and 1.0"
+        
+        # Validate duration for fade commands
+        duration = 2.0  # Default duration
+        if len(args) == 4 and dmx_command in ["fade", "fade_dimmer"]:
+            duration = args[3]
+            if not duration.replace('.', '', 1).isdigit() and float(duration) < 0:
+                return f"Invalid duration value: {duration}. Must be a positive number"
+            duration = float(duration)
+        
+        return (None, dmx_command, channel, scene_or_value, duration)

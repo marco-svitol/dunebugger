@@ -187,37 +187,17 @@ class SequencesHandler:
         if motor_enabled:
             self.motor_handler.start(motor_number, direction, speed)
 
-    def execute_dmx_command(self, command, channel, scene_or_value, duration=2.0):
-        if not self.dmx_handler:
-            logger.error("DMX module is disabled")
-            return
-        
-        if command == "fade":
-            self.dmx_handler.fade_to_scene(scene_or_value, start_channel=channel, duration=duration)
-        elif command == "set":
-            self.dmx_handler.set_scene(scene_or_value, start_channel=channel)
-        elif command == "dimmer":
-            # Parse intensity value (0.0 - 1.0)
-            try:
-                intensity = float(scene_or_value)
-                if 0.0 <= intensity <= 1.0:
-                    self.dmx_handler.set_dimmer(channel, intensity)
-                else:
-                    logger.error(f"DMX dimmer intensity must be between 0.0 and 1.0, got: {intensity}")
-            except ValueError:
-                logger.error(f"Invalid dimmer intensity value: {scene_or_value}")
-        elif command == "fade_dimmer":
-            # Parse intensity value (0.0 - 1.0)
-            try:
-                intensity = float(scene_or_value)
-                if 0.0 <= intensity <= 1.0:
-                    self.dmx_handler.fade_to_dimmer(channel, intensity, duration)
-                else:
-                    logger.error(f"DMX dimmer intensity must be between 0.0 and 1.0, got: {intensity}")
-            except ValueError:
-                logger.error(f"Invalid dimmer intensity value: {scene_or_value}")
+    def execute_dmx_command(self, dmx_command, channel, scene_or_value, duration=2.0):
+        if dmx_command == "fade":
+            self.dmx_handler.fade_to_scene(scene_or_value, channel, duration)
+        elif dmx_command == "set":
+            self.dmx_handler.set_scene(scene_or_value, channel)
+        elif dmx_command == "dimmer":
+            self.dmx_handler.set_dimmer(scene_or_value, channel)
+        elif dmx_command == "fade_dimmer":
+            self.dmx_handler.fade_to_dimmer(scene_or_value, channel, duration)
         else:
-            logger.error(f"Unknown DMX command: {command}")
+            logger.error(f"Unknown DMX command: {dmx_command}")
 
     def execute_switch_command(self, device_name, action):
         if action.lower() == "on" or action.lower() == "off":
@@ -326,50 +306,28 @@ class SequencesHandler:
                 else:
                     logger.error(f"Unknown audio action: {action}")
                     return False
-            
-            elif verb == "dmx" and len(parts) >= 4:
-                try:
-                    command = parts[1].lower()
-                    channel = int(parts[2])
-                    scene_or_value = parts[3]
-                    duration = 2.0  # default duration
-                    
-                    # Check for optional duration parameter
-                    if len(parts) >= 5 and command in ["fade", "fade_dimmer"]:
-                        try:
-                            duration = float(parts[4])
-                        except ValueError:
-                            logger.error(f"Invalid duration value: {parts[4]}")
-                            return False
-                    
-                    # Validate channel
-                    if channel < 1 or channel > 512:
-                        logger.error(f"DMX channel must be between 1 and 512, got: {channel}")
-                        return False
-                    
-                    # Validate command
-                    if command not in ["set", "fade", "dimmer", "fade_dimmer"]:
-                        logger.error(f"Invalid DMX command: {command}. Must be 'set', 'fade', 'dimmer', or 'fade_dimmer'")
-                        return False
-                    
-                    # For dimmer commands, validate intensity value
-                    if command in ["dimmer", "fade_dimmer"]:
-                        try:
-                            intensity = float(scene_or_value)
-                            if not (0.0 <= intensity <= 1.0):
-                                logger.error(f"DMX dimmer intensity must be between 0.0 and 1.0, got: {intensity}")
-                                return False
-                        except ValueError:
-                            logger.error(f"Invalid dimmer intensity value: {scene_or_value}")
-                            return False
-                    
-                    if not dry_run:
-                        self.execute_dmx_command(command, channel, scene_or_value, duration)
-                        
-                except (ValueError, IndexError) as e:
-                    logger.error(f"Error parsing DMX command: {e}")
+
+            #TODO: revisit the command interpreter vs sequence parser. Refactor to avoid code duplication.
+            elif verb == "dmx":
+                if not settings.dmxEnabled:
+                    logger.error("DMX module is disabled")
                     return False
-            
+
+                parsed_dmx_command_args = self.dmx_handler.validate_dmx_command_args(parts[1:])
+                if isinstance(parsed_dmx_command_args, str):
+                    logger.error(parsed_dmx_command_args)  # Log error message if validation failed
+                    return False
+
+                _, dmx_command, channel, scene_or_value, duration = parsed_dmx_command_args
+
+                if not dry_run:
+                    self.execute_dmx_command(dmx_command, channel, scene_or_value, duration)
+                    if dmx_command in ["fade", "fade_dimmer"]:
+                        logger.debug(f"DMX command '{dmx_command}' executed on channel {channel} with value '{scene_or_value}' over {duration}s")
+                    else:
+                        logger.debug(f"DMX command '{dmx_command}' executed on channel {channel} with value '{scene_or_value}'")
+
+                        
             else:
                 logger.error(f"Unknown command: {command_body}")
                 return False
