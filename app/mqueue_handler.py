@@ -54,6 +54,9 @@ class MessagingQueueHandler:
                     settings_list.append ({'music_volume_status':music_volume_status})
                     settings_list.append ({'sfx_volume_status':sfx_volume_status})
                     await self.dispatch_message(settings_list, "show_configuration", "terminal") #TODO , mqueue_message.reply)
+                elif command in ["get_commands_list"]:
+                    commands_list = self.command_interpreter.get_commands_list()
+                    await self.dispatch_message(commands_list, "commands_list", "terminal") #TODO , mqueue_message.reply)
                 else:
                     reply_message = await self.command_interpreter.process_command(command)
                     await self.dispatch_message(reply_message, "terminal_command_reply", "terminal") #TODO , mqueue_message.reply)

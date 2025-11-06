@@ -42,6 +42,9 @@ class CommandInterpreter:
         for command, details in settings.command_handlers.items():
             self.command_handlers[command] = {"handler": getattr(self, details["handler"]), "description": details["description"]}
 
+    def get_commands_list(self):
+        return settings.command_handlers
+
     def handle_load_configuration(self):
         settings.load_configuration()
         return "Configuration reloaded"
