@@ -1,3 +1,5 @@
+# For async DMX control
+pyserial-asyncio
 rpi-lgpio
 python-vlc
 schedule

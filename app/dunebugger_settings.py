@@ -25,7 +25,9 @@ class DunebuggerSettings:
 
         try:
             self.config.read(dunebugger_config)
-            for section in ["General", "MessageQueue", "Audio", "Motors", "Debug", "Log"]:
+            for section in ["General", "MessageQueue", "Audio", "Motors", "Debug", "Log", "DMX"]:
+                if not self.config.has_section(section):
+                    continue
                 for option in self.config.options(section):
                     value = self.config.get(section, option)
                     setattr(self, option, self.validate_option(section, option, value))
@@ -116,6 +118,14 @@ class DunebuggerSettings:
                         return logLevel
                 elif option == "sendLogsToQueue":
                     return self.config.getboolean(section, option)
+
+            elif section == "DMX":
+                if option == "dmxEnabled":
+                    return self.config.getboolean(section, option)
+                elif option == "dmxSerialPort":
+                    return str(value)
+                elif option == "dmxBaudRate":
+                    return int(value)
 
         except (configparser.NoOptionError, ValueError) as e:
             raise ValueError(f"Invalid configuration: Section={section}, Option={option}, Value={value}. Error: {e}")

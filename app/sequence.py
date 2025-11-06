@@ -1,3 +1,4 @@
+import asyncio
 import time
 import atexit
 import threading
@@ -14,7 +15,7 @@ class SequencesHandler:
 
     lastTimeMark = 0
 
-    def __init__(self, mygpio_handler, GPIO, audio_handler, state_tracker, motor_handler):
+    def __init__(self, mygpio_handler, GPIO, audio_handler, state_tracker, motor_handler, dmx_handler):
         self.sequenceFolder = path.join(path.dirname(path.abspath(__file__)), f"/etc/dunebugger/sequences/{settings.sequenceFolder}")
         self.random_elements = {}
         self.random_elements_file = settings.randomElementsFile
@@ -29,6 +30,7 @@ class SequencesHandler:
         self.mygpio_handler = mygpio_handler
         self.audio_handler = audio_handler
         self.motor_handler = motor_handler
+        self.dmx_handler = dmx_handler
         self.GPIO = GPIO
         self.start_button_enabled = False
         self.cycle_playing_time = 0
@@ -185,6 +187,18 @@ class SequencesHandler:
         if motor_enabled:
             self.motor_handler.start(motor_number, direction, speed)
 
+    def execute_dmx_command(self, dmx_command, channel, scene_or_value, duration=2.0):
+        if dmx_command == "fade":
+            self.dmx_handler.fade_to_scene(scene_or_value, channel, duration)
+        elif dmx_command == "set":
+            self.dmx_handler.set_scene(scene_or_value, channel)
+        elif dmx_command == "dimmer":
+            self.dmx_handler.set_dimmer(scene_or_value, channel)
+        elif dmx_command == "fade_dimmer":
+            self.dmx_handler.fade_to_dimmer(scene_or_value, channel, duration)
+        else:
+            logger.error(f"Unknown DMX command: {dmx_command}")
+
     def execute_switch_command(self, device_name, action):
         if action.lower() == "on" or action.lower() == "off":
             # Warning: on GPIO the action is inverted: on = 0, off = 1
@@ -292,6 +306,28 @@ class SequencesHandler:
                 else:
                     logger.error(f"Unknown audio action: {action}")
                     return False
+
+            #TODO: revisit the command interpreter vs sequence parser. Refactor to avoid code duplication.
+            elif verb == "dmx":
+                if not settings.dmxEnabled:
+                    logger.error("DMX module is disabled")
+                    return False
+
+                parsed_dmx_command_args = self.dmx_handler.validate_dmx_command_args(parts[1:])
+                if isinstance(parsed_dmx_command_args, str):
+                    logger.error(parsed_dmx_command_args)  # Log error message if validation failed
+                    return False
+
+                _, dmx_command, channel, scene_or_value, duration = parsed_dmx_command_args
+
+                if not dry_run:
+                    self.execute_dmx_command(dmx_command, channel, scene_or_value, duration)
+                    if dmx_command in ["fade", "fade_dimmer"]:
+                        logger.debug(f"DMX command '{dmx_command}' executed on channel {channel} with value '{scene_or_value}' over {duration}s")
+                    else:
+                        logger.debug(f"DMX command '{dmx_command}' executed on channel {channel} with value '{scene_or_value}'")
+
+                        
             else:
                 logger.error(f"Unknown command: {command_body}")
                 return False

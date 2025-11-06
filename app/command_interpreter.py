@@ -1,5 +1,7 @@
 import asyncio
 
+from schedule import logger
+
 from dunebugger_settings import settings
 from dunebugger_logging import set_logger_level, get_logging_level_from_name, enable_queue_logging, disable_queue_logging
 
@@ -13,38 +15,35 @@ class CommandInterpreter:
         self.load_command_handlers()
 
     async def process_command(self, command):
-        if command.startswith("#"):
-            command_parts = command[1:].split()  # Remove "#" from the beginning
-            return self.handle_gpio_command(command_parts)
+        # if command.startswith("sm"):
+        #     message = command[2:].strip()
+        #     return await self.handle_send_log(message)
 
-        if command.startswith("sm"):
-            message = command[2:].strip()
-            return await self.handle_send_log(message)
-
-        # Handle volume commands with parameters
-        if command.startswith("mv ") or command.startswith("sv "):
-            parts = command.split(" ", 1)
-            cmd = parts[0]
-            param = parts[1] if len(parts) > 1 else None
-            if cmd == "mv":
-                return self.handle_set_music_volume(param)
-            elif cmd == "sv":
-                return self.handle_set_sfx_volume(param)
-
-        if command in self.command_handlers:
-            handler = self.command_handlers[command]["handler"]
+        command_verb = command.split()[0]
+        command_args = command.split()[1:]
+        
+        if command_verb in self.command_handlers:
+            handler = self.command_handlers[command_verb]["handler"]
             # Check if the handler is a coroutine function
             if asyncio.iscoroutinefunction(handler):
-                await handler()
+                if command_args:
+                    await handler(command_args)
+                else:
+                    await handler()
             else:
+                if command_args:
+                    return handler(command_args)
                 return handler()
         else:
-            return f"Unknown command {command}. Type ? or h for help"
+            return f"Unknown command {command_verb}. Type ? or h for help"
 
     def load_command_handlers(self):
         self.command_handlers = {}
         for command, details in settings.command_handlers.items():
             self.command_handlers[command] = {"handler": getattr(self, details["handler"]), "description": details["description"]}
+
+    def get_commands_list(self):
+        return settings.command_handlers
 
     def handle_load_configuration(self):
         settings.load_configuration()
@@ -107,6 +106,24 @@ class CommandInterpreter:
         else:
             return "Motor module is disabled"
 
+    def handle_dmx(self, args = []):
+        if not settings.dmxEnabled:
+            logger.error("DMX module is disabled")
+            return
+        
+        parsed_dmx_command_args = self.sequence_handler.dmx_handler.validate_dmx_command_args(args) 
+        if isinstance(parsed_dmx_command_args, str):
+            return parsed_dmx_command_args  # Return error message if validation failed
+
+        _, dmx_command, channel, scene_or_value, duration = parsed_dmx_command_args
+
+        self.sequence_handler.execute_dmx_command(dmx_command, channel, scene_or_value, duration)
+        
+        if dmx_command in ["fade", "fade_dimmer"]:
+            return f"DMX command '{dmx_command}' executed on channel {channel} with value '{scene_or_value}' over {duration}s"
+        else:
+            return f"DMX command '{dmx_command}' executed on channel {channel} with value '{scene_or_value}'"
+
     def handle_set_music_volume(self, volume=None):
         if volume is None:
             return "Usage: mv <volume> - where volume is a number between 0-100, 'n' for normal volume, or 'q' for quiet volume"
@@ -153,9 +170,9 @@ class CommandInterpreter:
         self.sequence_handler.disable_start_button()
         return "Start button disabled"
 
-    async def handle_send_log(self, message):
-        await self.mqueue_handler.dispatch_message(message, "log", "remote")
-        return "Message sent"
+    # async def handle_send_log(self, message):
+    #     await self.mqueue_handler.dispatch_message(message, "log", "remote")
+    #     return "Message sent"
 
     def handle_validate_sequences(self):
         if self.sequence_handler.revalidate_sequences():
