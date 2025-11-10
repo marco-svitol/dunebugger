@@ -179,3 +179,36 @@ class CommandInterpreter:
             return "✅ All sequence files validated successfully"
         else:
             return "❌ Sequence validation failed - check logs for details"
+
+    def handle_upload_sequence(self, args=None):
+        """
+        Handle upload sequence file command.
+        Format: us <filename> <content>
+        
+        Args:
+            args (list): Command arguments [filename, content]
+        """
+        if not args or len(args) < 2:
+            return ("❌ Usage: us <filename> <content>\n"
+                   "   filename: name of sequence file (must end with .seq)\n" 
+                   "   content: sequence file content (use quotes for multi-line)")
+        
+        filename = args[0]
+        
+        # Join all content arguments (in case content contains spaces)
+        file_content = ' '.join(args[1:])
+        
+        # Replace escaped newlines with actual newlines
+        file_content = file_content.replace('\\n', '\n')
+        
+        try:
+            # Upload sequence file (always overwrites existing files)
+            result = self.sequence_handler.upload_sequence_file(filename, file_content)
+            
+            if result["success"]:
+                return f"✅ {result['message']}"
+            else:
+                return f"❌ Upload failed: {result['message']}"
+                
+        except Exception as e:
+            return f"❌ Upload error: {str(e)}"
