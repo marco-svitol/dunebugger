@@ -94,8 +94,8 @@ class DunebuggerSettings:
                 if option in [
                     "normalMusicVolume",
                     "normalSfxVolume",
-                    "quietMusicVol",
-                    "quietSfxVol",
+                    "quietMusicVolume",
+                    "quietSfxVolume",
                     "ignoreQuietTime",
                 ]:
                     return int(value) if option != "ignoreQuietTime" else self.config.getboolean(section, option)

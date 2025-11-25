@@ -82,7 +82,7 @@ class TerminalInterpreter:
                             self.handle_show_configuration()
                         else:
                             command_reply_message = await self.command_interpreter.process_command(command)
-                            print(command_reply_message)
+                            print(command_reply_message["message"])
                 else:
                     print("\r")
             except EOFError:

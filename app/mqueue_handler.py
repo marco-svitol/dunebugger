@@ -37,7 +37,10 @@ class MessagingQueueHandler:
 
             if subject in ["dunebugger_set"]:
                 command = message_json["body"]
-                return await self.command_interpreter.process_command(command)
+                command_reply_message =await self.command_interpreter.process_command(command)
+                if command_reply_message["level"] == "error":
+                    await self.dispatch_message(command_reply_message, "log", "remote")
+                return command_reply_message
             elif subject in ["refresh"]:
                 self.sequence_handler.state_tracker.force_update()
             elif subject in ["terminal_command"]:
@@ -61,7 +64,7 @@ class MessagingQueueHandler:
                     reply_message = await self.command_interpreter.process_command(command)
                     await self.dispatch_message(reply_message, "terminal_command_reply", "terminal") #TODO , mqueue_message.reply)
             else:
-                logger.warning(f"Unknown subjcet: {subject}. Ignoring message.")
+                logger.warning(f"Unknown subject: {subject}. Ignoring message.")
         except KeyError as key_error:
             logger.error(f"KeyError: {key_error}. Message: {message_json}")
         except Exception as e:

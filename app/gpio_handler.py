@@ -173,10 +173,15 @@ class GPIOHandler:
                 logger.debug(f"{gpiomap} {value}")
                 GPIO.output(gpio, value)
                 self.state_tracker.notify_update("gpios")
+                return None
             elif gpiomode == self.GPIO.IN and settings.ON_RASPBERRY_PI:
-                logger.error(f"Can't set an input GPIO. (gpio={gpio}, gpiomap={gpiomap})")
+                reply_message = f"Can't set an input GPIO. GPIOMap: '{gpiocast}', GPIO: {gpio}."
+                logger.error(reply_message)
+                return reply_message
         else:
-            logger.error(f"gpio_set_output: gpio={gpio}, gpiomap={gpiomap}, gpiomode={gpiomode}")
+            reply_message = f"GPIO map '{gpiocast}' not found."
+            logger.error(reply_message)
+            return reply_message    
 
     def gpiomap_toggle_output(self, gpiomap):
         logger.debug(f"Toggling {gpiomap}")

@@ -40,8 +40,10 @@ class SequencesHandler:
         self.mQueueCyclePlayingResolutionSecs = int(settings.mQueueCyclePlayingResolutionSecs)
 
         atexit.register(self.sequence_clean)
-
-        self.set_sequences_validated(self.validate_all_sequence_files(self.sequenceFolder))
+        try:
+            self.set_sequences_validated(self.validate_all_sequence_files(self.sequenceFolder))
+        except Exception as e:
+            logger.error(f"Initial sequence validation error: {str(e)}")
 
     def update_cycle_time(self):
         while not self.cycle_time_thread_stop_event.is_set():
@@ -68,10 +70,6 @@ class SequencesHandler:
             self.state_tracker.notify_update("playing_time")
 
     def validate_timestamps_order(self, file_path):
-        """
-        Validate that all timestamps in a sequence file are in consecutive order.
-        Returns True if valid, False otherwise.
-        """
         try:
             timestamps = []
             with open(file_path) as file:
@@ -94,9 +92,9 @@ class SequencesHandler:
                                 time_mark_seconds = int(time_mark_seconds)
                             timestamps.append((time_mark_seconds, line_num))
                         except ValueError:
-                            return f"Invalid timestamp format in {file_path} at line {line_num}: {time_mark_seconds}"
+                            raise ValueError(f"Invalid format at line {line_num}: {time_mark_seconds}")
                     else:
-                        return f"Missing or invalid timestamp in {file_path} at line {line_num}"
+                        raise ValueError(f"Missing or invalid timestamp at line {line_num}")
 
             # Check if timestamps are in consecutive order
             for i in range(1, len(timestamps)):
@@ -104,53 +102,32 @@ class SequencesHandler:
                 previous_time, previous_line = timestamps[i-1]
                 
                 if current_time < previous_time:
-                    return (f"Timestamp order error in {file_path}: "
-                               f"Line {current_line} has timestamp {current_time}s which is less than "
+                    raise ValueError(f"Line {current_line} has timestamp {current_time}s which is less than "
                                f"line {previous_line} timestamp {previous_time}s")
 
             logger.debug(f"Timestamp validation passed for {file_path}")
             return True
 
         except FileNotFoundError:
-            logger.error(f"File not found during timestamp validation: {file_path}")
-            return False
+            raise FileNotFoundError(f"File not found during timestamp validation: {file_path}")
         except Exception as e:
-            logger.error(f"Error during timestamp validation for {file_path}: {e}")
-            return False
+            raise RuntimeError(f"Error validating timestamps in {file_path}: {e}")
 
-    def set_sequences_validated(self, value: bool):
-        if isinstance(value, bool):
-            if self.sequences_validated != value:
-                self.sequences_validated = value
+    def set_sequences_validated(self, validation_result: bool):
+        if isinstance(validation_result, bool):
+            if self.sequences_validated != validation_result:
+                self.sequences_validated = validation_result
                 self.state_tracker.notify_update("sequences_validated")
         else:
-            logger.error
-            return False
+            return validation_result
 
     def validate_single_sequence_file(self, file_path):
-        """
-        Validate a single sequence file for syntax and timestamp order.
+        # First validate syntax by doing a dry run
+        self.read_sequence_file(file_path, dry_run=True)
         
-        Args:
-            file_path (str): Path to the sequence file to validate
-            
-        Returns:
-            tuple: (bool, str) - (success, error_message)
-        """
-        try:
-            # First validate syntax by doing a dry run
-            self.read_sequence_file(file_path, dry_run=True)
-            
-            # Then validate timestamp order
-            validate_timestamp_result = self.validate_timestamps_order(file_path)
-            if isinstance(validate_timestamp_result, str):
-                return validate_timestamp_result
-
-            return True
-            
-        except Exception as e:
-            error_msg = f"Validation failed for {file_path}: {e}"
-            return error_msg
+        # Then validate timestamp order
+        self.validate_timestamps_order(file_path)
+        return True
 
     def validate_all_sequence_files(self, directory):
         try:
@@ -169,29 +146,20 @@ class SequencesHandler:
                     missing_files.append(required_file)
             
             if missing_files:
-                return f"Missing required sequence files in {directory}: {', '.join(missing_files)}"
+                raise FileNotFoundError(f"Missing required sequence files in {directory}: {', '.join(missing_files)}")
             
             # Then validate all .seq files for syntax and timestamp order
-            validation_failed = False
-            validation_result_error = None
             for filename in os.listdir(directory):
                 if filename.endswith(".seq"):
                     file_path = os.path.join(directory, filename)
                     logger.debug(f"Validating sequence {file_path}")
-                    
-                    validation_result = self.validate_single_sequence_file(file_path)
-                    if isinstance(validation_result, str):
-                        validation_failed = True
-                        validation_result_error += f"\n{validation_result}"
-                        
-            if not validation_failed:
-                logger.info(f"All sequence files validated successfully in {directory}")
-                return True
-            else:
-                return validation_result_error
+                    self.validate_single_sequence_file(file_path)
+
+            logger.info(f"All sequence files validated successfully in {directory}")
+            return True
             
         except OSError as e:
-            return f"Error validating sequence files in {directory}: {e}"
+            raise OSError(f"Error validating sequence files in {directory}: {e}")
 
     def revalidate_sequences(self):
         """Re-validate all sequence files. Useful after configuration changes."""
@@ -205,6 +173,9 @@ class SequencesHandler:
             self.motor_handler.start(motor_number, direction, speed)
 
     def execute_dmx_command(self, dmx_command, channel, scene_or_value, duration=2.0):
+        if self.dmx_handler.serial_conn is None:
+            raise ConnectionError("DMX module is not connected")
+        
         if dmx_command == "fade":
             self.dmx_handler.fade_to_scene(scene_or_value, channel, duration)
         elif dmx_command == "set":
@@ -214,7 +185,7 @@ class SequencesHandler:
         elif dmx_command == "fade_dimmer":
             self.dmx_handler.fade_to_dimmer(scene_or_value, channel, duration)
         else:
-            logger.error(f"Unknown DMX command: {dmx_command}")
+            raise ValueError(f"Unknown DMX command: {dmx_command}")
 
     def execute_switch_command(self, device_name, action):
         if action.lower() == "on" or action.lower() == "off":
@@ -246,28 +217,24 @@ class SequencesHandler:
         # TODO: motor stop
         if verb == "motor" and settings.motorEnabled:
             if parts[1].lower() == "start":
-                try:
-                    motor_number = int(parts[2])
-                    direction = parts[3].lower()
-                    speed = int(parts[4])
+                motor_number = int(parts[2])
+                direction = parts[3].lower()
+                speed = int(parts[4])
 
-                    # Validate motor number
-                    if not isinstance(motor_number, int) or motor_number < 1 :
-                        return (f"Invalid motor number: {motor_number}")
+                # Validate motor number
+                if not isinstance(motor_number, int) or motor_number < 1 :
+                    raise ValueError(f"Invalid motor number: {motor_number}")
 
-                    # Validate direction
-                    if direction not in ["ccw", "cw"]:
-                        return (f"Invalid motor direction: {direction}")
-
-                    # Validate speed
-                    if  not isinstance(speed, int) or speed < 1:
-                        return (f"Invalid motor speed: {speed}")
+                # Validate direction
+                if direction not in ["ccw", "cw"]:
+                    raise ValueError(f"Invalid motor direction: {direction}")
+                # Validate speed
+                if  not isinstance(speed, int) or speed < 1:
+                    raise ValueError(f"Invalid motor speed: {speed}")
+                    
+                if not dry_run:
+                    self.execute_motor_command(motor_number, direction, speed)
                         
-                    if not dry_run:
-                        self.execute_motor_command(motor_number, direction, speed)
-                        
-                except (ValueError, IndexError) as e:
-                    return (f"Error parsing motor command: {e}")
         else:
             # Verify switch command
             if verb == "switch":
@@ -276,12 +243,11 @@ class SequencesHandler:
 
                 # Validate device name
                 if device_name not in self.mygpio_handler.GPIOMap:
-                    return (f"Invalid device name: {device_name}")
+                    raise ValueError(f"Invalid device name: {device_name}")
 
                 # Validate action
                 if action not in ["on", "off"]:
-                    return (f"Invalid action: {action}. Action must be 'on' or 'off'.")
-
+                    raise ValueError(f"Invalid action: {action}. Action must be 'on' or 'off'.")
                 if not dry_run:
                     self.execute_switch_command(device_name, action)
 
@@ -292,14 +258,14 @@ class SequencesHandler:
                 if action == "fadeout":
                     fadeout_secs = int(parameter)
                     if  not isinstance(fadeout_secs, int) or fadeout_secs < 0:
-                        return (f"Invalid fadeout seconds: {fadeout_secs}")
+                        raise ValueError(f"Invalid fadeout seconds: {fadeout_secs}")
                     if not dry_run:
                         self.execute_audio_fadeout_command(fadeout_secs)
 
                 elif action == "playmusic":
                     music_folder = self.audio_handler.get_music_path(parameter)
                     if not validate_path(music_folder):
-                        return (f"Music folder {music_folder} does not exist")
+                        raise ValueError(f"Music folder {music_folder} does not exist")
                     else:
                         if not dry_run:
                             self.execute_playmusic_command(music_folder)
@@ -307,22 +273,21 @@ class SequencesHandler:
                 elif action == "playsfx":
                     sfx_file = self.audio_handler.get_sfx_filepath(parameter)
                     if not validate_path(sfx_file):
-                        return (f"Sfx file {sfx_file} does not exist")
+                        raise ValueError(f"Sfx file {sfx_file} does not exist")
                     else:
                         if not dry_run:
                             self.execute_play_sfx_command(sfx_file)
                 else:
-                    return (f"Unknown audio action: {action}")
+                    raise ValueError(f"Unknown audio action: {action}")
 
             #TODO: revisit the command interpreter vs sequence parser. Refactor to avoid code duplication.
             elif verb == "dmx":
                 if not settings.dmxEnabled:
-                    return ("DMX module is disabled")
+                    raise ValueError("DMX module is disabled")
 
                 parsed_dmx_command_args = self.dmx_handler.validate_dmx_command_args(parts[1:])
                 if isinstance(parsed_dmx_command_args, str):
-                    return (parsed_dmx_command_args)
-
+                    raise ValueError(parsed_dmx_command_args)
                 _, dmx_command, channel, scene_or_value, duration = parsed_dmx_command_args
 
                 if not dry_run:
@@ -334,7 +299,7 @@ class SequencesHandler:
 
                         
             else:
-                return (f"Unknown command: {command_body}")
+                raise ValueError(f"Unknown command: {command_body}")
 
         return True
 
@@ -353,21 +318,25 @@ class SequencesHandler:
                         continue
 
                     time_mark_seconds, command_body = self.extract_time_mark(command_line)
-                    if time_mark_seconds is not None:
-                        if not dry_run:
-                            self.execute_waituntil_command(int(time_mark_seconds))
-                        # check for stop signal
-                        if self.cycle_stop_event.is_set():
-                            self.cycle_stop_event.clear()
-                            break
-                        command_result = self.execute_command(command_body, dry_run)
-                        if dry_run and isinstance(command_result, str):
-                            raise ValueError(f"Error validating sequence: {file_path} (line {line_num}): {command_result}.")
-                    else:
-                        raise ValueError(f"Error validating sequence: {file_path} (line {line_num}). Time mark needs a fix")
+                    #if time_mark_seconds is not None:
+                    if not dry_run:
+                        self.execute_waituntil_command(int(time_mark_seconds))
+                    # check for stop signal
+                    if self.cycle_stop_event.is_set():
+                        self.cycle_stop_event.clear()
+                        break
+                    self.execute_command(command_body, dry_run)
+                    #command_result = self.execute_command(command_body, dry_run)
+                    #if dry_run and isinstance(command_result, str):
+                    #    raise ValueError(f"Error validating sequence: {file_path} (line {line_num}): {command_result}.")
+                    #else:
+                        #raise ValueError(f"Error validating sequence: {file_path} (line {line_num}). Time mark needs a fix")
 
         except FileNotFoundError:
-            logger.error(f"File not found: {file_path}")
+           raise FileNotFoundError(f"File not found: {file_path}")
+        except Exception as e:
+            raise RuntimeError(f"Error reading sequence file {file_path} line {line_num}: {e}")
+
 
     def extract_time_mark(self, command):
         parts = command.split(" ", 1)
@@ -391,7 +360,7 @@ class SequencesHandler:
             else:
                 return time_mark, command_body
 
-        return None, command
+        raise ValueError("Invalid command format")
 
     def random_sequence_from_file(self, file_name):
         try:
@@ -399,8 +368,9 @@ class SequencesHandler:
             with open(file_path) as file:
                 self.random_elements = [line.strip() for line in file if line.strip()]
         except FileNotFoundError:
-            logger.error(f"File not found: {file_path}")
-            return
+            raise FileNotFoundError(f"File not found: {file_path}")
+        except Exception as e:
+            raise RuntimeError(f"Error reading random elements file {file_path}: {e}")
 
     def random_action(self):
         rand_elem = random.choice(self.random_elements)
@@ -430,6 +400,12 @@ class SequencesHandler:
                 return True
         return False
 
+    def restore_random_actions_state(self, state):
+        if state:
+            self.enable_random_actions()
+        else:
+            self.disable_random_actions()
+
     def setStandByMode(self):
         file_path = os.path.join(self.sequenceFolder, self.standby_file)
         self.read_sequence_file(file_path)
@@ -457,12 +433,9 @@ class SequencesHandler:
         self.state_tracker.notify_update("start_button")
 
     def disable_start_button(self):
-        try:
-            self.mygpio_handler.removeEventDetect(settings.startButtonGPIOName)
-            self.start_button_enabled = False
-            self.state_tracker.notify_update("start_button")
-        except Exception as e:
-            logger.debug(f"Error while disabling start button {e}")
+        self.mygpio_handler.removeEventDetect(settings.startButtonGPIOName)
+        self.start_button_enabled = False
+        self.state_tracker.notify_update("start_button")
 
     def get_start_button_state(self):
         return self.start_button_enabled
@@ -498,11 +471,12 @@ class SequencesHandler:
         with self.cycle_thread_lock:
             self.cycle_event.clear()
             self.cycle_stop_event.clear()
+            self.save_random_actions_state = self.get_random_actions_state()
             self.disable_random_actions()
             self.start_cycle_time_thread()
             self.start()
             self.stop_cycle_time_thread()
-            self.enable_random_actions()
+            self.restore_random_actions_state(self.save_random_actions_state)
             self.cycle_offset = 0
             self.setStandByMode()
 
@@ -553,8 +527,8 @@ class SequencesHandler:
                 time_mark, command_body = self.extract_time_mark(command_line)
                 if time_mark is not None:
                     parts = command_body.split()
-                    command = parts[0].lower()
-                    action = parts[1].lower() if len(parts) > 1 else None
+                    command = parts[0]#.lower()
+                    action = parts[1] if len(parts) > 1 else None #parts[1].lower() if len(parts) > 1 else None
                     parameter = " ".join(parts[2:]) if len(parts) > 2 else None
 
                     sequence_data.append({"time": time_mark, "command": command, "action": action, "parameter": parameter})
@@ -563,26 +537,15 @@ class SequencesHandler:
         return sequence_data
 
     def upload_sequence_file(self, filename, file_content):
-        """
-        Upload a new sequence file to the sequence folder.
-        Always overwrites existing files.
-        
-        Args:
-            filename (str): Name of the sequence file (should end with .seq)
-            file_content (str): Content of the sequence file
-            
-        Returns:
-            dict: Result with success status and message
-        """
         try:
             # Validate filename
             if not filename.endswith('.seq'):
-                return {"success": False, "message": "Filename must end with .seq extension"}
+                raise ValueError("Filename must end with .seq extension")
             
             # Sanitize filename to prevent path traversal attacks
             filename = os.path.basename(filename)
             if not filename or filename in ['', '.', '..']:
-                return {"success": False, "message": "Invalid filename"}
+                raise ValueError("Invalid filename")
             
             # Set file path (will overwrite if exists)
             file_path = os.path.join(self.sequenceFolder, filename)
@@ -596,58 +559,54 @@ class SequencesHandler:
                 temp_file.write(file_content)
                 temp_file_path = temp_file.name
             
-            try:
-                # Validate the temporary file using the shared validation method
-                validation_result = self.validate_single_sequence_file(temp_file_path)
-                if isinstance(validation_result, str):
-                    # Replace any references to the temporary file path with the actual filename
-                    if temp_file_path in validation_result:
-                        validation_result = validation_result.replace(temp_file_path, filename)
-                    return {"success": False, "message": validation_result}
+            self.validate_single_sequence_file(temp_file_path)
+
+            backup_created = False
+            backup_path = None
                 
-                backup_created = False
-                backup_path = None
+            # Create backup if file already exists
+            if os.path.exists(file_path):
+                backup_filename = f"{os.path.splitext(filename)[0]}.bak"
+                backup_path = os.path.join(self.sequenceFolder, backup_filename)
                 
-                # Create backup if file already exists
-                if os.path.exists(file_path):
-                    backup_filename = f"{os.path.splitext(filename)[0]}.bak"
-                    backup_path = os.path.join(self.sequenceFolder, backup_filename)
-                    
-                    try:
-                        shutil.copy2(file_path, backup_path)
-                        backup_created = True
-                        logger.info(f"Created backup of existing file: {backup_filename}")
-                    except Exception as e:
-                        logger.warning(f"Failed to create backup for {filename}: {e}")
-                        # Continue with upload even if backup fails
-                
-                # If validation passes, write the file to the sequence folder
-                with open(file_path, 'w') as f:
-                    f.write(file_content)
-                
-                logger.info(f"Successfully uploaded sequence file: {filename}")
-                
-                # Re-validate all sequences after upload
-                # self.revalidate_sequences()
-                
-                success_message = f"Sequence file {filename} uploaded successfully"
-                if backup_created:
-                    success_message += f" (backup created: {os.path.basename(backup_path)})"
-                
-                return {
-                    "success": True, 
-                    "message": success_message,
-                    "file_path": file_path,
-                    "backup_path": backup_path if backup_created else None
-                }
-                
-            finally:
-                # Clean up temporary file
                 try:
-                    os.unlink(temp_file_path)
-                except OSError:
-                    pass
-                    
+                    shutil.copy2(file_path, backup_path)
+                    backup_created = True
+                    logger.info(f"Created backup of existing file: {backup_filename}")
+                except Exception as e:
+                    logger.warning(f"Failed to create backup for {filename}: {e}")
+                    # Continue with upload even if backup fails
+                
+            # If validation passes, write the file to the sequence folder
+            with open(file_path, 'w') as f:
+                f.write(file_content)
+                
+            logger.info(f"Successfully uploaded sequence file: {filename}")
+            
+            # Re-validate all sequences after upload
+            # self.revalidate_sequences()
+            
+            success_message = f"Sequence file {filename} uploaded successfully"
+
+            self.state_tracker.notify_update("sequence")
+
+            if backup_created:
+                success_message += f" (backup created: {os.path.basename(backup_path)})"
+            
+            return {
+                "success": True, 
+                "message": success_message,
+                "file_path": file_path,
+                "backup_path": backup_path if backup_created else None
+            }
+                
+                                    
         except Exception as e:
-            logger.error(f"Error uploading sequence file {filename}: {e}")
-            return {"success": False, "message": f"Upload failed: {str(e)}"}
+            raise RuntimeError(str(e).replace(temp_file_path, filename))
+
+        finally:
+            # Clean up temporary file
+            try:
+                os.unlink(temp_file_path)
+            except OSError:
+                pass
