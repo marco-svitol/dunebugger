@@ -49,7 +49,7 @@ class AudioPlayer:
             self.musicVolume = volume
             self.musicSetVolume(volume)
         else:
-            logger.warning(f"Invalid music volume level: {volume}. Must be between 0-100.")
+            raise ValueError(f"Invalid music volume level: {volume}. Must be between 0-100.")
 
     def get_music_volume(self):
         return self.musicVolume
@@ -215,11 +215,11 @@ class AudioPlayer:
     #     logger.debug("MusicVolume: " + str(self.musicVolume) + " SfxVolume: " + str(self.sfxVolume))
     #     if not self.ignoreQuietTime:
     #         if not isinstance(InTime.getNTPTime(), int):  # time not synced
-    #             self.musicVolume = self.quietMusicVol
+    #             self.musicVolume = self.quietMusicVolume
     #             self.sfxVolume = self.quietSfxVol
     #             logger.info("Orario non sincronizzato: vol musica=" + str(self.musicVolume) + " vol sfx=" + str(self.sfxVolume))
     #         elif InTime.duranteCelebrazioni(datetime.now(), 372):
-    #             self.musicVolume = self.quietMusicVol
+    #             self.musicVolume = self.quietMusicVolume
     #             self.sfxVolume = self.quietSfxVol
     #             logger.info("Siamo durante una celebrazione: vol music=" + str(self.musicVolume) + " vol sfx=" + str(self.sfxVolume))
 

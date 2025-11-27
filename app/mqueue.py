@@ -126,7 +126,10 @@ class NATSComm:
         try:
             command_reply_message = await self.mqueue_handler.process_mqueue_message(mqueue_message)
             if command_reply_message:
-                logger.debug(command_reply_message)
+                if isinstance(command_reply_message, dict) and "message" in command_reply_message:
+                    logger.debug(command_reply_message["message"])
+                else:
+                    logger.debug(f"Received reply: {command_reply_message}")
         except Exception as e:
             logger.error(f"Error processing message: {e}")
 

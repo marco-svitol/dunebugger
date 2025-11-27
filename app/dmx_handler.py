@@ -45,8 +45,11 @@ class DMXController:
     def connect(self):
         try:
             self.serial_conn = serial.Serial(self.port, self.baudrate, timeout=1)
-            self._send_dmx()
-            logger.info(f"DMX connected to {self.port}")
+            reply_message = self._send_dmx()
+            if reply_message is not None:
+                logger.error(f"DMX connection error: {reply_message}")
+            else:
+                logger.info(f"DMX connected to {self.port}")
         except Exception as e:
             logger.error(f"Failed to connect DMX: {e}")
 
@@ -71,38 +74,45 @@ class DMXController:
         fade_thread.start()
 
     def _fade_worker(self, start_channel, r, g, b, duration, fade_key):
-        with self._lock:
-            current = list(self.universe[start_channel-1:start_channel+2])
-        target = [r, g, b]
-        steps = int(duration * 30)
-        
-        for i in range(1, steps+1):
-            if not self._fade_tasks.get(fade_key, False):  # Check if cancelled
-                break
-                
-            intermediate = [
-                int(current[j] + (target[j] - current[j]) * i / steps)
-                for j in range(3)
-            ]
+        try:
             with self._lock:
-                self.universe[start_channel-1:start_channel+2] = bytes(intermediate)
-                self._send_dmx()
-            time.sleep(duration / steps)
-        
-        # Clean up
-        if fade_key in self._fade_tasks:
-            del self._fade_tasks[fade_key]
+                current = list(self.universe[start_channel-1:start_channel+2])
+            target = [r, g, b]
+            steps = int(duration * 30)
+            
+            for i in range(1, steps+1):
+                if not self._fade_tasks.get(fade_key, False):  # Check if cancelled
+                    break
+                    
+                intermediate = [
+                    int(current[j] + (target[j] - current[j]) * i / steps)
+                    for j in range(3)
+                ]
+                with self._lock:
+                    self.universe[start_channel-1:start_channel+2] = bytes(intermediate)
+                    self._send_dmx()
+                time.sleep(duration / steps)
+            
+            # Clean up
+            if fade_key in self._fade_tasks:
+                del self._fade_tasks[fade_key]
+        except Exception as e:
+            logger.error(f"DMX fade error: {e}")
 
     def fade_to_scene(self, scene_name, start_channel=1, duration=2.0):
         rgb = SCENES.get(scene_name)
         if rgb:
             self.fade_to_rgb(start_channel, *rgb, duration)
+        else:
+            raise ValueError(f"Scene '{scene_name}' not defined")
 
     def set_scene(self, scene_name, start_channel=1):
         rgb = SCENES.get(scene_name)
         if rgb:
             self.set_rgb(start_channel, *rgb)
-
+        else:
+            raise ValueError(f"Scene '{scene_name}' not defined")
+        
     def set_dimmer(self, intensity, start_channel):
         """
         Set the dimmer intensity for RGB channels while maintaining color ratios.
@@ -185,17 +195,12 @@ class DMXController:
             del self._fade_tasks[fade_key]
 
     def _send_dmx(self):
-        if not self.serial_conn:
-            return
-        try:
-            # ENTTEC DMX USB Pro: send DMX packet (see protocol)
-            # Start code: 0x7E, Label: 6, Length: 513, Data: [0]+universe, End: 0xE7
-            data = bytes([0x7E, 6, 0x02, 0x02, 0x00]) + bytes([0]) + self.universe + bytes([0xE7])
-            self.serial_conn.write(data)
-            self.serial_conn.flush()
-        except Exception as e:
-            logger.error(f"DMX send error: {e}")
-
+        # ENTTEC DMX USB Pro: send DMX packet (see protocol)
+        # Start code: 0x7E, Label: 6, Length: 513, Data: [0]+universe, End: 0xE7
+        data = bytes([0x7E, 6, 0x02, 0x02, 0x00]) + bytes([0]) + self.universe + bytes([0xE7])
+        self.serial_conn.write(data)
+        self.serial_conn.flush()
+            
     def disconnect(self):
         if self.serial_conn:
             self.serial_conn.close()
