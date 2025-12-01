@@ -43,6 +43,8 @@ class MessagingQueueHandler:
                 return command_reply_message
             elif subject in ["refresh"]:
                 self.sequence_handler.state_tracker.force_update()
+            elif subject in ["heartbeat"]:
+                await self.dispatch_message("alive", "heartbeat", "remote")
             elif subject in ["terminal_command"]:
                 command = message_json["body"]
                 if command in ["s"]:
