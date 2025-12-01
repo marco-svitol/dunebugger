@@ -173,8 +173,11 @@ class SequencesHandler:
             self.motor_handler.start(motor_number, direction, speed)
 
     def execute_dmx_command(self, dmx_command, channel, scene_or_value, duration=2.0):
-        if self.dmx_handler.serial_conn is None:
-            raise ConnectionError("DMX module is not connected")
+        if not settings.dmxEnabled:
+            raise ValueError("DMX module is disabled")
+        else:
+            if self.dmx_handler.serial_conn is None:
+                raise ConnectionError("DMX module is not connected")
         
         if dmx_command == "fade":
             self.dmx_handler.fade_to_scene(scene_or_value, channel, duration)
@@ -282,21 +285,26 @@ class SequencesHandler:
 
             #TODO: revisit the command interpreter vs sequence parser. Refactor to avoid code duplication.
             elif verb == "dmx":
-                if not settings.dmxEnabled:
-                    raise ValueError("DMX module is disabled")
-
                 parsed_dmx_command_args = self.dmx_handler.validate_dmx_command_args(parts[1:])
                 if isinstance(parsed_dmx_command_args, str):
                     raise ValueError(parsed_dmx_command_args)
                 _, dmx_command, channel, scene_or_value, duration = parsed_dmx_command_args
 
                 if not dry_run:
-                    self.execute_dmx_command(dmx_command, channel, scene_or_value, duration)
-                    if dmx_command in ["fade", "fade_dimmer"]:
-                        logger.debug(f"DMX command '{dmx_command}' executed on channel {channel} with value '{scene_or_value}' over {duration}s")
+                    try:
+                        self.execute_dmx_command(dmx_command, channel, scene_or_value, duration)
+                        if dmx_command in ["fade", "fade_dimmer"]:
+                            logger.debug(f"DMX command '{dmx_command}' executed on channel {channel} with value '{scene_or_value}' over {duration}s")
+                        else:
+                            logger.debug(f"DMX command '{dmx_command}' executed on channel {channel} with value '{scene_or_value}'")
+                    except Exception as e:
+                        logger.error(f"Error executing DMX command: {e}")
+                else:
+                    if not settings.dmxEnabled:
+                        logger.warning("DMX module is disabled")
                     else:
-                        logger.debug(f"DMX command '{dmx_command}' executed on channel {channel} with value '{scene_or_value}'")
-
+                        if self.dmx_handler.serial_conn is None:
+                            logger.warning("DMX module is not connected")
                         
             else:
                 raise ValueError(f"Unknown command: {command_body}")
@@ -318,7 +326,6 @@ class SequencesHandler:
                         continue
 
                     time_mark_seconds, command_body = self.extract_time_mark(command_line)
-                    #if time_mark_seconds is not None:
                     if not dry_run:
                         self.execute_waituntil_command(int(time_mark_seconds))
                     # check for stop signal
@@ -326,11 +333,6 @@ class SequencesHandler:
                         self.cycle_stop_event.clear()
                         break
                     self.execute_command(command_body, dry_run)
-                    #command_result = self.execute_command(command_body, dry_run)
-                    #if dry_run and isinstance(command_result, str):
-                    #    raise ValueError(f"Error validating sequence: {file_path} (line {line_num}): {command_result}.")
-                    #else:
-                        #raise ValueError(f"Error validating sequence: {file_path} (line {line_num}). Time mark needs a fix")
 
         except FileNotFoundError:
            raise FileNotFoundError(f"File not found: {file_path}")
