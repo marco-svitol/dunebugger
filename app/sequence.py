@@ -25,6 +25,7 @@ class SequencesHandler:
         self.sequences_validated = False
         self.cycle_thread_lock = threading.Lock()
         self.cycle_event = threading.Event()
+        self.cycle_event.set()
         self.cycle_stop_event = threading.Event()
         self.state_tracker = state_tracker
         self.mygpio_handler = mygpio_handler
@@ -466,8 +467,8 @@ class SequencesHandler:
 
     def get_cycle_state(self):
         if self.cycle_event.is_set():
-            return True
-        return False
+            return False
+        return True
 
     def cycle(self):
         with self.cycle_thread_lock:
@@ -481,6 +482,7 @@ class SequencesHandler:
             self.restore_random_actions_state(self.save_random_actions_state)
             self.cycle_offset = 0
             self.setStandByMode()
+            self.cycle_event.set()
 
     def get_state(self):
         return {

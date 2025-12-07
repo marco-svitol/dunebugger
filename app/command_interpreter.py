@@ -76,7 +76,9 @@ class CommandInterpreter:
             raise ValueError(reply_message)
         return f"GPIO {gpio} set to {command_parts[1]}"
 
-    def handle_cycle_start(self, args=None): 
+    def handle_cycle_start(self, args=None):
+        if self.sequence_handler.get_cycle_state():
+            return "Cycle is already running"
         self.sequence_handler.cycle_trigger()
         #TODO: fix should not always print "Cycle started"
         return "Cycle started"
