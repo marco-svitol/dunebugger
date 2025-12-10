@@ -1,5 +1,4 @@
 from nats.aio.client import Client as NATS
-import atexit
 import json
 import asyncio
 from dunebugger_logging import logger

@@ -48,7 +48,10 @@ class CommandInterpreter:
 
     def get_commands_list(self):
         return settings.command_handlers
-
+    
+    def get_states_list(self):
+        return settings.states
+    
     def handle_load_configuration(self, args=None):
         settings.load_configuration()
         return "Configuration reloaded"
