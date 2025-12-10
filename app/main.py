@@ -15,7 +15,7 @@ async def main():
         await mqueue.start_listener()
         # Wait some seconds to allow NATS connection establishment
         await asyncio.sleep(2)
-        # Start the mqueue monitoring task
+        # Start the state monitoring task
         await state_tracker.start_state_monitoring()
 
         # Execute initialization commands if any

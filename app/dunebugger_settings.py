@@ -15,6 +15,9 @@ class DunebuggerSettings:
         self.command_handlers = {}
         self.commands_config_path = path.join(path.dirname(path.abspath(__file__)), "config/commands.conf")
         self.load_commands(self.commands_config_path)
+        self.states = {}
+        self.states_config_path = path.join(path.dirname(path.abspath(__file__)), "config/states.conf")
+        self.load_states(self.states_config_path)
         self.load_configuration(self.dunebugger_config)
         self.override_configuration()
         set_logger_level("dunebuggerLog", self.dunebuggerLogLevel)
@@ -54,6 +57,27 @@ class DunebuggerSettings:
 
         except configparser.Error as e:
             logger.error(f"Error reading {commands_config_path} configuration: {e}")
+
+    def load_states(self, states_config_path=None):
+        if states_config_path is None:
+            states_config_path = self.states_config_path
+
+        try:
+            self.config.read(states_config_path)
+            for state, value in self.config.items("States"):
+                # Find the last quoted string (description)
+                last_quote_idx = value.rfind('"')
+                first_quote_idx = value.rfind('"', 0, last_quote_idx)
+                description = value[first_quote_idx + 1:last_quote_idx]
+                
+                # Everything before the last quoted part is the command list
+                commands_str = value[:first_quote_idx].strip().rstrip(',').strip()
+                commands = eval(commands_str)  # Convert string representation to list
+                
+                self.states[state] = {"commands": commands, "description": description}
+
+        except configparser.Error as e:
+            logger.error(f"Error reading {states_config_path} configuration: {e}")
 
     def validate_option(self, section, option, value):
         # Validation for specific options

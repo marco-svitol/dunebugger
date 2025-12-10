@@ -41,8 +41,15 @@ class MessagingQueueHandler:
                 if command_reply_message["level"] == "error":
                     await self.dispatch_message(command_reply_message, "log", "remote")
                 return command_reply_message
-            elif subject in ["refresh"]:
-                self.sequence_handler.state_tracker.force_update()
+            elif subject in ["refresh_sequence"]:
+                await self.send_sequence()
+                await self.send_sequence_state()
+                await self.send_playing_time()
+            elif subject in ["get_sequence"]:
+                await self.send_sequence()
+            elif subject in ["refresh_gpios"]:
+                await self.send_gpio_state()
+                await self.send_sequence_state()
             elif subject in ["heartbeat"]:
                 await self.dispatch_message("alive", "heartbeat", "remote")
             elif subject in ["terminal_command"]:
@@ -65,6 +72,14 @@ class MessagingQueueHandler:
                 else:
                     reply_message = await self.command_interpreter.process_command(command)
                     await self.dispatch_message(reply_message, "terminal_command_reply", "terminal") #TODO , mqueue_message.reply)
+            elif subject in ["schedule_command"]:
+                command = message_json["body"]
+                if command in ["get_commands_list"]:
+                    commands_list = self.command_interpreter.get_commands_list()
+                    await self.dispatch_message(commands_list, "commands_list", "scheduler")
+                if command in ["get_states_list"]:
+                    states_list = self.command_interpreter.get_states_list()
+                    await self.dispatch_message(states_list, "states_list", "scheduler")
             else:
                 logger.warning(f"Unknown subject: {subject}. Ignoring message.")
         except KeyError as key_error:
