@@ -65,10 +65,10 @@ class AudioPlayer:
             logger.warning(f"Invalid SFX volume level: {volume}. Must be between 0-100.")
 
     def get_music_path(self, music_folder):
-        return path.join(path.dirname(path.abspath(__file__)), "/etc/dunebugger/music", music_folder)
+        return path.join(path.dirname(path.abspath(__file__)), "/opt/dunebugger-data/music", music_folder)
 
     def get_sfx_filepath(self, sfx_file):
-        return path.join(path.dirname(path.abspath(__file__)), "/etc/dunebugger/sfx", sfx_file)
+        return path.join(path.dirname(path.abspath(__file__)), "/opt/dunebugger-data/sfx", sfx_file)
 
     def checkaudioext(self, filename):
         audioext = [

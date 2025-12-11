@@ -16,7 +16,7 @@ class SequencesHandler:
     lastTimeMark = 0
 
     def __init__(self, mygpio_handler, GPIO, audio_handler, state_tracker, motor_handler, dmx_handler):
-        self.sequenceFolder = path.join(path.dirname(path.abspath(__file__)), f"/etc/dunebugger/sequences/{settings.sequenceFolder}")
+        self.sequenceFolder = path.join(path.dirname(path.abspath(__file__)), f"/opt/dunebugger-data/sequences/{settings.sequenceFolder}")
         self.random_elements = {}
         self.random_elements_file = settings.randomElementsFile
         self.sequence_file = settings.sequenceFile
