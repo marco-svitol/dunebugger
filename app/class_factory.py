@@ -13,7 +13,13 @@ from initialization_handler import InitializationHandler
 
 mygpio_handler = GPIOHandler(state_tracker)
 audio_handler = AudioPlayer()
-motor_handler = MotorController(mygpio_handler, GPIO)
+
+# Only create motor controller if enabled
+if settings.motorEnabled:
+    motor_handler = MotorController(mygpio_handler, GPIO)
+else:
+    motor_handler = None
+
 dmx_handler = DMXController(settings.dmxSerialPort, settings.dmxBaudRate)
 sequence_handler = SequencesHandler(mygpio_handler, GPIO, audio_handler, state_tracker, motor_handler, dmx_handler)
 command_interpreter = CommandInterpreter(mygpio_handler, sequence_handler)
