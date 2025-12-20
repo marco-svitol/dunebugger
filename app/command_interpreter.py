@@ -77,6 +77,8 @@ class CommandInterpreter:
         reply_message = self.gpio_handler.gpio_set_output(gpio, gpio_value)
         if reply_message is not None:
             raise ValueError(reply_message)
+        #TODO: addedd Natale 2025. Improve
+        self.mqueue_handler.dispatch_message("sw "+command_parts[0]+" "+command_parts[1], "dunebugger_set", "starter")
         return f"GPIO {gpio} set to {command_parts[1]}"
 
     def handle_cycle_start(self, args=None):
