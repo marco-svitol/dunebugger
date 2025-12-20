@@ -64,7 +64,7 @@ class CommandInterpreter:
         self.sequence_handler.disable_random_actions()
         return "Random actions disabled"
 
-    def handle_gpio_command(self, command_parts = []):
+    async def handle_gpio_command(self, command_parts = []):
         if len(command_parts) != 2:
             raise ValueError("Incorrect number of arguments for gpio command") 
         elif (command_parts[0].isdigit() is False):
@@ -78,7 +78,7 @@ class CommandInterpreter:
         if reply_message is not None:
             raise ValueError(reply_message)
         #TODO: addedd Natale 2025. Improve
-        self.mqueue_handler.dispatch_message("sw "+command_parts[0]+" "+command_parts[1], "dunebugger_set", "starter")
+        await self.mqueue_handler.dispatch_message("sw "+command_parts[0]+" "+command_parts[1], "dunebugger_set", "starter")
         return f"GPIO {gpio} set to {command_parts[1]}"
 
     def handle_cycle_start(self, args=None):
