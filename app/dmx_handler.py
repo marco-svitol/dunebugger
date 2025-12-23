@@ -30,6 +30,8 @@ SCENES = {
     'red': (255, 0, 0),
     'green': (0, 255, 0),
     'blue': (0, 0, 255),
+    'yellow': (255, 255, 0),
+    'orange': (255, 165, 0),
 }
 
 class DMXController:
@@ -218,7 +220,7 @@ class DMXController:
                 "  fade <channel> <scene> [duration]\n"
                 "  dimmer <channel> <value 0.0-1.0>\n"
                 "  fade_dimmer <channel> <value 0.0-1.0> [duration]\n"
-                "Scenes: warm_white, cool_white, red, green, blue")
+                "Scenes: warm_white, cool_white, red, green, blue, yellow, orange")
         
         dmx_command = args[0].lower()
         valid_commands = {"set", "fade", "dimmer", "fade_dimmer"}
@@ -229,7 +231,7 @@ class DMXController:
         # Command present but missing further arguments
         if len(args) == 1:
             if dmx_command in ("set", "fade"):
-                return f"Missing arguments. Usage: dmx {dmx_command} <channel> <scene>{' [duration]' if dmx_command == 'fade' else ''}. Scenes: warm_white, cool_white, red, green, blue"
+                return f"Missing arguments. Usage: dmx {dmx_command} <channel> <scene>{' [duration]' if dmx_command == 'fade' else ''}. Scenes: warm_white, cool_white, red, green, blue, yellow, orange"
             elif dmx_command == "dimmer":
                 return "Missing arguments. Usage: dmx dimmer <channel> <value 0.0-1.0>"
             elif dmx_command == "fade_dimmer":
@@ -240,7 +242,7 @@ class DMXController:
             if not channel.isdigit() or not (1 <= int(channel) <= 512):
                 return f"Invalid or missing channel: {channel}. Channel must be an integer 1-512."
             if dmx_command in ("set", "fade"):
-                return f"Missing scene. Usage: dmx {dmx_command} {channel} <scene>{' [duration]' if dmx_command == 'fade' else ''}. Scenes: warm_white, cool_white, red, green, blue"
+                return f"Missing scene. Usage: dmx {dmx_command} {channel} <scene>{' [duration]' if dmx_command == 'fade' else ''}. Scenes: warm_white, cool_white, red, green, blue, yellow, orange"
             elif dmx_command == "dimmer":
                 return f"Missing dimmer value. Usage: dmx dimmer {channel} <value 0.0-1.0>"
             elif dmx_command == "fade_dimmer":
@@ -259,8 +261,8 @@ class DMXController:
         # Validate scene_or_value: args[2] must be a valid scene name or a float between 0.0 and 1.0
         scene_or_value = args[2]
         if dmx_command in ["set", "fade"]:
-            if scene_or_value not in ["warm_white", "cool_white", "red", "green", "blue"]:
-                return f"Invalid DMX scene: {scene_or_value}. Must be one of 'warm_white', 'cool_white', 'red', 'green', 'blue'"
+            if scene_or_value not in ["warm_white", "cool_white", "red", "green", "blue", "yellow", "orange"]:
+                return f"Invalid DMX scene: {scene_or_value}. Must be one of 'warm_white', 'cool_white', 'red', 'green', 'blue', 'yellow', 'orange'"
         elif dmx_command in ["dimmer", "fade_dimmer"]:
             try:
                 scene_or_value = float(scene_or_value)
