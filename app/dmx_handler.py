@@ -196,6 +196,18 @@ class DMXController:
         if fade_key in self._fade_tasks:
             del self._fade_tasks[fade_key]
 
+    def fade_dimmer(self, start_channel, intensity, duration):
+        """
+        Fade dimmer to a specific intensity over time.
+        This is an alias for fade_to_dimmer for consistency with command naming.
+        
+        Args:
+            start_channel (int): Starting DMX channel (1-based)
+            intensity (float): Target intensity level from 0.0 to 1.0
+            duration (float): Fade duration in seconds
+        """
+        self.fade_to_dimmer(intensity, start_channel, duration)
+
     def _send_dmx(self):
         # ENTTEC DMX USB Pro: send DMX packet (see protocol)
         # Start code: 0x7E, Label: 6, Length: 513, Data: [0]+universe, End: 0xE7
