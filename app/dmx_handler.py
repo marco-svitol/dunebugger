@@ -163,8 +163,8 @@ class DMXController:
             current_rgb = list(self.universe[start_channel-1:start_channel+2])
         
         # Calculate current intensity (max of RGB values normalized to 0-1)
-        max_current = max(current_rgb) if max(current_rgb) > 0 else 1
-        current_intensity = max_current / 255.0
+        max_current = max(current_rgb)
+        current_intensity = max_current / 255.0 if max_current > 0 else 0.0
         
         # Store the original color ratios
         if max_current > 0:
