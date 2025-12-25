@@ -86,6 +86,7 @@ class DunebuggerSettings:
                 if option in [
                     "randomActionsMinSecs",
                     "randomActionsMaxSecs",
+                    "startButtonBouncetimeMillis",
                 ]:
                     return int(value)
                 elif option == "bouncingTreshold":

@@ -431,7 +431,7 @@ class SequencesHandler:
         self.disable_start_button()
 
     def enable_start_button(self):
-        self.mygpio_handler.addEventDetect(settings.startButtonGPIOName, lambda channel: self.cycle_trigger(channel))
+        self.mygpio_handler.addEventDetect(settings.startButtonGPIOName, lambda channel: self.cycle_trigger(channel), bouncetime=int(settings.startButtonBouncetimeMillis))
         self.start_button_enabled = True
         self.state_tracker.notify_update("start_button")
 
