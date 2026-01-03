@@ -49,8 +49,8 @@ class CommandInterpreter:
     def get_commands_list(self):
         return settings.command_handlers
     
-    def get_states_list(self):
-        return settings.states
+    def get_modes_list(self):
+        return settings.modes
     
     def handle_load_configuration(self, args=None):
         settings.load_configuration()

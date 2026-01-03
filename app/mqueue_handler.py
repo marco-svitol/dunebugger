@@ -77,9 +77,9 @@ class MessagingQueueHandler:
                 if command in ["get_commands_list"]:
                     commands_list = self.command_interpreter.get_commands_list()
                     await self.dispatch_message(commands_list, "commands_list", "scheduler")
-                if command in ["get_states_list"]:
-                    states_list = self.command_interpreter.get_states_list()
-                    await self.dispatch_message(states_list, "states_list", "scheduler")
+                if command in ["get_modes_list"]:
+                    modes_list = self.command_interpreter.get_modes_list()
+                    await self.dispatch_message(modes_list, "modes_list", "scheduler")
             else:
                 logger.warning(f"Unknown subject: {subject}. Ignoring message.")
         except KeyError as key_error:
