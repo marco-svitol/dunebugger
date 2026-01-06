@@ -81,8 +81,16 @@ class TerminalInterpreter:
                         elif command.lower() in ["t"]:
                             self.handle_show_configuration()
                         else:
-                            command_reply_message = await self.command_interpreter.process_command(command)
-                            print(command_reply_message["message"])
+                            command_reply_message = self.command_interpreter.process_command(command)
+                            
+                            # Log based on message level
+                            level = command_reply_message.get("level", "info")
+                            if level == "error":
+                                logger.error(command_reply_message["message"])
+                            elif level == "warning":
+                                logger.warning(command_reply_message["message"])
+                            else:
+                                logger.info(command_reply_message["message"])
                 else:
                     print("\r")
             except EOFError:
@@ -155,5 +163,5 @@ mode: {mode}, state: {state}, switch: {COLORS['RESET']}{switchcolor}{switchstate
 
         random_actions_status = "on" if self.command_interpreter.sequence_handler.get_random_actions_state() else "off"
         print(f"{color_blue}Random actions is now: {COLORS['RESET']}{random_actions_status}")
-        print(f"{color_blue}Music is now: {COLORS['RESET']}{self.command_interpreter.sequence_handler.audio_handler.get_music_volume()}")
-        print(f"{color_blue}SFX is now: {COLORS['RESET']}{self.command_interpreter.sequence_handler.audio_handler.get_sfx_volume()}")
+        print(f"{color_blue}Music is now: {COLORS['RESET']}{self.command_interpreter.audio_handler.get_music_volume()}")
+        print(f"{color_blue}SFX is now: {COLORS['RESET']}{self.command_interpreter.audio_handler.get_sfx_volume()}")

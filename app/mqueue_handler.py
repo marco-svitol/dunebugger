@@ -7,11 +7,12 @@ from dunebugger_settings import settings
 class MessagingQueueHandler:
     """Class to handle messaging queue operations."""
 
-    def __init__(self, sequence_handler, mygpio_handler, command_interpreter):
+    def __init__(self, sequence_handler, mygpio_handler, command_interpreter, cycle_handler):
         self.mqueue_sender = None
         self.sequence_handler = sequence_handler
         self.mygpio_handler = mygpio_handler
         self.command_interpreter = command_interpreter
+        self.cycle_handler = cycle_handler
         
         # Only enable queue logging if both sendLogsToQueue and mQueueEnabled are True
         if settings.sendLogsToQueue and settings.mQueueEnabled:
@@ -37,7 +38,7 @@ class MessagingQueueHandler:
 
             if subject in ["dunebugger_set"]:
                 command = message_json["body"]
-                command_reply_message =await self.command_interpreter.process_command(command)
+                command_reply_message = self.command_interpreter.process_command(command)
                 if command_reply_message["level"] == "error":
                     await self.dispatch_message(command_reply_message, "log", "remote")
                 return command_reply_message
@@ -70,16 +71,20 @@ class MessagingQueueHandler:
                     commands_list = self.command_interpreter.get_commands_list()
                     await self.dispatch_message(commands_list, "commands_list", "terminal") #TODO , mqueue_message.reply)
                 else:
-                    reply_message = await self.command_interpreter.process_command(command)
+                    reply_message = self.command_interpreter.process_command(command)
                     await self.dispatch_message(reply_message, "terminal_command_reply", "terminal") #TODO , mqueue_message.reply)
             elif subject in ["schedule_command"]:
                 command = message_json["body"]
                 if command in ["get_commands_list"]:
                     commands_list = self.command_interpreter.get_commands_list()
                     await self.dispatch_message(commands_list, "commands_list", "scheduler")
-                if command in ["get_modes_list"]:
+                elif command in ["get_modes_list"]:
                     modes_list = self.command_interpreter.get_modes_list()
                     await self.dispatch_message(modes_list, "modes_list", "scheduler")
+                else:
+                    # Handle other schedule commands through command interpreter
+                    reply_message = self.command_interpreter.process_command(command)
+                    await self.dispatch_message(reply_message, "schedule_command_reply", "scheduler")
             else:
                 logger.warning(f"Unknown subject: {subject}. Ignoring message.")
         except KeyError as key_error:
@@ -94,9 +99,9 @@ class MessagingQueueHandler:
         await self.dispatch_message(self.sequence_handler.get_state(), "sequence_state", "remote")
 
     async def send_playing_time(self):
-        await self.dispatch_message(self.sequence_handler.get_playing_time(), "playing_time", "remote")
+        await self.dispatch_message(self.cycle_handler.get_playing_time(), "playing_time", "remote")
 
-    async def send_sequence(self, sequence="main"):
+    async def send_sequence(self, sequence="play"):
         await self.dispatch_message(self.sequence_handler.get_sequence(sequence), "sequence", "remote")
 
     async def dispatch_message(self, message_body, subject, recipient, reply_subject=None):

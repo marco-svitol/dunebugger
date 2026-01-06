@@ -2,7 +2,7 @@
 import asyncio
 
 # from dunebugger_settings import settings
-from class_factory import terminal_interpreter, mqueue, state_tracker, initialization_handler
+from class_factory import terminal_interpreter, mqueue, state_tracker, sequence_handler
 from dunebugger_logging import update_queue_logging_handler_loop
 
 
@@ -11,6 +11,9 @@ async def main():
         # Queue logging helper: update queue handler with the current event loop
         update_queue_logging_handler_loop()
         
+        # validate programs
+        sequence_handler.initialize()
+
         # Start NATS connection manager (non-blocking)
         await mqueue.start_listener()
         # Wait some seconds to allow NATS connection establishment
@@ -19,7 +22,8 @@ async def main():
         await state_tracker.start_state_monitoring()
 
         # Execute initialization commands if any
-        await initialization_handler.execute_initialization_commands()
+        # TODO: manage with modes
+        #await initialization_handler.execute_initialization_commands()
 
         # Terminal listener (blocking) will keep the program running
         # If you want to run other tasks, create them before this line

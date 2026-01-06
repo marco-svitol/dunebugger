@@ -157,6 +157,33 @@ def disable_queue_logging():
         _queue_handler = None
         logger.debug("Queue logging disabled")
 
+def execute_logger_command(command_parts, mqueue_handler):
+    # if first arg is queue, second arg must be enable/disable
+    # if first arg is not queue, it must be info/debug
+    if command_parts is None or len(command_parts) == 0:
+        raise ValueError("Usage: logger [queue <enable|disable>] [<info|debug>]")
+    if command_parts[0].lower() == "queue":
+        if len(command_parts) < 2:
+            raise ValueError("Usage: logger queue <enable|disable>")
+        action = command_parts[1].lower()
+        if action == "enable":
+            enable_queue_logging(mqueue_handler)
+            return "Logger set to queue mode"
+        elif action == "disable":
+            disable_queue_logging()
+            return "Logger queue mode disabled"
+        else:
+            raise ValueError("Invalid argument. Usage: logger queue <enable|disable>")
+    else:
+        level = command_parts[0].lower()
+        if level == "debug":
+            set_logger_level("dunebuggerLog", get_logging_level_from_name("DEBUG"))
+            return "Logger level set to DEBUG"
+        elif level == "info":
+            set_logger_level("dunebuggerLog", get_logging_level_from_name("INFO"))
+            return "Logger level set to INFO"
+        else:
+            raise ValueError("Invalid argument. Usage: logger [queue <enable|disable>] [<info|debug>]") 
 
 # Get the console handler and set the custom formatter
 console_handler = logger.handlers[0]

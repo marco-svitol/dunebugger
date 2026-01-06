@@ -1,75 +1,41 @@
-import asyncio
-import time
 import atexit
-import threading
-import random
 import os
 from os import path
 
 from dunebugger_settings import settings
 from dunebugger_logging import logger
-from utils import validate_path
-
+from random_actions_handler import RandomActions
 
 class SequencesHandler:
 
-    lastTimeMark = 0
-
-    def __init__(self, mygpio_handler, GPIO, audio_handler, state_tracker, motor_handler, dmx_handler):
-        self.sequenceFolder = path.join(path.dirname(path.abspath(__file__)), f"/opt/dunebugger-data/sequences/{settings.sequenceFolder}")
-        self.random_elements = {}
-        self.random_elements_file = settings.randomElementsFile
-        self.sequence_file = settings.sequenceFile
+    def __init__(self, random_actions_handler, state_tracker, command_interpreter, cycle_handler):
+        self.sequenceFolder = path.join(path.dirname(path.abspath(__file__)), f"{settings.sequenceFolder}")
+        self.play_file = settings.playFile
         self.standby_file = settings.standbyFile
         self.off_file = settings.offFile
+        self.sequences = []
         self.sequences_validated = False
-        self.cycle_thread_lock = threading.Lock()
-        self.cycle_event = threading.Event()
-        self.cycle_event.set()
-        self.cycle_stop_event = threading.Event()
+        self.command_interpreter = command_interpreter
         self.state_tracker = state_tracker
-        self.mygpio_handler = mygpio_handler
-        self.audio_handler = audio_handler
-        self.motor_handler = motor_handler
-        self.dmx_handler = dmx_handler
-        self.GPIO = GPIO
         self.start_button_enabled = False
-        self.cycle_playing_time = 0
-        self.cycle_time_thread = None
-        self.cycle_time_thread_stop_event = threading.Event()
-        self.cycle_offset = 0
-        self.mQueueCyclePlayingResolutionSecs = int(settings.mQueueCyclePlayingResolutionSecs)
-
+        self.random_actions_handler = random_actions_handler
+        self.cycle_handler = cycle_handler
+        
         atexit.register(self.sequence_clean)
+
+    def initialize(self):
         try:
             self.set_sequences_validated(self.validate_all_sequence_files(self.sequenceFolder))
+            self.sequence_start(self.standby_file)
         except Exception as e:
             logger.error(f"Initial sequence validation error: {str(e)}")
 
-    def update_cycle_time(self):
-        while not self.cycle_time_thread_stop_event.is_set():
-            time.sleep(self.mQueueCyclePlayingResolutionSecs)
-            self.cycle_playing_time += self.mQueueCyclePlayingResolutionSecs
-            self.state_tracker.notify_update("playing_time")
-            if random.random() < 0.01:
-                logger.debug(f"Cycle playing time: {self.cycle_playing_time} seconds")
-
-    def start_cycle_time_thread(self):
-        """Start a thread to update the cycle playing time."""
-        self.cycle_playing_time = 0  # Reset playing time
-        self.cycle_time_thread_stop_event.clear()
-        self.cycle_time_thread = threading.Thread(target=self.update_cycle_time, daemon=True)
-        self.cycle_time_thread.start()
-
-    def stop_cycle_time_thread(self):
-        """Stop the cycle time thread."""
-        if self.cycle_time_thread:
-            self.cycle_time_thread_stop_event.set()
-            self.cycle_time_thread.join()
-            self.cycle_time_thread = None
-            self.cycle_playing_time = 0  # Reset playing time
-            self.state_tracker.notify_update("playing_time")
-
+    def revalidate_sequences(self):
+        """Re-validate all sequence files. Useful after configuration changes."""
+        logger.info("Re-validating sequence files...")
+        self.set_sequences_validated(self.validate_all_sequence_files(self.sequenceFolder))
+        return f"All sequence files validated successfully in directory: {self.sequenceFolder}"
+    
     def validate_timestamps_order(self, file_path):
         try:
             timestamps = []
@@ -119,6 +85,7 @@ class SequencesHandler:
             if self.sequences_validated != validation_result:
                 self.sequences_validated = validation_result
                 self.state_tracker.notify_update("sequences_validated")
+                self.cycle_handler.sequences_validated = validation_result
         else:
             return validation_result
 
@@ -130,187 +97,48 @@ class SequencesHandler:
         self.validate_timestamps_order(file_path)
         return True
 
+    def validate_required_files_exist(self):
+        """Check if all required sequence files exist in self.sequences."""
+        required_files = [
+            self.play_file,
+            self.standby_file,
+            self.off_file,
+        ]
+        
+        missing_files = []
+        for required_file in required_files:
+            if required_file not in self.sequences:
+                missing_files.append(required_file)
+        
+        if missing_files:
+            raise FileNotFoundError(f"Missing required sequence files: {', '.join(missing_files)}")
+        
+        return True
+
     def validate_all_sequence_files(self, directory):
         try:
-            # First, validate that required configuration files exist
-            required_files = [
-                self.sequence_file,
-                self.standby_file,
-                self.off_file,
-                self.random_elements_file
-            ]
+            # Clear and populate self.sequences with all .seq files
+            self.sequences = []
             
-            missing_files = []
-            for required_file in required_files:
-                file_path = os.path.join(directory, required_file)
-                if not os.path.exists(file_path):
-                    missing_files.append(required_file)
-            
-            if missing_files:
-                raise FileNotFoundError(f"Missing required sequence files in {directory}: {', '.join(missing_files)}")
-            
-            # Then validate all .seq files for syntax and timestamp order
+            # Validate all .seq files for syntax and timestamp order
             for filename in os.listdir(directory):
                 if filename.endswith(".seq"):
                     file_path = os.path.join(directory, filename)
                     logger.debug(f"Validating sequence {file_path}")
                     self.validate_single_sequence_file(file_path)
+                    self.sequences.append(filename)
+            
+            # Validate that required configuration files exist
+            self.validate_required_files_exist()
 
-            logger.info(f"All sequence files validated successfully in {directory}")
+            # Validate random elements file
+            self.random_actions_handler.validate_random_elements_file()
+
             return True
             
         except OSError as e:
             raise OSError(f"Error validating sequence files in {directory}: {e}")
 
-    def revalidate_sequences(self):
-        """Re-validate all sequence files. Useful after configuration changes."""
-        logger.info("Re-validating sequence files...")
-        self.set_sequences_validated(self.validate_all_sequence_files(self.sequenceFolder))
-        return self.sequences_validated
-
-    def execute_motor_command(self, motor_number, direction, speed):
-        motor_enabled = getattr(settings, f"motor{motor_number}Enabled", False)
-        if motor_enabled:
-            self.motor_handler.start(motor_number, direction, speed)
-
-    def execute_dmx_command(self, dmx_command, channel, scene_or_value, duration=2.0):
-        if not settings.dmxEnabled:
-            raise ValueError("DMX module is disabled")
-        else:
-            if self.dmx_handler.serial_conn is None:
-                raise ConnectionError("DMX module is not connected")
-        
-        if dmx_command == "fade":
-            self.dmx_handler.fade_to_scene(scene_or_value, channel, duration)
-        elif dmx_command == "set":
-            self.dmx_handler.set_scene(scene_or_value, channel)
-        elif dmx_command == "dimmer":
-            self.dmx_handler.set_dimmer(scene_or_value, channel)
-        elif dmx_command == "fade_dimmer":
-            self.dmx_handler.fade_to_dimmer(scene_or_value, channel, duration)
-        else:
-            raise ValueError(f"Unknown DMX command: {dmx_command}")
-
-    def execute_switch_command(self, device_name, action):
-        if action.lower() == "on" or action.lower() == "off":
-            # Warning: on GPIO the action is inverted: on = 0, off = 1
-            gpio_value = 0 if action.lower() == "on" else 1
-            self.mygpio_handler.gpio_set_output(device_name, gpio_value)
-        else:
-            logger.error(f"Unknown action: {action}")
-
-    def execute_waituntil_command(self, duration):
-        self.waituntil(duration)
-
-    def execute_audio_fadeout_command(self, fadeout_secs):
-        self.audio_handler.vstopaudio(fadeout_secs)
-
-    def execute_playmusic_command(self, music_folder):
-        gpio = self.mygpio_handler.GPIOMap[settings.startButtonGPIOName]
-        if self.GPIO.input(gpio) == 1:
-            self.audio_handler.setEasterEggTrigger(True)
-        self.audio_handler.playMusic(music_folder)
-
-    def execute_play_sfx_command(self, music_folder):
-        self.audio_handler.play_sfx(music_folder)
-
-    def execute_command(self, command_body, dry_run=False):
-        parts = command_body.split()
-
-        verb = parts[0].lower()
-        # TODO: motor stop
-        if verb == "motor" and settings.motorEnabled:
-            if parts[1].lower() == "start":
-                motor_number = int(parts[2])
-                direction = parts[3].lower()
-                speed = int(parts[4])
-
-                # Validate motor number
-                if not isinstance(motor_number, int) or motor_number < 1 :
-                    raise ValueError(f"Invalid motor number: {motor_number}")
-
-                # Validate direction
-                if direction not in ["ccw", "cw"]:
-                    raise ValueError(f"Invalid motor direction: {direction}")
-                # Validate speed
-                if  not isinstance(speed, int) or speed < 1:
-                    raise ValueError(f"Invalid motor speed: {speed}")
-                    
-                if not dry_run:
-                    self.execute_motor_command(motor_number, direction, speed)
-                        
-        else:
-            # Verify switch command
-            if verb == "switch":
-                device_name = parts[1]
-                action = parts[2].lower()
-
-                # Validate device name
-                if device_name not in self.mygpio_handler.GPIOMap:
-                    raise ValueError(f"Invalid device name: {device_name}")
-
-                # Validate action
-                if action not in ["on", "off"]:
-                    raise ValueError(f"Invalid action: {action}. Action must be 'on' or 'off'.")
-                if not dry_run:
-                    self.execute_switch_command(device_name, action)
-
-            elif verb == "audio" and len(parts) >= 2:
-                action = parts[1].lower()
-                parameter = parts[2].lower()
-
-                if action == "fadeout":
-                    fadeout_secs = int(parameter)
-                    if  not isinstance(fadeout_secs, int) or fadeout_secs < 0:
-                        raise ValueError(f"Invalid fadeout seconds: {fadeout_secs}")
-                    if not dry_run:
-                        self.execute_audio_fadeout_command(fadeout_secs)
-
-                elif action == "playmusic":
-                    music_folder = self.audio_handler.get_music_path(parameter)
-                    if not validate_path(music_folder):
-                        raise ValueError(f"Music folder {music_folder} does not exist")
-                    else:
-                        if not dry_run:
-                            self.execute_playmusic_command(music_folder)
-                            
-                elif action == "playsfx":
-                    sfx_file = self.audio_handler.get_sfx_filepath(parameter)
-                    if not validate_path(sfx_file):
-                        raise ValueError(f"Sfx file {sfx_file} does not exist")
-                    else:
-                        if not dry_run:
-                            self.execute_play_sfx_command(sfx_file)
-                else:
-                    raise ValueError(f"Unknown audio action: {action}")
-
-            #TODO: revisit the command interpreter vs sequence parser. Refactor to avoid code duplication.
-            elif verb == "dmx":
-                parsed_dmx_command_args = self.dmx_handler.validate_dmx_command_args(parts[1:])
-                if isinstance(parsed_dmx_command_args, str):
-                    raise ValueError(parsed_dmx_command_args)
-                _, dmx_command, channel, scene_or_value, duration = parsed_dmx_command_args
-
-                if not dry_run:
-                    try:
-                        self.execute_dmx_command(dmx_command, channel, scene_or_value, duration)
-                        if dmx_command in ["fade", "fade_dimmer"]:
-                            logger.debug(f"DMX command '{dmx_command}' executed on channel {channel} with value '{scene_or_value}' over {duration}s")
-                        else:
-                            logger.debug(f"DMX command '{dmx_command}' executed on channel {channel} with value '{scene_or_value}'")
-                    except Exception as e:
-                        logger.error(f"Error executing DMX command: {e}")
-                else:
-                    if not settings.dmxEnabled:
-                        logger.warning("DMX module is disabled")
-                    else:
-                        if self.dmx_handler.serial_conn is None:
-                            logger.warning("DMX module is not connected")
-                        
-            else:
-                raise ValueError(f"Unknown command: {command_body}")
-
-        return True
 
     def read_sequence_file(self, file_path, dry_run=False):
         try:
@@ -328,15 +156,26 @@ class SequencesHandler:
 
                     time_mark_seconds, command_body = self.extract_time_mark(command_line)
                     if not dry_run:
-                        self.execute_waituntil_command(int(time_mark_seconds))
+                        self.cycle_handler.cycle_waituntil(int(time_mark_seconds))
                     # check for stop signal
-                    if self.cycle_stop_event.is_set():
-                        self.cycle_stop_event.clear()
+                    #TODO: review sequence stop
+                    if self.cycle_handler.cycle_stop_event.is_set():
+                        self.cycle_handler.cycle_stop_event.clear()
+                        logger.info("Sequence execution stopped by stop signal.")
                         break
-                    self.execute_command(command_body, dry_run)
+                    
+                    command_reply_message = self.command_interpreter.process_command(command_body, dry_run)
+                    if command_reply_message["level"] == "warning":
+                        logger.warning(f"Warning executing command '{command_body}' at line {line_num}: {command_reply_message['message']}")
+                    elif command_reply_message["level"] == "error":
+                        raise RuntimeError(f"Error executing command '{command_body}' at line {line_num}: {command_reply_message['message']}")
+                    else:
+                        if not dry_run:
+                            logger.debug(f"Executed command '{command_body}' at line {line_num}: {command_reply_message['message']}")
+                            #logger.debug(f"Received reply: {command_reply_message}")
 
         except FileNotFoundError:
-           raise FileNotFoundError(f"File not found: {file_path}")
+            raise FileNotFoundError(f"File not found: {file_path}")
         except Exception as e:
             raise RuntimeError(f"Error reading sequence file {file_path} line {line_num}: {e}")
 
@@ -365,139 +204,87 @@ class SequencesHandler:
 
         raise ValueError("Invalid command format")
 
-    def random_sequence_from_file(self, file_name):
-        try:
-            file_path = path.join(self.sequenceFolder, file_name)
-            with open(file_path) as file:
-                self.random_elements = [line.strip() for line in file if line.strip()]
-        except FileNotFoundError:
-            raise FileNotFoundError(f"File not found: {file_path}")
-        except Exception as e:
-            raise RuntimeError(f"Error reading random elements file {file_path}: {e}")
-
-    def random_action(self):
-        rand_elem = random.choice(self.random_elements)
-        self.mygpio_handler.gpiomap_toggle_output(rand_elem)
-
-    def random_actions(self):
-        while not self.random_actions_event.is_set():
-            self.random_actions_event.wait(timeout=random.uniform(settings.randomActionsMinSecs, settings.randomActionsMaxSecs))
-            self.random_action()
-
-    def enable_random_actions(self):
-        self.random_sequence_from_file(self.random_elements_file)
-        self.random_actions_event = threading.Event()
-        self.random_actions_event.clear()
-        self.random_actions_thread = threading.Thread(name="_random_actions", target=self.random_actions, daemon=True)
-        self.random_actions_thread.start()
-        self.state_tracker.notify_update("random_actions")
-
-    def disable_random_actions(self):
-        if hasattr(self, "random_actions_event"):
-            self.random_actions_event.set()
-            self.state_tracker.notify_update("random_actions")
-
+    # Delegate methods to RandomActions handler
+    def execute_random_actions_command(self, args, dry_run=False):
+        """Delegate to RandomActions handler."""
+        return self.random_actions_handler.execute_random_actions_command(args, dry_run)
+    
     def get_random_actions_state(self):
-        if hasattr(self, "random_actions_event"):
-            if not self.random_actions_event.is_set():
-                return True
-        return False
+        """Delegate to RandomActions handler."""
+        return self.random_actions_handler.get_random_actions_state()
 
-    def restore_random_actions_state(self, state):
-        if state:
-            self.enable_random_actions()
+    def execute_sequence_command(self, args=None):
+        """Execute sequence commands: start, stop, validate, or upload.
+        
+        Args:
+            args: List of arguments where first element is the subcommand
+        
+        Returns:
+            Result message or raises ValueError/RuntimeError on errors
+        """
+        if args is None or len(args) == 0:
+            raise ValueError("Usage: sequence <play|stop|validate|upload> [arguments]")
+        
+        subcommand = args[0].lower()
+        
+        if subcommand == "play":
+            # Play a sequence - needs a sequence name
+            if len(args) < 2:
+                raise ValueError("Usage: sequence play <sequence_name>")
+            
+            sequence_name = args[1]
+            
+            # Check if sequence name is in self.sequences
+            if sequence_name not in self.sequences:
+                available = ", ".join(self.sequences) if self.sequences else "none"
+                raise ValueError(f"Sequence '{sequence_name}' not found. Available sequences: {available}")
+            
+            # Execute the sequence
+            self.cycle_handler.cycle_trigger(sequence_name=sequence_name)
+            return f"Playing sequence: {sequence_name}"
+        
+        elif subcommand == "stop":
+            # Stop the current running sequence thread
+            self.cycle_handler.cycle_stop()
+            return "Stop signal sent to running sequence"
+        
+        elif subcommand == "validate":
+            # Re-validate all sequence files
+            return self.revalidate_sequences()
+        
+        elif subcommand == "upload":
+            # Upload a new sequence file
+            if len(args) < 3:
+                raise ValueError("Usage: sequence upload <filename> <file_content>")
+            
+            # Pass remaining args to upload command
+            return self.execute_upload_sequence_command(args[1:])
+        
         else:
-            self.disable_random_actions()
+            raise ValueError(f"Unknown sequence subcommand: '{subcommand}'. Valid subcommands: play, play_thread, stop_thread, validate, upload")
 
-    def setStandByMode(self):
-        file_path = os.path.join(self.sequenceFolder, self.standby_file)
+    def sequence_start(self, sequence_name):
+        file_path = os.path.join(self.sequenceFolder, sequence_name)
         self.read_sequence_file(file_path)
-
-    def setOffMode(self):
-        file_path = os.path.join(self.sequenceFolder, self.off_file)
-        self.read_sequence_file(file_path)
-
-    def start(self):
-        file_path = os.path.join(self.sequenceFolder, self.sequence_file)
-        self.read_sequence_file(file_path)
-
-    def waituntil(self, sec):
-        logger.debug("Waiting: " + str(sec - self.cycle_offset))
-        self.cycle_event.wait((sec - self.cycle_offset) * settings.cyclespeed)
-        self.cycle_offset = sec
 
     def sequence_clean(self):
         logger.debug("Sequence clean")
         self.disable_start_button()
 
-    def enable_start_button(self):
-        self.mygpio_handler.addEventDetect(settings.startButtonGPIOName, lambda channel: self.cycle_trigger(channel), bouncetime=int(settings.startButtonBouncetimeMillis))
-        self.start_button_enabled = True
-        self.state_tracker.notify_update("start_button")
-
-    def disable_start_button(self):
-        self.mygpio_handler.removeEventDetect(settings.startButtonGPIOName)
-        self.start_button_enabled = False
-        self.state_tracker.notify_update("start_button")
-
     def get_start_button_state(self):
         return self.start_button_enabled
-
-    def cycle_stop(self):
-        self.cycle_stop_event.set()
-
-    def cycle_trigger(self, channel=False):
-        with self.cycle_thread_lock:
-            # Check if sequences are validated before starting cycle
-            if not self.sequences_validated:
-                logger.error("Cannot start cycle: sequence files are not properly validated. Please check sequence files configuration.")
-                return
-            
-            if channel is not False:
-                # TODO : fix bouncing
-                # start_time = time.time()
-                # while time.time() < start_time + settings.bouncingTreshold:
-                time.sleep(settings.bouncingTreshold)  # avoid catching a bouncing
-                if self.GPIO.input(channel) != 1:
-                    logger.debug("Warning! Cycle: below treshold of " + str(settings.bouncingTreshold) + " on channel" + str(channel))
-                    return
-
-            logger.info("Start button pressed")
-            threading.Thread(name="_cycle_thread", target=self.cycle, daemon=True).start()
-
-    def get_cycle_state(self):
-        if self.cycle_event.is_set():
-            return False
-        return True
-
-    def cycle(self):
-        with self.cycle_thread_lock:
-            self.cycle_event.clear()
-            self.cycle_stop_event.clear()
-            self.save_random_actions_state = self.get_random_actions_state()
-            self.disable_random_actions()
-            self.start_cycle_time_thread()
-            self.start()
-            self.stop_cycle_time_thread()
-            self.restore_random_actions_state(self.save_random_actions_state)
-            self.cycle_offset = 0
-            self.setStandByMode()
-            self.cycle_event.set()
 
     def get_state(self):
         return {
             "random_actions": self.get_random_actions_state(),
-            "cycle_running": self.get_cycle_state(),
+            "cycle_running": self.cycle_handler.get_cycle_state(),
             "start_button_enabled": self.get_start_button_state(),
             "sequences_validated": self.sequences_validated,
         }
 
-    def get_playing_time(self):
-        return self.cycle_playing_time
-
     def get_sequence(self, sequence_name):
-        if sequence_name == "main":
-            file_path = os.path.join(self.sequenceFolder, self.sequence_file)
+        if sequence_name == "play":
+            file_path = os.path.join(self.sequenceFolder, self.play_file)
         elif sequence_name == "standby":
             file_path = os.path.join(self.sequenceFolder, self.standby_file)
         elif sequence_name == "off":
@@ -539,6 +326,18 @@ class SequencesHandler:
                 else:
                     logger.error(f"Invalid time mark in sequence file: {file_path}")
         return sequence_data
+
+    def execute_upload_sequence_command(self, args):
+        if args is None or len(args) < 2:
+            raise ValueError("Usage: us <filename> <file_content>")
+        
+        filename = args[0]
+        file_content = " ".join(args[1:])
+        
+        # Replace escaped newlines with actual newlines
+        file_content = file_content.replace('\\n', '\n')
+
+        return self.upload_sequence_file(filename, file_content)
 
     def upload_sequence_file(self, filename, file_content):
         try:
@@ -586,9 +385,6 @@ class SequencesHandler:
                 f.write(file_content)
                 
             logger.info(f"Successfully uploaded sequence file: {filename}")
-            
-            # Re-validate all sequences after upload
-            # self.revalidate_sequences()
             
             success_message = f"Sequence file {filename} uploaded successfully"
 

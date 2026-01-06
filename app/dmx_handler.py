@@ -23,6 +23,7 @@ import time
 import threading
 import serial
 from dunebugger_logging import logger
+from dunebugger_settings import settings
 
 SCENES = {
     'warm_white': (255, 180, 80),
@@ -226,7 +227,7 @@ class DMXController:
 
     def validate_dmx_command_args(self, args):
         if not args or len(args) == 0:
-            return ("Usage: dmx <command> <channel> <scene_or_value> [duration]\n"
+            raise ValueError("Usage: dmx <command> <channel> <scene_or_value> [duration]\n"
                 "Commands:\n"
                 "  set <channel> <scene>\n"
                 "  fade <channel> <scene> [duration]\n"
@@ -237,28 +238,28 @@ class DMXController:
         dmx_command = args[0].lower()
         valid_commands = {"set", "fade", "dimmer", "fade_dimmer"}
         if dmx_command not in valid_commands:
-            return (f"Invalid DMX command: {dmx_command}. Valid commands: set, fade, dimmer, fade_dimmer.\n"
+            raise ValueError(f"Invalid DMX command: {dmx_command}. Valid commands: set, fade, dimmer, fade_dimmer.\n"
                 "Usage: dmx <command> <channel> <scene_or_value> [duration]")
         
         # Command present but missing further arguments
         if len(args) == 1:
             if dmx_command in ("set", "fade"):
-                return f"Missing arguments. Usage: dmx {dmx_command} <channel> <scene>{' [duration]' if dmx_command == 'fade' else ''}. Scenes: warm_white, cool_white, red, green, blue, yellow, orange"
+                raise ValueError(f"Missing arguments. Usage: dmx {dmx_command} <channel> <scene>{' [duration]' if dmx_command == 'fade' else ''}. Scenes: warm_white, cool_white, red, green, blue, yellow, orange")
             elif dmx_command == "dimmer":
-                return "Missing arguments. Usage: dmx dimmer <channel> <value 0.0-1.0>"
+                raise ValueError("Missing arguments. Usage: dmx dimmer <channel> <value 0.0-1.0>")
             elif dmx_command == "fade_dimmer":
-                return "Missing arguments. Usage: dmx fade_dimmer <channel> <value 0.0-1.0> [duration]"
+                raise ValueError("Missing arguments. Usage: dmx fade_dimmer <channel> <value 0.0-1.0> [duration]")
         
         if len(args) == 2:
             channel = args[1]
             if not channel.isdigit() or not (1 <= int(channel) <= 512):
-                return f"Invalid or missing channel: {channel}. Channel must be an integer 1-512."
+                raise ValueError(f"Invalid or missing channel: {channel}. Channel must be an integer 1-512.")
             if dmx_command in ("set", "fade"):
-                return f"Missing scene. Usage: dmx {dmx_command} {channel} <scene>{' [duration]' if dmx_command == 'fade' else ''}. Scenes: warm_white, cool_white, red, green, blue, yellow, orange"
+                raise ValueError(f"Missing scene. Usage: dmx {dmx_command} {channel} <scene>{' [duration]' if dmx_command == 'fade' else ''}. Scenes: warm_white, cool_white, red, green, blue, yellow, orange")
             elif dmx_command == "dimmer":
-                return f"Missing dimmer value. Usage: dmx dimmer {channel} <value 0.0-1.0>"
+                raise ValueError(f"Missing dimmer value. Usage: dmx dimmer {channel} <value 0.0-1.0>")
             elif dmx_command == "fade_dimmer":
-                return f"Missing dimmer value. Usage: dmx fade_dimmer {channel} <value 0.0-1.0> [duration]"
+                raise ValueError(f"Missing dimmer value. Usage: dmx fade_dimmer {channel} <value 0.0-1.0> [duration]")
             
         if len(args) == 3 and dmx_command in ("fade", "fade_dimmer"):
             # Third arg present; duration optional, handled later (defaults)
@@ -267,28 +268,56 @@ class DMXController:
         # Validate channel: args[1] must be an integer between 1 and 512
         channel = args[1]
         if not channel.isdigit() or not (1 <= int(channel) <= 512):
-            return f"Invalid DMX channel: {channel}. Must be an integer between 1 and 512"
+            raise ValueError(f"Invalid DMX channel: {channel}. Must be an integer between 1 and 512")
         channel = int(channel)
 
         # Validate scene_or_value: args[2] must be a valid scene name or a float between 0.0 and 1.0
         scene_or_value = args[2]
         if dmx_command in ["set", "fade"]:
             if scene_or_value not in ["warm_white", "cool_white", "red", "green", "blue", "yellow", "orange"]:
-                return f"Invalid DMX scene: {scene_or_value}. Must be one of 'warm_white', 'cool_white', 'red', 'green', 'blue', 'yellow', 'orange'"
+                raise ValueError(f"Invalid DMX scene: {scene_or_value}. Must be one of 'warm_white', 'cool_white', 'red', 'green', 'blue', 'yellow', 'orange'")
         elif dmx_command in ["dimmer", "fade_dimmer"]:
             try:
                 scene_or_value = float(scene_or_value)
                 if not (0.0 <= scene_or_value <= 1.0):
-                    return f"Invalid DMX dimmer value: {scene_or_value}. Must be a float between 0.0 and 1.0"
+                    raise ValueError(f"Invalid DMX dimmer value: {scene_or_value}. Must be a float between 0.0 and 1.0")
             except ValueError:
-                return f"Invalid DMX dimmer value: {scene_or_value}. Must be a float between 0.0 and 1.0"
+                raise ValueError(f"Invalid DMX dimmer value: {scene_or_value}. Must be a float between 0.0 and 1.0")
         
         # Validate duration for fade commands
         duration = 2.0  # Default duration
         if len(args) == 4 and dmx_command in ["fade", "fade_dimmer"]:
             duration = args[3]
             if not duration.replace('.', '', 1).isdigit() and float(duration) < 0:
-                return f"Invalid duration value: {duration}. Must be a positive number"
+                raise ValueError(f"Invalid duration value: {duration}. Must be a positive number")
             duration = float(duration)
         
-        return (None, dmx_command, channel, scene_or_value, duration)
+        return (dmx_command, channel, scene_or_value, duration)
+
+
+    def execute_dmx_command(self, args, dry_run=False):
+        if not settings.dmxEnabled:
+            return {"success": False, "message": "DMX module is disabled", "level": "warning"}
+            
+        dmx_command, channel, scene_or_value, duration = self.validate_dmx_command_args(args) 
+        if self.serial_conn is None:
+            return {"success": False, "message": "DMX module is not connected", "level": "warning"}
+
+        if dry_run:
+            return True
+        else:
+            if dmx_command == "fade":
+                self.fade_to_scene(scene_or_value, channel, duration)
+            elif dmx_command == "set":
+                self.set_scene(scene_or_value, channel)
+            elif dmx_command == "dimmer":
+                self.set_dimmer(scene_or_value, channel)
+            elif dmx_command == "fade_dimmer":
+                self.fade_to_dimmer(scene_or_value, channel, duration)
+            else:
+                raise ValueError(f"Unknown DMX command: {dmx_command}")
+        
+            if dmx_command in ["fade", "fade_dimmer"]:
+                return f"DMX command '{dmx_command}' started on channel {channel} with value '{scene_or_value}' over {duration}s"
+            else:
+                return f"DMX command '{dmx_command}' executed on channel {channel} with value '{scene_or_value}'"

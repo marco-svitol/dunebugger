@@ -10,23 +10,6 @@ if settings.ON_RASPBERRY_PI:
     import RPi.GPIO as GPIO  # type: ignore
 else:
     from dunemock import GPIO
-
-# PWM 13,19,12,18 # free : 19
-# 2,3 were used for Arduino serial (no rele). Two GPIOs were reserved for Arduino reset (14) relè and Dimmer board reset (15) relè
-
-#     # Dimmer1 I2C - Light dimmering : 0 Fully open - 100 Fully closed
-#     Dimmer1Add = '0x27'
-#     Dimmer1Ch1 = '0x80'
-#     Dimmer1Ch2 = '0x81'
-#     Dimmer1Ch3 = '0x82'
-#     Dimmer1Ch4 = '0x83'
-
-#     # Dimmer2 Serial - Protocol commands
-#     Ch1Rst = "900\n"
-#     Ch1FIn = "i\n"
-#     Ch1FOu = "o\n"
-
-
 class GPIOHandler:
     def __init__(self, state_tracker):
         # Load GPIO configuration from gpio_config.conf
@@ -142,10 +125,10 @@ class GPIOHandler:
         else:
             return None, None
 
-    def addEventDetect(self, gpioName, callback, bounceMs=0):
+    def addEventDetect(self, gpioName, callback, bouncetime=0):
         gpio = self.GPIOMap[gpioName]
-        if bounceMs > 0:
-            GPIO.add_event_detect(gpio, GPIO.RISING, callback=callback, bouncetime=bounceMs)
+        if bouncetime > 0:
+            GPIO.add_event_detect(gpio, GPIO.RISING, callback=callback, bouncetime=bouncetime)
         else:
             GPIO.add_event_detect(gpio, GPIO.RISING, callback=callback)
 
@@ -159,33 +142,13 @@ class GPIOHandler:
         GPIO.cleanup()
         self.state_tracker.notify_update("gpios")
 
-    def gpio_set_output(self, gpiocast, value):
-        if isinstance(gpiocast, int):
-            gpio = gpiocast
-            gpiomap = self.getGPIOLabel(gpio)
-        else:
-            gpiomap = gpiocast
-            gpio = self.__gpiomap_get_gpio(gpiomap)
-
-        gpiomode = self.__gpio_get_mode(gpio)
-        if gpiomap is not None:
-            if gpiomode == self.GPIO.OUT or (not settings.ON_RASPBERRY_PI):
-                logger.debug(f"{gpiomap} {value}")
-                GPIO.output(gpio, value)
-                self.state_tracker.notify_update("gpios")
-                return None
-            elif gpiomode == self.GPIO.IN and settings.ON_RASPBERRY_PI:
-                reply_message = f"Can't set an input GPIO. GPIOMap: '{gpiocast}', GPIO: {gpio}."
-                logger.error(reply_message)
-                return reply_message
-        else:
-            reply_message = f"GPIO map '{gpiocast}' not found."
-            logger.error(reply_message)
-            return reply_message    
-
-    def gpiomap_toggle_output(self, gpiomap):
-        logger.debug(f"Toggling {gpiomap}")
-        self.gpio_set_output(gpiomap, not GPIO.input(self.GPIOMap[gpiomap]))
+    def set_gpio_state(self, gpio_num, value):
+        gpiomode = self.__gpio_get_mode(gpio_num)
+        if gpiomode == self.GPIO.OUT or (not settings.ON_RASPBERRY_PI):
+            GPIO.output(gpio_num, value)
+            self.state_tracker.notify_update("gpios")
+        elif gpiomode == self.GPIO.IN and settings.ON_RASPBERRY_PI:
+            raise ValueError(f"Can't set GPIO #{gpio_num}: it's an input GPIO")
 
     def __gpiomap_get_gpio(self, gpiomap):
         try:
@@ -230,3 +193,47 @@ class GPIOHandler:
             gpio_status.append({"pin": gpio, "label": label, "mode": mode, "state": state, "switch": switchstate})
 
         return gpio_status
+
+    def validate_switch_command_args(self, command_parts):
+        if not command_parts or len(command_parts) != 2:
+            arg_count = len(command_parts) if command_parts else 0
+            raise ValueError(f"GPIO command requires 2 arguments: <gpio_name/number> <on/off/toggle>. Got {arg_count} argument(s).")
+        
+        gpio_identifier = command_parts[0]
+        action = command_parts[1].lower()
+        
+        # Validate action
+        if action not in ["on", "off", "toggle"]:
+            raise ValueError(f"Invalid action: {action}. Use 'on', 'off', or 'toggle'.")
+        
+        # Check if gpio_identifier is a valid integer GPIO number
+        try:
+            gpio_num = int(gpio_identifier)
+            # Check if this GPIO number exists in the GPIOMap values
+            if gpio_num not in self.GPIOMap.values():
+                raise ValueError(f"Invalid GPIO number: {gpio_num}")
+        except ValueError:
+            # It's a string, so use __gpiomap_get_gpio to convert to GPIO number
+            gpio_num = self.__gpiomap_get_gpio(gpio_identifier)
+            if gpio_num is None:
+                raise ValueError(f"GPIO map '{gpio_identifier}' not found.")
+        
+        # Determine the action value
+        if action == "toggle":
+            # Read current value and toggle it
+            current_value = GPIO.input(gpio_num)
+            action = current_value ^ 1
+        else:
+            # returned action must be 0 if "on", 1 if "off"
+            action = GPIO.LOW if action == "on" else GPIO.HIGH
+        
+        return gpio_num, action
+
+    def execute_gpio_command(self, command_parts, dry_run=False):
+        gpio, action = self.validate_switch_command_args(command_parts)
+        if dry_run:
+            return True
+        else:
+            self.set_gpio_state(gpio, action)
+            return (f"GPIO {gpio} set to {'ON' if action == GPIO.LOW else 'OFF'}")
+            

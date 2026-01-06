@@ -15,9 +15,6 @@ class DunebuggerSettings:
         self.command_handlers = {}
         self.commands_config_path = path.join(path.dirname(path.abspath(__file__)), "config/commands.conf")
         self.load_commands(self.commands_config_path)
-        self.modes = {}
-        self.modes_config_path = path.join(path.dirname(path.abspath(__file__)), "config/modes.conf")
-        self.load_modes(self.modes_config_path)
         self.load_configuration(self.dunebugger_config)
         self.override_configuration()
         set_logger_level("dunebuggerLog", self.dunebuggerLogLevel)
@@ -28,7 +25,7 @@ class DunebuggerSettings:
 
         try:
             self.config.read(dunebugger_config)
-            for section in ["General", "MessageQueue", "Audio", "Motors", "Debug", "Log", "DMX"]:
+            for section in ["General", "MessageQueue", "Audio", "Motors", "DMX", "Debug", "Log"]:
                 if not self.config.has_section(section):
                     continue
                 for option in self.config.options(section):
@@ -58,27 +55,6 @@ class DunebuggerSettings:
         except configparser.Error as e:
             logger.error(f"Error reading {commands_config_path} configuration: {e}")
 
-    def load_modes(self, modes_config_path=None):
-        if modes_config_path is None:
-            modes_config_path = self.modes_config_path
-
-        try:
-            self.config.read(modes_config_path)
-            for mode, value in self.config.items("Modes"):
-                # Find the last quoted string (description)
-                last_quote_idx = value.rfind('"')
-                first_quote_idx = value.rfind('"', 0, last_quote_idx)
-                description = value[first_quote_idx + 1:last_quote_idx]
-                
-                # Everything before the last quoted part is the command list
-                commands_str = value[:first_quote_idx].strip().rstrip(',').strip()
-                commands = eval(commands_str)  # Convert string representation to list
-                
-                self.modes[mode] = {"commands": commands, "description": description}
-
-        except configparser.Error as e:
-            logger.error(f"Error reading {modes_config_path} configuration: {e}")
-
     def validate_option(self, section, option, value):
         # Validation for specific options
         try:
@@ -95,7 +71,7 @@ class DunebuggerSettings:
                     return self.config.getboolean(section, option)
                 elif option in [
                     "sequenceFolder",
-                    "sequenceFile",
+                    "playFile",
                     "standbyFile",
                     "offFile",
                     "randomElementsFile",
@@ -103,11 +79,6 @@ class DunebuggerSettings:
                     "startButtonGPIOName",
                 ]:
                     return str(value)
-                elif option == "initializationCommandsString":
-                    commands = value.split(",")
-                    for command in commands:
-                        if command not in self.command_handlers:
-                            raise ValueError(f"Invalid commands in initializationCommandsString: {command}")
             elif section == "MessageQueue":
                 if option in ["mQueueServers", "mQueueClientID", "mQueueSubjectRoot"]:
                     return str(value)
@@ -116,24 +87,13 @@ class DunebuggerSettings:
                 elif option == "mQueueEnabled":
                     return self.config.getboolean(section, option)
             elif section == "Audio":
-                if option in [
-                    "normalMusicVolume",
-                    "normalSfxVolume",
-                    "quietMusicVolume",
-                    "quietSfxVolume",
-                    "ignoreQuietTime",
-                ]:
-                    return int(value) if option != "ignoreQuietTime" else self.config.getboolean(section, option)
-                elif option in ["easteregg", "vlcdevice"]:
+                if option in ["musicBaseFolder", "sfxFolder", "vlcdevice"]:
                     return str(value)
             elif section == "Motors":
                 if option in ["motor1Freq", "motor2Freq"]:
                     return int(value)
                 elif option in ["motorEnabled", "motor1Enabled", "motor2Enabled"]:
                     return self.config.getboolean(section, option)
-            elif section == "Debug":
-                if option == "cyclespeed":
-                    return float(value)
             elif section == "Log":
                 if option == "dunebuggerLogLevel":
                     logLevel = get_logging_level_from_name(value)
