@@ -45,6 +45,12 @@ class CommandInterpreter:
     def get_commands_list(self):
         return settings.command_handlers
     
+    def get_modes_list(self):
+        """Get modes list in JSON format for mqueue/API usage."""
+        if self.modes_handler:
+            return self.modes_handler.get_modes_list_with_metadata()
+        return {"error": "Modes handler not initialized"}
+    
     def handle_load_configuration(self, args=None):
         settings.load_configuration()
         return "Configuration reloaded"

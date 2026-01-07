@@ -11,7 +11,7 @@ class ModesHandler:
 
     def __init__(self, state_tracker, command_interpreter):
         self.modesFolder = path.join(path.dirname(path.abspath(__file__)), f"{settings.modesFolder}")
-        self.modes = []
+        self.modes = {}
         self.modes_validated = False
         self.init_mode_file = None
         self.command_interpreter = command_interpreter
@@ -84,7 +84,7 @@ class ModesHandler:
     def validate_all_mode_files(self, directory):
         try:
             # Clear and populate self.modes with all .mod files
-            self.modes = []
+            self.modes = {}
             self.init_mode_file = None
             init_modes_found = []
             
@@ -98,12 +98,14 @@ class ModesHandler:
                     file_path = os.path.join(directory, filename)
                     logger.debug(f"Validating mode {file_path}")
                     self.validate_single_mode_file(file_path)
-                    self.modes.append(filename)
                     
                     # Check if this mode is marked as init_mode
                     config = configparser.ConfigParser()
                     config.read(file_path)
                     metadata = config['metadata']
+                    mode_name_key = metadata.get('name', '').lower()
+                    self.modes[mode_name_key] = filename
+                    
                     init_mode = metadata.get('init_mode', 'False').lower() in ['true', '1', 'yes']
                     if init_mode:
                         init_modes_found.append(filename)
@@ -131,19 +133,19 @@ class ModesHandler:
         modes_list = []
         
         try:
-            for mode_filename in self.modes:
+            for mode_filename in self.modes.values():
                 file_path = os.path.join(self.modesFolder, mode_filename)
                 config = configparser.ConfigParser()
                 config.read(file_path)
                 
                 metadata = config['metadata']
-                mode_name_key = os.path.splitext(mode_filename)[0]
+                commands_dict = dict(config['commands'])
                 
                 modes_list.append({
                     "filename": mode_filename,
-                    "mode_name": mode_name_key,
-                    "name": metadata.get('name', ''),
-                    "desc": metadata.get('desc', '')
+                    "name": metadata.get('name', '').lower(),
+                    "desc": metadata.get('desc', ''),
+                    "commands": commands_dict
                 })
             
             return {"modes": modes_list}
@@ -162,7 +164,7 @@ class ModesHandler:
             Result message or raises ValueError/RuntimeError on errors
         """
         if args is None or len(args) == 0:
-            raise ValueError("Usage: mode <execute|list|validate|upload> [arguments]")
+            raise ValueError("Usage: mode [execute <mode_name>|list|validate|upload <filename> <content>]")
         
         subcommand = args[0].lower()
         
@@ -172,20 +174,21 @@ class ModesHandler:
                 raise ValueError("Usage: mode execute <mode_name>")
             
             mode_name = args[1]
-            mode_filename = f"{mode_name}.mod"
+            mode_name_lower = mode_name.lower()
             
             # Check if mode exists
-            if mode_filename not in self.modes:
-                available = ", ".join([os.path.splitext(m)[0] for m in self.modes]) if self.modes else "none"
+            if mode_name_lower not in self.modes:
+                available = ", ".join(self.modes.keys()) if self.modes else "none"
                 raise ValueError(f"Mode '{mode_name}' not found. Available modes: {available}")
             
             # Execute the mode
+            mode_filename = self.modes[mode_name_lower]
             file_path = os.path.join(self.modesFolder, mode_filename)
             return self.execute_mode_file(file_path)
         
         elif subcommand == "list":
-            # List all available modes with metadata
-            return self.get_modes_list_with_metadata()
+            # List all available modes with metadata in human-readable format
+            return self._format_modes_list_human_readable()
         
         elif subcommand == "validate":
             # Re-validate all mode files
@@ -201,6 +204,45 @@ class ModesHandler:
         
         else:
             raise ValueError(f"Unknown mode subcommand: '{subcommand}'. Valid subcommands: execute, list, validate, upload")
+
+    def _format_modes_list_human_readable(self):
+        """Format modes list in human-readable format."""
+        if not self.modes:
+            return "No modes available."
+        
+        try:
+            modes_list = []
+            for mode_filename in self.modes.values():
+                file_path = os.path.join(self.modesFolder, mode_filename)
+                config = configparser.ConfigParser()
+                config.read(file_path)
+                
+                metadata = config['metadata']
+                commands_dict = dict(config['commands'])
+                
+                modes_list.append({
+                    "name": metadata.get('name', ''),
+                    "desc": metadata.get('desc', ''),
+                    "filename": mode_filename,
+                    "commands": commands_dict
+                })
+            
+            output_lines = [f"Available Modes ({len(modes_list)}):"]
+            output_lines.append("=" * 60)
+            
+            for mode in modes_list:
+                output_lines.append(f"\n[{mode['name']}]")
+                output_lines.append(f"  Description: {mode['desc']}")
+                output_lines.append(f"  File: {mode['filename']}")
+                output_lines.append(f"  Commands ({len(mode['commands'])})")
+                for key, command in mode['commands'].items():
+                    output_lines.append(f"    {key}: {command}")
+            
+            return "\n".join(output_lines)
+            
+        except Exception as e:
+            logger.error(f"Error formatting modes list: {e}")
+            return f"Error retrieving modes list: {str(e)}"
 
     def execute_mode_file(self, file_path):
         """Read and execute all commands from a mode file."""
@@ -236,11 +278,12 @@ class ModesHandler:
 
     def get_mode_details(self, mode_name):
         """Get detailed information about a specific mode including metadata and commands."""
-        mode_filename = f"{mode_name}.mod"
+        mode_name_lower = mode_name.lower()
         
-        if mode_filename not in self.modes:
+        if mode_name_lower not in self.modes:
             return {"error": f"Mode '{mode_name}' not found"}
         
+        mode_filename = self.modes[mode_name_lower]
         file_path = os.path.join(self.modesFolder, mode_filename)
         config = configparser.ConfigParser()
         
@@ -357,5 +400,5 @@ class ModesHandler:
         return {
             "modes_validated": self.modes_validated,
             "modes_count": len(self.modes),
-            "available_modes": [os.path.splitext(m)[0] for m in self.modes]
+            "available_modes": list(self.modes.keys())
         }

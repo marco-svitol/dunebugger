@@ -152,8 +152,8 @@ class SequencesHandler:
                     time_mark_seconds, command_body = self.extract_time_mark(command_line)
                     if not dry_run:
                         self.cycle_handler.cycle_waituntil(int(time_mark_seconds))
+                    
                     # check for stop signal
-                    #TODO: review sequence stop
                     if self.cycle_handler.cycle_stop_event.is_set():
                         self.cycle_handler.cycle_stop_event.clear()
                         logger.info("Sequence execution stopped by stop signal.")

@@ -22,10 +22,6 @@ async def main():
         # Start the state monitoring task
         await state_tracker.start_state_monitoring()
 
-        # Execute initialization commands if any
-        # TODO: manage with modes
-        #await initialization_handler.execute_initialization_commands()
-
         # Terminal listener (blocking) will keep the program running
         # If you want to run other tasks, create them before this line
         # The listener will detect if an interactive terminal is available

@@ -33,8 +33,6 @@ class MessagingQueueHandler:
 
         try:
             subject = (mqueue_message.subject).split(".")[2]
-            #TODO: too much verbosity
-            # logger.debug(f"Processing message: {str(message_json)[:20]}. Subject: {subject}. Reply to: {mqueue_message.reply}")
 
             if subject in ["dunebugger_set"]:
                 command = message_json["body"]
@@ -57,7 +55,7 @@ class MessagingQueueHandler:
                 command = message_json["body"]
                 if command in ["s"]:
                     gpio_status = self.command_interpreter.gpio_handler.get_gpio_status()
-                    await self.dispatch_message(gpio_status, "show_gpio_status", "terminal") #TODO , mqueue_message.reply)
+                    await self.dispatch_message(gpio_status, "show_gpio_status", "terminal") 
                 elif command in ["t"]:
                     settings_list = settings.get_settings()
                     random_actions_status = True if self.command_interpreter.sequence_handler.get_random_actions_state() else False
@@ -66,19 +64,16 @@ class MessagingQueueHandler:
                     settings_list.append ({'random_actions_status':random_actions_status})
                     settings_list.append ({'music_volume_status':music_volume_status})
                     settings_list.append ({'sfx_volume_status':sfx_volume_status})
-                    await self.dispatch_message(settings_list, "show_configuration", "terminal") #TODO , mqueue_message.reply)
+                    await self.dispatch_message(settings_list, "show_configuration", "terminal") 
                 elif command in ["get_commands_list"]:
                     commands_list = self.command_interpreter.get_commands_list()
-                    await self.dispatch_message(commands_list, "commands_list", "terminal") #TODO , mqueue_message.reply)
+                    await self.dispatch_message(commands_list, "commands_list", "terminal") 
                 else:
                     reply_message = self.command_interpreter.process_command(command)
-                    await self.dispatch_message(reply_message, "terminal_command_reply", "terminal") #TODO , mqueue_message.reply)
+                    await self.dispatch_message(reply_message, "terminal_command_reply", "terminal") 
             elif subject in ["schedule_command"]:
                 command = message_json["body"]
-                if command in ["get_commands_list"]:
-                    commands_list = self.command_interpreter.get_commands_list()
-                    await self.dispatch_message(commands_list, "commands_list", "scheduler")
-                elif command in ["get_modes_list"]:
+                if command in ["get_modes_list"]:
                     modes_list = self.command_interpreter.get_modes_list()
                     await self.dispatch_message(modes_list, "modes_list", "scheduler")
                 else:
