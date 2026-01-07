@@ -10,6 +10,7 @@ class CommandInterpreter:
         self.motor_handler = motor_handler
         self.audio_handler = audio_handler
         self.sequence_handler = None  # Will be set after SequencesHandler is created
+        self.modes_handler = None  # Will be set after ModesHandler is created
         self.mqueue_handler = None # Will be set after MessagingQueueHandler is created
         self.command_handlers = {}
         self.load_command_handlers()
@@ -73,4 +74,7 @@ class CommandInterpreter:
     
     def handle_sequence(self, args=None):
         return self.sequence_handler.execute_sequence_command(args)
+    
+    def handle_mode(self, args=None):
+        return self.modes_handler.execute_mode_command(args)
                 

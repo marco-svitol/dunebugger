@@ -71,9 +71,8 @@ class DunebuggerSettings:
                     return self.config.getboolean(section, option)
                 elif option in [
                     "sequenceFolder",
+                    "modesFolder",
                     "playFile",
-                    "standbyFile",
-                    "offFile",
                     "randomElementsFile",
                     "arduinoSerialPort",
                     "startButtonGPIOName",

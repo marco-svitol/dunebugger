@@ -1,0 +1,16 @@
+[metadata]
+name = Stand-by
+desc = Pronto per l'avvio, solo luci essenziali
+init_mode = True
+
+[commands]
+start_button = start_button enable
+random_actions = random_actions disable
+audio_music = audio music_volume 80
+audio_sfx = audio sfx_volume 80
+switch_lucestart = switch 12VLuceStart on
+switch_lunastelle = switch 220VLunaStelle off
+switch_alwayson = switch 220VAlwaysOn on
+switch_case1 = switch 220VCase1 off
+switch_fuochi = switch 220VFuochi on
+switch_acqua = switch 220VAcquaCornice off

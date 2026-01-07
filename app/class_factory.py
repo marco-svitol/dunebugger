@@ -2,6 +2,7 @@ from command_interpreter import CommandInterpreter
 from terminal_interpreter import TerminalInterpreter
 from state_tracker import state_tracker
 from sequence import SequencesHandler
+from modes_handler import ModesHandler
 from dunebugger_settings import settings
 from mqueue import NATSComm, NullNATSComm
 from mqueue_handler import MessagingQueueHandler
@@ -20,6 +21,7 @@ dmx_handler = DMXController(settings.dmxSerialPort, settings.dmxBaudRate)
 command_interpreter = CommandInterpreter(mygpio_handler, dmx_handler, motor_handler, audio_handler, cycle_handler)
 random_actions_handler = RandomActions(mygpio_handler, state_tracker)
 sequence_handler = SequencesHandler(random_actions_handler, state_tracker, command_interpreter, cycle_handler)
+modes_handler = ModesHandler(state_tracker, command_interpreter)
 terminal_interpreter = TerminalInterpreter(command_interpreter)
 mqueue_handler = MessagingQueueHandler(sequence_handler, mygpio_handler, command_interpreter, cycle_handler)
 
@@ -36,6 +38,7 @@ else:
     mqueue = NullNATSComm()
     
 command_interpreter.sequence_handler = sequence_handler
+command_interpreter.modes_handler = modes_handler
 command_interpreter.mqueue_handler = mqueue_handler
 state_tracker.mqueue_handler = mqueue_handler
 cycle_handler.sequence_handler = sequence_handler

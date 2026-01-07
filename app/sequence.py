@@ -11,8 +11,6 @@ class SequencesHandler:
     def __init__(self, random_actions_handler, state_tracker, command_interpreter, cycle_handler):
         self.sequenceFolder = path.join(path.dirname(path.abspath(__file__)), f"{settings.sequenceFolder}")
         self.play_file = settings.playFile
-        self.standby_file = settings.standbyFile
-        self.off_file = settings.offFile
         self.sequences = []
         self.sequences_validated = False
         self.command_interpreter = command_interpreter
@@ -26,7 +24,6 @@ class SequencesHandler:
     def initialize(self):
         try:
             self.set_sequences_validated(self.validate_all_sequence_files(self.sequenceFolder))
-            self.sequence_start(self.standby_file)
         except Exception as e:
             logger.error(f"Initial sequence validation error: {str(e)}")
 
@@ -101,8 +98,6 @@ class SequencesHandler:
         """Check if all required sequence files exist in self.sequences."""
         required_files = [
             self.play_file,
-            self.standby_file,
-            self.off_file,
         ]
         
         missing_files = []
@@ -285,10 +280,6 @@ class SequencesHandler:
     def get_sequence(self, sequence_name):
         if sequence_name == "play":
             file_path = os.path.join(self.sequenceFolder, self.play_file)
-        elif sequence_name == "standby":
-            file_path = os.path.join(self.sequenceFolder, self.standby_file)
-        elif sequence_name == "off":
-            file_path = os.path.join(self.sequenceFolder, self.off_file)
         else:
             return {"error": "Unknown sequence name"}
 
