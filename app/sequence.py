@@ -15,7 +15,6 @@ class SequencesHandler:
         self.sequences_validated = False
         self.command_interpreter = command_interpreter
         self.state_tracker = state_tracker
-        self.start_button_enabled = False
         self.random_actions_handler = random_actions_handler
         self.cycle_handler = cycle_handler
         
@@ -267,7 +266,7 @@ class SequencesHandler:
         self.disable_start_button()
 
     def get_start_button_state(self):
-        return self.start_button_enabled
+        return self.cycle_handler.start_button_enabled
 
     def get_state(self):
         return {

@@ -21,6 +21,7 @@ class CycleHandler():
         self.GPIO = GPIO
         self.sequences_validated = False
         self.sequence_handler = None  # Will be set after SequencesHandler is created
+        self.start_button_enabled = False
         
     def _update_cycle_time(self):
         while not self.cycle_time_thread_stop_event.is_set():

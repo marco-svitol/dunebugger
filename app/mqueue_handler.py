@@ -51,6 +51,11 @@ class MessagingQueueHandler:
                 await self.send_sequence_state()
             elif subject in ["heartbeat"]:
                 await self.dispatch_message("alive", "heartbeat", "remote")
+            elif subject in ["frontend_command"]:
+                command = message_json["body"]
+                if command in ["get_modes_list"]:
+                    modes_list = self.command_interpreter.get_modes_list()
+                    await self.dispatch_message(modes_list, "modes_list", "remote")                 
             elif subject in ["terminal_command"]:
                 command = message_json["body"]
                 if command in ["s"]:
