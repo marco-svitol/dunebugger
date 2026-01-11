@@ -14,6 +14,7 @@ class GPIOHandler:
     def __init__(self, state_tracker):
         # Load GPIO configuration from gpio_config.conf
         self.GPIOMap = {}
+        self.logicalMap = {}
         self.channelsSetup = {}
         self.channels = {}
         self.logicalChannels = {}
@@ -79,9 +80,9 @@ class GPIOHandler:
 
             # Load GPIOMap
             try:
-                for GPIOMap, values in config.items("GPIOMaps"):
-                    logicalChannel, index = self.__extract_variable_info(values)
-                    self.GPIOMap[GPIOMap] = self.logicalChannels[index]
+                for label, logicLabel in config.items("GPIOMaps"):
+                    self.logicalMap[label] = logicLabel
+                    self.GPIOMap[label] = self.logicalChannels[logicLabel]
             except (configparser.Error, ValueError) as e:
                 logger.error(f"Error reading LogicalChannels configuration: {e}")
                 # Handle the error as needed
@@ -162,6 +163,18 @@ class GPIOHandler:
         except Exception:
             return None
 
+    def get_logic_status(self):
+        # Iterate over logicalMap to get status
+        logic_status = {}
+        for label, logicLabel in self.logicalMap.items():
+            gpio_num = self.GPIOMap[label]
+            try:
+                state = "HIGH" if self.GPIO.input(gpio_num) == 1 else "LOW"
+            except Exception:
+                state = "ERROR"
+            logic_status[logicLabel] = {"pin": gpio_num, "label": label, "state": state}
+        return logic_status
+
     def get_gpio_status(self):
         gpios = range(0, 28)  # Assuming BCM numbering scheme and 27 available GPIO pins
         gpio_status = []
@@ -190,7 +203,7 @@ class GPIOHandler:
                     state = "ERROR"
                     switchstate = "ERROR"
 
-            gpio_status.append({"pin": gpio, "label": label, "mode": mode, "state": state, "switch": switchstate})
+            gpio_status.append({"logic": self.logicalMap.get(label, "_not_found_"), "pin": gpio, "label": label, "mode": mode, "state": state, "switch": switchstate})
 
         return gpio_status
 

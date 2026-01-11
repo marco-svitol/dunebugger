@@ -119,9 +119,11 @@ class TerminalInterpreter:
     def handle_show_gpio_status(self):
         gpio_status = self.command_interpreter.gpio_handler.get_gpio_status()
         color_red = COLORS["RED"]
-        print(f"{color_red}Current GPIO Status:")
+        print(f"{color_red}{'Pin':<5} {'Logic':<20} {'Label':<20} {'Mode':<8} {'State':<8} {'Switch':<8}")
+        print(f"{color_red}{'-' * 72}")
         for gpio_info in gpio_status:
             gpio = gpio_info["pin"]
+            logic = gpio_info["logic"]
             label = gpio_info["label"]
             mode = gpio_info["mode"]
             state = gpio_info["state"]
@@ -143,14 +145,13 @@ class TerminalInterpreter:
             if state == "ERROR":
                 color = COLORS["RED"]
                 switchcolor = color
-
+            
             print(
-                f"{color}Pin {gpio} label: {label} \
-mode: {mode}, state: {state}, switch: {COLORS['RESET']}{switchcolor}{switchstate}{COLORS['RESET']}"
+                f"{color}{gpio:<5} {logic:<20} {label:<20} {mode:<8} "
+                f"{state:<8} {switchcolor}{switchstate:<8}{COLORS['RESET']}"
             )
 
-    def handle_show_configuration(self):
-
+    def handle_show_configuration():
         settings_list = settings.get_settings()
         # Print DunebuggerSettings configuration
         color_blue = COLORS["BLUE"]
