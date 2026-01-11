@@ -85,6 +85,11 @@ class MessagingQueueHandler:
                     # Handle other schedule commands through command interpreter
                     reply_message = self.command_interpreter.process_command(command)
                     await self.dispatch_message(reply_message, "schedule_command_reply", "scheduler")
+            elif subject in ["analytics_command"]:
+                command = message_json["body"]
+                if command in ["get_metrics"]:
+                    metrics = self.command_interpreter.analytics_handler.get_metrics()
+                    await self.dispatch_message(metrics, "analytics_metrics", "remote")
             else:
                 logger.warning(f"Unknown subject: {subject}. Ignoring message.")
         except KeyError as key_error:
