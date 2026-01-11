@@ -185,6 +185,46 @@ def execute_logger_command(command_parts, mqueue_handler):
         else:
             raise ValueError("Invalid argument. Usage: logger [queue <enable|disable>] [<info|debug>]") 
 
+def get_log_file_path():
+    """
+    Get the log file path from the logging configuration.
+    
+    Returns:
+        Absolute path to the log file, or None if not found
+    """
+    import re
+    
+    if not path.exists(logConfig):
+        return None
+    
+    try:
+        with open(logConfig, 'r') as f:
+            content = f.read()
+            
+        # Check if handler_fileHandler section exists
+        if 'handler_fileHandler' not in content:
+            return None
+            
+        # Look for args= line after handler_fileHandler
+        for line in content.splitlines():
+            if line.strip().startswith('args='):
+                # Extract filename from args=('dunebugger.log',)
+                match = re.search(r"args=\('([^']+)'", line)
+                if match:
+                    log_filename = match.group(1)
+                    # If it's a relative path, make it absolute
+                    if not path.isabs(log_filename):
+                        # Assume it's relative to the project root (parent of app/)
+                        app_dir = path.dirname(path.abspath(__file__))
+                        project_root = path.dirname(app_dir)
+                        log_filename = path.join(project_root, log_filename)
+                    return log_filename
+    except Exception:
+        return None
+    
+    return None
+
+
 # Get the console handler and set the custom formatter
 console_handler = logger.handlers[0]
 console_handler.setFormatter(CustomFormatter("%(levelname)s - %(asctime)s : %(message)s", "%d/%m/%Y %H:%M:%S"))

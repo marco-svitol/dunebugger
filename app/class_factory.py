@@ -12,13 +12,17 @@ from motor import MotorController
 from dmx_handler import DMXController
 from random_actions_handler import RandomActions
 from cycle_handler import CycleHandler
+from analytics import LogAnalytics
+from dunebugger_logging import get_log_file_path
 
 mygpio_handler = GPIOHandler(state_tracker)
 cycle_handler = CycleHandler(mygpio_handler, state_tracker, GPIO)
 audio_handler = AudioPlayer()
 motor_handler = MotorController(mygpio_handler, GPIO)
 dmx_handler = DMXController(settings.dmxSerialPort, settings.dmxBaudRate)
-command_interpreter = CommandInterpreter(mygpio_handler, dmx_handler, motor_handler, audio_handler, cycle_handler)
+analytics_handler = LogAnalytics("dunebugger.service", get_log_file_path())
+
+command_interpreter = CommandInterpreter(mygpio_handler, dmx_handler, motor_handler, audio_handler, cycle_handler, analytics_handler)
 random_actions_handler = RandomActions(mygpio_handler, state_tracker)
 sequence_handler = SequencesHandler(random_actions_handler, state_tracker, command_interpreter, cycle_handler)
 modes_handler = ModesHandler(state_tracker, command_interpreter)

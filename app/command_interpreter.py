@@ -3,7 +3,7 @@ from dunebugger_logging import execute_logger_command
 
 
 class CommandInterpreter:
-    def __init__(self, mygpio_handler, dmx_handler, motor_handler, audio_handler, cycle_handler):
+    def __init__(self, mygpio_handler, dmx_handler, motor_handler, audio_handler, cycle_handler, analytics_handler):
         self.gpio_handler = mygpio_handler
         self.cycle_handler = cycle_handler
         self.dmx_handler = dmx_handler
@@ -13,6 +13,7 @@ class CommandInterpreter:
         self.modes_handler = None  # Will be set after ModesHandler is created
         self.mqueue_handler = None # Will be set after MessagingQueueHandler is created
         self.command_handlers = {}
+        self.analytics_handler = analytics_handler  # Will be set after LogAnalytics is created
         self.load_command_handlers()
 
     def process_command(self, command, dry_run=None):
@@ -83,4 +84,6 @@ class CommandInterpreter:
     
     def handle_mode(self, args=None):
         return self.modes_handler.execute_mode_command(args)
-                
+    
+    def handle_metrics(self, args=None):
+        return self.analytics_handler.execute_metrics_command(args)
