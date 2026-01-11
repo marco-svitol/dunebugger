@@ -13,7 +13,7 @@ class TerminalInterpreter:
     def __init__(self, command_interpreter):
 
         history_path = "~/.python_history"
-        self.enableHistory(history_path)
+        self.enable_history(history_path)
         atexit.register(self.save_history, history_path)
         self.command_interpreter = command_interpreter
         self.running = True
@@ -104,8 +104,8 @@ class TerminalInterpreter:
                 self.running = False
                 break
 
-    def enableHistory(self, historyPath):
-        history_file = os.path.expanduser(historyPath)
+    def enable_history(self, history_path):
+        history_file = os.path.expanduser(history_path)
         if os.path.exists(history_file):
             readline.read_history_file(history_file)
 
@@ -127,10 +127,10 @@ class TerminalInterpreter:
             label = gpio_info["label"]
             mode = gpio_info["mode"]
             state = gpio_info["state"]
-            switchstate = gpio_info["switch"]
+            switch_state = gpio_info["switch"]
 
             color = COLORS["RESET"]
-            switchcolor = COLORS["RESET"]
+            switch_color = COLORS["RESET"]
 
             if mode == "INPUT":
                 color = COLORS["BLUE"]
@@ -138,20 +138,20 @@ class TerminalInterpreter:
                 color = COLORS["RESET"]
 
             if state == "HIGH":
-                switchcolor = COLORS["MAGENTA"]
+                switch_color = COLORS["MAGENTA"]
             elif state == "LOW":
-                switchcolor = COLORS["GREEN"]
+                switch_color = COLORS["GREEN"]
 
             if state == "ERROR":
                 color = COLORS["RED"]
-                switchcolor = color
+                switch_color = color
             
             print(
                 f"{color}{gpio:<5} {logic:<20} {label:<20} {mode:<8} "
-                f"{state:<8} {switchcolor}{switchstate:<8}{COLORS['RESET']}"
+                f"{state:<8} {switch_color}{switch_state:<8}{COLORS['RESET']}"
             )
 
-    def handle_show_configuration():
+    def handle_show_configuration(self):
         settings_list = settings.get_settings()
         # Print DunebuggerSettings configuration
         color_blue = COLORS["BLUE"]

@@ -9,7 +9,7 @@ from random_actions_handler import RandomActions
 class SequencesHandler:
 
     def __init__(self, random_actions_handler, state_tracker, command_interpreter, cycle_handler):
-        self.sequenceFolder = path.join(path.dirname(path.abspath(__file__)), f"{settings.sequenceFolder}")
+        self.sequence_folder = path.join(path.dirname(path.abspath(__file__)), f"{settings.sequenceFolder}")
         self.play_file = settings.playFile
         self.sequences = []
         self.sequences_validated = False
@@ -22,15 +22,15 @@ class SequencesHandler:
 
     def initialize(self):
         try:
-            self.set_sequences_validated(self.validate_all_sequence_files(self.sequenceFolder))
+            self.set_sequences_validated(self.validate_all_sequence_files(self.sequence_folder))
         except Exception as e:
             logger.error(f"Initial sequence validation error: {str(e)}")
 
     def revalidate_sequences(self):
         """Re-validate all sequence files. Useful after configuration changes."""
         logger.info("Re-validating sequence files...")
-        self.set_sequences_validated(self.validate_all_sequence_files(self.sequenceFolder))
-        return f"All sequence files validated successfully in directory: {self.sequenceFolder}"
+        self.set_sequences_validated(self.validate_all_sequence_files(self.sequence_folder))
+        return f"All sequence files validated successfully in directory: {self.sequence_folder}"
     
     def validate_timestamps_order(self, file_path):
         try:

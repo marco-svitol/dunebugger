@@ -3,7 +3,7 @@ import subprocess
 from dunebugger_logging import logger
 
 
-def ArduinoSend(command):
+def arduino_send(command):
     global Arduino
     ccommand = command.replace("\n", "")
     if Arduino is not False:
