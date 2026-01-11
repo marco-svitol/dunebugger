@@ -15,7 +15,7 @@ class CycleHandler():
         self.cycle_time_thread = None
         self.cycle_time_thread_stop_event = threading.Event()
         self.cycle_offset = 0
-        self.mQueueCyclePlayingResolutionSecs = settings.mQueueCyclePlayingResolutionSecs
+        self.mqueue_cycle_playing_resolution_secs = settings.mQueueCyclePlayingResolutionSecs
         self.mygpio_handler = mygpio_handler
         self.state_tracker = state_tracker
         self.GPIO = GPIO
@@ -25,8 +25,8 @@ class CycleHandler():
         
     def _update_cycle_time(self):
         while not self.cycle_time_thread_stop_event.is_set():
-            time.sleep(self.mQueueCyclePlayingResolutionSecs)
-            self.cycle_playing_time += self.mQueueCyclePlayingResolutionSecs
+            time.sleep(self.mqueue_cycle_playing_resolution_secs)
+            self.cycle_playing_time += self.mqueue_cycle_playing_resolution_secs
             self.state_tracker.notify_update("playing_time")
             if random.random() < 0.01:
                 logger.debug(f"Cycle playing time: {self.cycle_playing_time} seconds")
@@ -120,11 +120,11 @@ class CycleHandler():
                     raise ValueError("Invalid argument. Usage: start_button <enable|disable> : enable/disable start button handling")
 
     def enable_start_button(self):
-        self.mygpio_handler.addEventDetect(settings.startButtonGPIOName, lambda channel: self.cycle_trigger(channel), bouncetime=int(settings.startButtonBouncetimeMillis))
+        self.mygpio_handler.add_event_detect(settings.startButtonGPIOName, lambda channel: self.cycle_trigger(channel), bouncetime=int(settings.startButtonBouncetimeMillis))
         self.start_button_enabled = True
         self.state_tracker.notify_update("start_button")
 
     def disable_start_button(self):
-        self.mygpio_handler.removeEventDetect(settings.startButtonGPIOName)
+        self.mygpio_handler.remove_event_detect(settings.startButtonGPIOName)
         self.start_button_enabled = False
         self.state_tracker.notify_update("start_button")

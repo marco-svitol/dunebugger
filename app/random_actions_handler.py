@@ -10,7 +10,7 @@ class RandomActions:
     """Handles random GPIO actions at random intervals."""
     
     def __init__(self, mygpio_handler, state_tracker):
-        self.sequenceFolder = path.join(path.dirname(path.abspath(__file__)), f"{settings.sequenceFolder}")
+        self.sequence_folder = path.join(path.dirname(path.abspath(__file__)), f"{settings.sequenceFolder}")
         self.random_elements_file = settings.randomElementsFile
         self.random_elements = []
         self.mygpio_handler = mygpio_handler
@@ -21,12 +21,12 @@ class RandomActions:
     def validate_random_elements_file(self):
         """Validate that all elements in the random elements file exist in GPIO maps."""
         try:
-            file_path = path.join(self.sequenceFolder, self.random_elements_file)
+            file_path = path.join(self.sequence_folder, self.random_elements_file)
             with open(file_path) as file:
                 raw_elements = [line.strip() for line in file if line.strip()]
             
             # Get available GPIO maps
-            available_gpio_maps = set(self.mygpio_handler.GPIOMap.keys())
+            available_gpio_maps = set(self.mygpio_handler.gpio_map.keys())
             invalid_elements = []
             
             for element in raw_elements:

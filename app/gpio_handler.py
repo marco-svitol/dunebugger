@@ -13,11 +13,11 @@ else:
 class GPIOHandler:
     def __init__(self, state_tracker):
         # Load GPIO configuration from gpio_config.conf
-        self.GPIOMap = {}
-        self.logicalMap = {}
-        self.channelsSetup = {}
+        self.gpio_map = {}
+        self.logical_map = {}
+        self.channels_setup = {}
         self.channels = {}
-        self.logicalChannels = {}
+        self.logical_channels = {}
         self.load_gpio_configuration()
         self.GPIO = GPIO
         self.state_tracker = state_tracker
@@ -25,7 +25,7 @@ class GPIOHandler:
         GPIO.setwarnings(False)
         GPIO.setmode(GPIO.BCM)
 
-        for channel, config in self.channelsSetup.items():
+        for channel, config in self.channels_setup.items():
             pin_setup, initial_state = config
             if pin_setup == "OUT" and (initial_state == "HIGH" or initial_state == "LOW"):
                 GPIO.setup(
@@ -44,60 +44,60 @@ class GPIOHandler:
         # Set optionxform to lambda x: x to preserve case
         config.optionxform = lambda x: x
         try:
-            gpioConfig = path.join(path.dirname(path.abspath(__file__)), "config/gpio.conf")
-            config.read(gpioConfig)
+            gpio_config = path.join(path.dirname(path.abspath(__file__)), "config/gpio.conf")
+            config.read(gpio_config)
 
             # Load Channels Setup
             try:
-                for channelSetup, values in config.items("ChannelsSetup"):
-                    channelSetupValues = values.split(", ")
-                    self.channelsSetup[channelSetup] = channelSetupValues
+                for channel_setup, values in config.items("ChannelsSetup"):
+                    channel_setup_values = values.split(", ")
+                    self.channels_setup[channel_setup] = channel_setup_values
             except (configparser.Error, ValueError) as e:
                 logger.error(f"Error reading channel setup configuration: {e}")
                 # Handle the error as needed
 
             # Load Channels
             try:
-                for physicalChannel, values in config.items("Channels"):
+                for physical_channel, values in config.items("Channels"):
                     # Convert the values to tuple if there is more than one element
                     channel_values = literal_eval(values)
                     if isinstance(channel_values, tuple):
-                        self.channels[physicalChannel] = channel_values
+                        self.channels[physical_channel] = channel_values
                     else:
-                        self.channels[physicalChannel] = (channel_values,)
+                        self.channels[physical_channel] = (channel_values,)
             except (configparser.Error, ValueError) as e:
                 logger.error(f"Error reading channel configuration: {e}")
                 # Handle the error as needed
 
             # Load GPIOMapPhysical
             try:
-                for logicalChannel, values in config.items("LogicalChannels"):
+                for logical_channel, values in config.items("LogicalChannels"):
                     channel, index = self.__extract_variable_info(values)
-                    self.logicalChannels[logicalChannel] = self.channels[channel][index]
+                    self.logical_channels[logical_channel] = self.channels[channel][index]
             except (configparser.Error, ValueError) as e:
                 logger.error(f"Error reading LogicalChannels configuration: {e}")
                 # Handle the error as needed
 
             # Load GPIOMap
             try:
-                for label, logicLabel in config.items("GPIOMaps"):
-                    self.logicalMap[label] = logicLabel
-                    self.GPIOMap[label] = self.logicalChannels[logicLabel]
+                for label, logic_label in config.items("GPIOMaps"):
+                    self.logical_map[label] = logic_label
+                    self.gpio_map[label] = self.logical_channels[logic_label]
             except (configparser.Error, ValueError) as e:
                 logger.error(f"Error reading LogicalChannels configuration: {e}")
                 # Handle the error as needed
 
             # Check if StartButton entry exists in GPIOMap
-            if settings.startButtonGPIOName not in self.GPIOMap:
+            if settings.startButtonGPIOName not in self.gpio_map:
                 raise ValueError(f"GPIOMap must have an entry for {settings.startButtonGPIOName}")
 
         except (configparser.Error, ValueError) as e:
             logger.error(f"Error reading GPIO configuration: {e}")
             # You might want to handle the error in an appropriate way, e.g., logging or quitting the program
 
-    def getGPIOLabel(self, GPIONum):
-        for key, value in self.GPIOMap.items():
-            if value == GPIONum:
+    def get_gpio_label(self, gpio_num):
+        for key, value in self.gpio_map.items():
+            if value == gpio_num:
                 return key
             # Return None if the value is not found
         return None
@@ -126,16 +126,16 @@ class GPIOHandler:
         else:
             return None, None
 
-    def addEventDetect(self, gpioName, callback, bouncetime=0):
-        gpio = self.GPIOMap[gpioName]
+    def add_event_detect(self, gpio_name, callback, bouncetime=0):
+        gpio = self.gpio_map[gpio_name]
         if bouncetime > 0:
             GPIO.add_event_detect(gpio, GPIO.RISING, callback=callback, bouncetime=bouncetime)
         else:
             GPIO.add_event_detect(gpio, GPIO.RISING, callback=callback)
 
-    def removeEventDetect(self, gpioName):
-        gpio = self.GPIOMap[gpioName]
-        logger.debug(f"Removing interrupt on {self.getGPIOLabel(gpio)}")
+    def remove_event_detect(self, gpio_name):
+        gpio = self.gpio_map[gpio_name]
+        logger.debug(f"Removing interrupt on {self.get_gpio_label(gpio)}")
         GPIO.remove_event_detect(gpio)
 
     def clean_gpios(self):
@@ -144,16 +144,16 @@ class GPIOHandler:
         self.state_tracker.notify_update("gpios")
 
     def set_gpio_state(self, gpio_num, value):
-        gpiomode = self.__gpio_get_mode(gpio_num)
-        if gpiomode == self.GPIO.OUT or (not settings.ON_RASPBERRY_PI):
+        gpio_mode = self.__gpio_get_mode(gpio_num)
+        if gpio_mode == self.GPIO.OUT or (not settings.ON_RASPBERRY_PI):
             GPIO.output(gpio_num, value)
             self.state_tracker.notify_update("gpios")
-        elif gpiomode == self.GPIO.IN and settings.ON_RASPBERRY_PI:
+        elif gpio_mode == self.GPIO.IN and settings.ON_RASPBERRY_PI:
             raise ValueError(f"Can't set GPIO #{gpio_num}: it's an input GPIO")
 
     def __gpiomap_get_gpio(self, gpiomap):
         try:
-            return self.GPIOMap[gpiomap]
+            return self.gpio_map[gpiomap]
         except Exception:
             return None
 
@@ -166,13 +166,13 @@ class GPIOHandler:
     def get_logic_status(self):
         # Iterate over logicalMap to get status
         logic_status = {}
-        for label, logicLabel in self.logicalMap.items():
-            gpio_num = self.GPIOMap[label]
+        for label, logic_label in self.logical_map.items():
+            gpio_num = self.gpio_map[label]
             try:
                 state = "HIGH" if self.GPIO.input(gpio_num) == 1 else "LOW"
             except Exception:
                 state = "ERROR"
-            logic_status[logicLabel] = {"pin": gpio_num, "label": label, "state": state}
+            logic_status[logic_label] = {"pin": gpio_num, "label": label, "state": state}
         return logic_status
 
     def get_gpio_status(self):
@@ -182,8 +182,8 @@ class GPIOHandler:
         for gpio in gpios:
             mode = "UNKNOWN"
             state = "UNKNOWN"
-            switchstate = "UNKNOWN"
-            label = self.getGPIOLabel(gpio) if self.getGPIOLabel(gpio) is not None else "_not_found_"
+            switch_state = "UNKNOWN"
+            label = self.get_gpio_label(gpio) if self.get_gpio_label(gpio) is not None else "_not_found_"
 
             # Determine mode
             try:
@@ -198,12 +198,12 @@ class GPIOHandler:
             if mode == "INPUT" or mode == "OUTPUT":
                 try:
                     state = "HIGH" if self.GPIO.input(gpio) == 1 else "LOW"
-                    switchstate = "OFF" if self.GPIO.input(gpio) == 1 else "ON"
+                    switch_state = "OFF" if self.GPIO.input(gpio) == 1 else "ON"
                 except Exception:
                     state = "ERROR"
-                    switchstate = "ERROR"
+                    switch_state = "ERROR"
 
-            gpio_status.append({"logic": self.logicalMap.get(label, "_not_found_"), "pin": gpio, "label": label, "mode": mode, "state": state, "switch": switchstate})
+            gpio_status.append({"logic": self.logical_map.get(label, "_not_found_"), "pin": gpio, "label": label, "mode": mode, "state": state, "switch": switch_state})
 
         return gpio_status
 
@@ -222,8 +222,8 @@ class GPIOHandler:
         # Check if gpio_identifier is a valid integer GPIO number
         try:
             gpio_num = int(gpio_identifier)
-            # Check if this GPIO number exists in the GPIOMap values
-            if gpio_num not in self.GPIOMap.values():
+            # Check if this GPIO number exists in the gpio_map values
+            if gpio_num not in self.gpio_map.values():
                 raise ValueError(f"Invalid GPIO number: {gpio_num}")
         except ValueError:
             # It's a string, so use __gpiomap_get_gpio to convert to GPIO number

@@ -12,12 +12,12 @@ class MotorController:
         self.GPIO = GPIO
         if settings.motorEnabled:
             self.init_pwm()
-        # self.pwm_motor1 = PWMHandler(GPIO, mygpio_handler.GPIOMap["Motor1PWM"], settings.motor1Freq)
-        # self.pwm_motor2 = PWMHandler(GPIO, mygpio_handler.GPIOMap["Motor2PWM"], settings.motor2Freq)
+        # self.pwm_motor1 = PWMHandler(GPIO, mygpio_handler.gpio_map["Motor1PWM"], settings.motor1Freq)
+        # self.pwm_motor2 = PWMHandler(GPIO, mygpio_handler.gpio_map["Motor2PWM"], settings.motor2Freq)
 
     def init_pwm(self):
-        self.pwm_motor1 = PWMHandler(self.GPIO, self.mygpio_handler.GPIOMap["Motor1PWM"], settings.motor1Freq)
-        self.pwm_motor2 = PWMHandler(self.GPIO, self.mygpio_handler.GPIOMap["Motor2PWM"], settings.motor2Freq)
+        self.pwm_motor1 = PWMHandler(self.GPIO, self.mygpio_handler.gpio_map["Motor1PWM"], settings.motor1Freq)
+        self.pwm_motor2 = PWMHandler(self.GPIO, self.mygpio_handler.gpio_map["Motor2PWM"], settings.motor2Freq)
         logger.info("Motor PWM initialized")
 
     def validate_motor_command_args(self, args):
@@ -61,7 +61,7 @@ class MotorController:
             return True
         else:
             if init_motor:
-                self.sequence_handler.motor_handler.initMotorLimits()
+                self.sequence_handler.motor_handler.init_motor_limits()
                 return "Initializing motor limits"
             else:
                 self.start(motor_number, rotation, speed)
@@ -71,16 +71,16 @@ class MotorController:
         logger.debug(f"motor {motor_number} start with rotation {rotation} and speed {speed}")
 
         # Crash prevention
-        if (rotation == "cw" and self.mygpio_handler.GPIOMap[f"In_Motor{motor_number}LimitCW"] == self.GPIO.HIGH) or (rotation == "ccw" and self.mygpio_handler.GPIOMap[f"In_Motor{motor_number}LimitCCW"] == self.GPIO.HIGH):
+        if (rotation == "cw" and self.mygpio_handler.gpio_map[f"In_Motor{motor_number}LimitCW"] == self.GPIO.HIGH) or (rotation == "ccw" and self.mygpio_handler.gpio_map[f"In_Motor{motor_number}LimitCCW"] == self.GPIO.HIGH):
             logger.warning("Start command aborted to prevent motor crash")
             return
 
         if rotation == "cw":
-            self.GPIO.output(self.mygpio_handler.GPIOMap[f"Motor{motor_number}In1"], self.GPIO.HIGH)
-            self.GPIO.output(self.mygpio_handler.GPIOMap[f"Motor{motor_number}In2"], self.GPIO.LOW)
+            self.GPIO.output(self.mygpio_handler.gpio_map[f"Motor{motor_number}In1"], self.GPIO.HIGH)
+            self.GPIO.output(self.mygpio_handler.gpio_map[f"Motor{motor_number}In2"], self.GPIO.LOW)
         else:
-            self.GPIO.output(self.mygpio_handler.GPIOMap[f"Motor{motor_number}In1"], self.GPIO.LOW)
-            self.GPIO.output(self.mygpio_handler.GPIOMap[f"Motor{motor_number}In2"], self.GPIO.HIGH)
+            self.GPIO.output(self.mygpio_handler.gpio_map[f"Motor{motor_number}In1"], self.GPIO.LOW)
+            self.GPIO.output(self.mygpio_handler.gpio_map[f"Motor{motor_number}In2"], self.GPIO.HIGH)
 
         if motor_number == 1:
             self.pwm_motor1.set_duty_cycle(speed)
@@ -89,21 +89,21 @@ class MotorController:
 
     def stop(self, motor_number):
         logger.debug(f"motor {motor_number} stopping")
-        self.GPIO.output(self.mygpio_handler.GPIOMap[f"Motor{motor_number}In1"], self.GPIO.LOW)
-        self.GPIO.output(self.mygpio_handler.GPIOMap[f"Motor{motor_number}In2"], self.GPIO.LOW)
-        self.GPIO.output(self.mygpio_handler.GPIOMap[f"Motor{motor_number}PWM"], self.GPIO.LOW)
+        self.GPIO.output(self.mygpio_handler.gpio_map[f"Motor{motor_number}In1"], self.GPIO.LOW)
+        self.GPIO.output(self.mygpio_handler.gpio_map[f"Motor{motor_number}In2"], self.GPIO.LOW)
+        self.GPIO.output(self.mygpio_handler.gpio_map[f"Motor{motor_number}PWM"], self.GPIO.LOW)
 
-    def limitTouch(self, channel, event=None):
+    def limit_touch(self, channel, event=None):
         time.sleep(settings.bouncingTreshold + 0.23)  # avoid catching a bouncing
         if self.GPIO.input(channel) != 1:
             return
 
-        GPIOLabel = self.mygpio_handler.getGPIOLabel(channel)
-        logger.debug(f"Limit touched on channel {GPIOLabel}")
-        motor_number = 1 if channel in (self.mygpio_handler.GPIOMap["In_Motor1LimitCCW"], self.mygpio_handler.GPIOMap["In_Motor1LimitCW"]) else 2
+        gpio_label = self.mygpio_handler.get_gpio_label(channel)
+        logger.debug(f"Limit touched on channel {gpio_label}")
+        motor_number = 1 if channel in (self.mygpio_handler.gpio_map["In_Motor1LimitCCW"], self.mygpio_handler.gpio_map["In_Motor1LimitCW"]) else 2
         self.stop(motor_number)
 
-        if channel == self.mygpio_handler.GPIOMap[f"In_Motor{motor_number}LimitCCW"]:
+        if channel == self.mygpio_handler.gpio_map[f"In_Motor{motor_number}LimitCCW"]:
             time.sleep(0.2)
             self.start(motor_number, "cw", speed=100)
         elif event is not None:
@@ -115,13 +115,13 @@ class MotorController:
 
     def reset(self, motor_number):
         pos = ""
-        if self.GPIO.input(self.mygpio_handler.GPIOMap[f"In_Motor{motor_number}LimitCW"]) == self.GPIO.HIGH:
+        if self.GPIO.input(self.mygpio_handler.gpio_map[f"In_Motor{motor_number}LimitCW"]) == self.GPIO.HIGH:
             pos = "CW limit touch"
             logger.debug(f"Motor {motor_number} position is {pos}. Short CCW and then CW.")
             self.start(motor_number, "ccw", 100)
             time.sleep(0.5)
             return
-        elif self.GPIO.input(self.mygpio_handler.GPIOMap[f"In_Motor{motor_number}LimitCCW"]) == self.GPIO.HIGH:
+        elif self.GPIO.input(self.mygpio_handler.gpio_map[f"In_Motor{motor_number}LimitCCW"]) == self.GPIO.HIGH:
             pos = "CCW limit touch"
         else:
             pos = "floating"
@@ -135,23 +135,23 @@ class MotorController:
         self.mygpio_handler.removeEventDetect("In_Motor2LimitCCW")
         self.mygpio_handler.removeEventDetect("In_Motor2LimitCW")
 
-    def initMotorLimits(self):
+    def init_motor_limits(self):
         atexit.register(self.motor_clean)
         motor1_reset_event = threading.Event()
 
         def motor1_callback_with_params(channel):
-            self.limitTouch(channel, motor1_reset_event)
+            self.limit_touch(channel, motor1_reset_event)
 
-        self.mygpio_handler.addEventDetect("In_Motor1LimitCCW", self.limitTouch, 5)
-        self.mygpio_handler.addEventDetect("In_Motor1LimitCW", motor1_callback_with_params, 5)
+        self.mygpio_handler.add_event_detect("In_Motor1LimitCCW", self.limit_touch, 5)
+        self.mygpio_handler.add_event_detect("In_Motor1LimitCW", motor1_callback_with_params, 5)
 
         motor2_reset_event = threading.Event()
 
         def motor2_callback_with_params(channel):
-            self.limitTouch(channel, motor2_reset_event)
+            self.limit_touch(channel, motor2_reset_event)
 
-        self.mygpio_handler.addEventDetect("In_Motor2LimitCCW", self.limitTouch, 5)
-        self.mygpio_handler.addEventDetect("In_Motor2LimitCW", motor2_callback_with_params, 5)
+        self.mygpio_handler.add_event_detect("In_Motor2LimitCCW", self.limit_touch, 5)
+        self.mygpio_handler.add_event_detect("In_Motor2LimitCW", motor2_callback_with_params, 5)
 
         if settings.motor1Enabled:
             self.reset(1)

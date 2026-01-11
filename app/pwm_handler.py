@@ -1,10 +1,10 @@
 class PWMHandler:
-    def __init__(self, GPIO, GPIOnum, frequency=5000, duty_cycle=100):
-        self.GPIOnum = GPIOnum
+    def __init__(self, GPIO, gpio_num, frequency=5000, duty_cycle=100):
+        self.gpio_num = gpio_num
         self.frequency = frequency
         self.duty_cycle = duty_cycle
 
-        self.pwm = GPIO.PWM(self.GPIOnum, self.frequency)
+        self.pwm = GPIO.PWM(self.gpio_num, self.frequency)
         self.pwm.start(self.duty_cycle)
 
     def set_duty_cycle(self, duty_cycle):
