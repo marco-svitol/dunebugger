@@ -1,8 +1,7 @@
-import asyncio
 import json
 from dunebugger_logging import enable_queue_logging, logger
 from dunebugger_settings import settings
-
+from version import get_version_info
 
 class MessagingQueueHandler:
     """Class to handle messaging queue operations."""
@@ -51,6 +50,10 @@ class MessagingQueueHandler:
                 await self.send_sequence_state()
             elif subject in ["heartbeat"]:
                 await self.dispatch_message("alive", "heartbeat", "remote")
+            elif subject in ["get_version"]:
+                #TODO : make use of reply field more consistently in mqueue handling
+                recipient = mqueue_message.reply if mqueue_message.reply else message_json.get("source")
+                await self.handle_get_version(recipient)
             elif subject in ["frontend_command"]:
                 command = message_json["body"]
                 if command in ["get_modes_list"]:
@@ -108,6 +111,9 @@ class MessagingQueueHandler:
 
     async def send_sequence(self, sequence="play"):
         await self.dispatch_message(self.sequence_handler.get_sequence(sequence), "sequence", "remote")
+
+    async def handle_get_version(self, recipient):
+        await self.dispatch_message(get_version_info(), "version_info", recipient)
 
     async def dispatch_message(self, message_body, subject, recipient, reply_subject=None):
         # Only send message if mqueue_sender is available (NATS is enabled)

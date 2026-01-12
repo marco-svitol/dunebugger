@@ -10,7 +10,7 @@ import subprocess
 import re
 import json
 from pathlib import Path
-
+from dunebugger_settings import settings
 
 def _load_from_version_file():
     """
@@ -146,6 +146,7 @@ else:
 def get_version_info():
     """Return a dictionary with complete version information."""
     return {
+        "component": settings.mQueueClientID,
         "version": __version__,
         "build": __build__,
         "commit": __commit__,
