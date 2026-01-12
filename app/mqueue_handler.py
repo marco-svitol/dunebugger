@@ -115,7 +115,7 @@ class MessagingQueueHandler:
     async def handle_get_version(self, recipient):
         await self.dispatch_message(get_version_info(), "version_info", recipient)
 
-    async def dispatch_message(self, message_body, subject, recipient, reply_subject=None):
+    async def dispatch_message(self, message_body, subject, recipient, reply_to=None):
         # Only send message if mqueue_sender is available (NATS is enabled)
         if self.mqueue_sender is None:
             logger.debug(f"NATS disabled - not sending message. Subject: {subject}, Recipient: {recipient}")
@@ -126,4 +126,4 @@ class MessagingQueueHandler:
             "subject": subject,
             "source": settings.mQueueClientID,
         }
-        await self.mqueue_sender.send(message, recipient, reply_subject)
+        await self.mqueue_sender.send(message, recipient, reply_to)
