@@ -1,3 +1,10 @@
+## 1.0.0-beta.1 (2026-01-12)
+
+
+### Features
+
+* implement semantic versioning for project artifacts ([#48](https://github.com/marco-svitol/dunebugger/issues/48)) ([5cdcaa7](https://github.com/marco-svitol/dunebugger/commit/5cdcaa7ab2d22b87ca67003e6516f7a418fe8e18))
+
 # Changelog
 
 All notable changes to this project will be documented in this file.
