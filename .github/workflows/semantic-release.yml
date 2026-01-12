@@ -127,7 +127,6 @@ jobs:
               requirements.txt \
               VERSION \
               CHANGELOG.md \
-              README.md \
               ReadMe.md
             
             # Generate SHA256 checksum
