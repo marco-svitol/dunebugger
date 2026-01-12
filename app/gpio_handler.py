@@ -102,7 +102,7 @@ class GPIOHandler:
             # Return None if the value is not found
         return None
 
-    def __extract_variable_info(solf, expression):
+    def __extract_variable_info(self, expression):
         """
         Extract variable name and index from an expression of the form 'variable[index]'.
 

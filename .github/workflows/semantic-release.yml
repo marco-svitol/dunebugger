@@ -1,0 +1,181 @@
+name: Semantic Release
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install semantic-release and plugins
+        run: |
+          npm install -g \
+            semantic-release@23 \
+            @semantic-release/git@10 \
+            @semantic-release/github@10 \
+            @semantic-release/changelog@6 \
+            @semantic-release/exec@6 \
+            conventional-changelog-conventionalcommits@7
+
+      - name: Create .releaserc.json
+        run: |
+          cat > .releaserc.json << 'EOF'
+          {
+            "branches": [
+              "+([0-9])?(.{+([0-9]),x}).x",
+              "main",
+              {
+                "name": "develop",
+                "prerelease": "beta"
+              }
+            ],
+            "plugins": [
+              [
+                "@semantic-release/commit-analyzer",
+                {
+                  "preset": "conventionalcommits",
+                  "releaseRules": [
+                    {"type": "feat", "release": "minor"},
+                    {"type": "fix", "release": "patch"},
+                    {"type": "perf", "release": "patch"},
+                    {"type": "revert", "release": "patch"},
+                    {"type": "docs", "release": "patch"},
+                    {"type": "style", "release": "patch"},
+                    {"type": "refactor", "release": "patch"},
+                    {"type": "test", "release": "patch"},
+                    {"type": "build", "release": "patch"},
+                    {"type": "ci", "release": "patch"},
+                    {"type": "chore", "release": false},
+                    {"breaking": true, "release": "major"}
+                  ]
+                }
+              ],
+              [
+                "@semantic-release/release-notes-generator",
+                {
+                  "preset": "conventionalcommits"
+                }
+              ],
+              [
+                "@semantic-release/changelog",
+                {
+                  "changelogFile": "CHANGELOG.md"
+                }
+              ],
+              [
+                "@semantic-release/git",
+                {
+                  "assets": ["CHANGELOG.md"],
+                  "message": "chore(release): ${nextRelease.version}\n\n${nextRelease.notes}"
+                }
+              ],
+              "@semantic-release/github"
+            ]
+          }
+          EOF
+
+      - name: Run semantic-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx semantic-release
+
+      - name: Generate VERSION file and create release artifact
+        if: success()
+        run: |
+          # Check if a release was created
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -n "$LATEST_TAG" ]; then
+            echo "Release detected: ${LATEST_TAG}"
+            
+            # Generate VERSION file
+            ./generate_version.sh
+            
+            # Create artifact
+            VERSION=${LATEST_TAG#v}
+            ARTIFACT_NAME="dunebugger-${VERSION}.tar.gz"
+            
+            tar czf "${ARTIFACT_NAME}" \
+              --exclude='.git' \
+              --exclude='.github' \
+              --exclude='__pycache__' \
+              --exclude='*.pyc' \
+              --exclude='.venv' \
+              --exclude='*.log' \
+              --exclude='.gitignore' \
+              --exclude='.pre-commit-config.yaml' \
+              app/ \
+              requirements.txt \
+              VERSION \
+              CHANGELOG.md \
+              README.md \
+              ReadMe.md
+            
+            # Generate SHA256 checksum
+            sha256sum "${ARTIFACT_NAME}" > "${ARTIFACT_NAME}.sha256"
+            
+            echo "ARTIFACT_PATH=${ARTIFACT_NAME}" >> $GITHUB_ENV
+            echo "CHECKSUM_PATH=${ARTIFACT_NAME}.sha256" >> $GITHUB_ENV
+            echo "RELEASE_TAG=${LATEST_TAG}" >> $GITHUB_ENV
+          fi
+
+      - name: Upload artifact to GitHub Release
+        if: env.ARTIFACT_PATH != ''
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          files: |
+            ${{ env.ARTIFACT_PATH }}
+            ${{ env.CHECKSUM_PATH }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Output release info
+        id: release_info
+        run: |
+          # Check if a new tag was created
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -n "$LATEST_TAG" ]; then
+            VERSION=${LATEST_TAG#v}
+            echo "Released version: ${VERSION}"
+            echo "### Release Created :rocket:" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Version:** ${VERSION}" >> $GITHUB_STEP_SUMMARY
+            echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Artifacts Published:**" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "dunebugger-${VERSION}.tar.gz" >> $GITHUB_STEP_SUMMARY
+            echo "dunebugger-${VERSION}.tar.gz.sha256" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Updater Integration:**" >> $GITHUB_STEP_SUMMARY
+            echo "- Artifacts available via GitHub Releases API" >> $GITHUB_STEP_SUMMARY
+            echo "- Includes VERSION file (no git needed)" >> $GITHUB_STEP_SUMMARY
+            echo "- SHA256 checksum for verification" >> $GITHUB_STEP_SUMMARY
+            echo "- Ready for artifact-based deployment" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "No release created"
+            echo "### No Release Created" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "No commits found that trigger a release." >> $GITHUB_STEP_SUMMARY
+          fi
