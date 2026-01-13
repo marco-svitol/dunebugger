@@ -1,3 +1,10 @@
+## [1.0.0-beta.2](https://github.com/marco-svitol/dunebugger/compare/v1.0.0-beta.1...v1.0.0-beta.2) (2026-01-13)
+
+
+### Features
+
+* automate versioning of artifacts and display version info on startup ([d3c83c7](https://github.com/marco-svitol/dunebugger/commit/d3c83c7cc9a985b4a44f4c4e5f6dc4f2a6d64b5b))
+
 ## 1.0.0-beta.1 (2026-01-12)
 
 
