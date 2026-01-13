@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 import asyncio
 
-# from dunebugger_settings import settings
+# print component version info on startup
+from version import get_version_info
+print(f"Dunebugger core version: {get_version_info()['full_version']}")
+
 from class_factory import terminal_interpreter, mqueue, state_tracker, sequence_handler, modes_handler
 from dunebugger_logging import update_queue_logging_handler_loop
 
