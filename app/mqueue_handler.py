@@ -49,7 +49,7 @@ class MessagingQueueHandler:
                 await self.send_gpio_state()
                 await self.send_sequence_state()
             elif subject in ["heartbeat"]:
-                await self.dispatch_message("alive", "heartbeat", "remote")
+                await self.dispatch_message(get_version_info(), "heartbeat", "remote")
             elif subject in ["get_version"]:
                 #TODO : make use of reply field more consistently in mqueue handling
                 recipient = mqueue_message.reply if mqueue_message.reply else message_json.get("source")
