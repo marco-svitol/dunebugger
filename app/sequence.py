@@ -258,7 +258,7 @@ class SequencesHandler:
             raise ValueError(f"Unknown sequence subcommand: '{subcommand}'. Valid subcommands: play, play_thread, stop_thread, validate, upload")
 
     def sequence_start(self, sequence_name):
-        file_path = os.path.join(self.sequenceFolder, sequence_name)
+        file_path = os.path.join(self.sequence_folder, sequence_name)
         self.read_sequence_file(file_path)
 
     def sequence_clean(self):
@@ -278,7 +278,7 @@ class SequencesHandler:
 
     def get_sequence(self, sequence_name):
         if sequence_name == "play":
-            file_path = os.path.join(self.sequenceFolder, self.play_file)
+            file_path = os.path.join(self.sequence_folder, self.play_file)
         else:
             return {"error": "Unknown sequence name"}
 
@@ -341,7 +341,7 @@ class SequencesHandler:
                 raise ValueError("Invalid filename")
             
             # Set file path (will overwrite if exists)
-            file_path = os.path.join(self.sequenceFolder, filename)
+            file_path = os.path.join(self.sequence_folder, filename)
             
             # Validate file content by creating a temporary file and testing it
             import tempfile
@@ -360,7 +360,7 @@ class SequencesHandler:
             # Create backup if file already exists
             if os.path.exists(file_path):
                 backup_filename = f"{os.path.splitext(filename)[0]}.bak"
-                backup_path = os.path.join(self.sequenceFolder, backup_filename)
+                backup_path = os.path.join(self.sequence_folder, backup_filename)
                 
                 try:
                     shutil.copy2(file_path, backup_path)

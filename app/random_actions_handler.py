@@ -50,7 +50,7 @@ class RandomActions:
 
     def random_sequence_from_file(self, file_name):
         try:
-            file_path = path.join(self.sequenceFolder, file_name)
+            file_path = path.join(self.sequence_folder, file_name)
             with open(file_path) as file:
                 self.random_elements = [line.strip() for line in file if line.strip()]
         except FileNotFoundError:
