@@ -7,3 +7,4 @@ dotenv
 load_dotenv
 schedule
 nats-py
+requests

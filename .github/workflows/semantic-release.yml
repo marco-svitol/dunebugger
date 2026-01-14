@@ -132,8 +132,12 @@ jobs:
             # Generate SHA256 checksum
             sha256sum "${ARTIFACT_NAME}" > "${ARTIFACT_NAME}.sha256"
             
+            # Copy VERSION file for standalone download
+            cp VERSION "VERSION.json"
+            
             echo "ARTIFACT_PATH=${ARTIFACT_NAME}" >> $GITHUB_ENV
             echo "CHECKSUM_PATH=${ARTIFACT_NAME}.sha256" >> $GITHUB_ENV
+            echo "VERSION_PATH=VERSION.json" >> $GITHUB_ENV
             echo "RELEASE_TAG=${LATEST_TAG}" >> $GITHUB_ENV
           fi
 
@@ -145,6 +149,7 @@ jobs:
           files: |
             ${{ env.ARTIFACT_PATH }}
             ${{ env.CHECKSUM_PATH }}
+            ${{ env.VERSION_PATH }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -165,11 +170,12 @@ jobs:
             echo '```' >> $GITHUB_STEP_SUMMARY
             echo "dunebugger-${VERSION}.tar.gz" >> $GITHUB_STEP_SUMMARY
             echo "dunebugger-${VERSION}.tar.gz.sha256" >> $GITHUB_STEP_SUMMARY
+            echo "VERSION.json" >> $GITHUB_STEP_SUMMARY
             echo '```' >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "**Updater Integration:**" >> $GITHUB_STEP_SUMMARY
             echo "- Artifacts available via GitHub Releases API" >> $GITHUB_STEP_SUMMARY
-            echo "- Includes VERSION file (no git needed)" >> $GITHUB_STEP_SUMMARY
+            echo "- VERSION.json contains full version metadata with build number" >> $GITHUB_STEP_SUMMARY
             echo "- SHA256 checksum for verification" >> $GITHUB_STEP_SUMMARY
             echo "- Ready for artifact-based deployment" >> $GITHUB_STEP_SUMMARY
           else
