@@ -1,3 +1,10 @@
+## [1.0.0-beta.4](https://github.com/marco-svitol/dunebugger/compare/v1.0.0-beta.3...v1.0.0-beta.4) (2026-01-14)
+
+
+### Features
+
+* Add version update checker and related documentation ([be0443b](https://github.com/marco-svitol/dunebugger/commit/be0443bb09112e434aa6d8b5ed951e3dd2f21a92))
+
 ## [1.0.0-beta.3](https://github.com/marco-svitol/dunebugger/compare/v1.0.0-beta.2...v1.0.0-beta.3) (2026-01-14)
 
 
