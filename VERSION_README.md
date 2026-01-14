@@ -2,7 +2,7 @@
 
 ## Quick Start
 
-### For Production Deployment (No Git Required!)
+### For Production Deployment (No Git Required)
 
 ```bash
 # Step 1: On your build/CI machine (with git)
