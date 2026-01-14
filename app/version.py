@@ -17,7 +17,7 @@ def _load_from_version_file():
     Try to load version from VERSION file.
     This file should be created during deployment/release.
     
-    Returns a tuple of (version, build, commit) or None if file doesn't exist.
+    Returns a dict with version info or None if file doesn't exist.
     """
     try:
         version_file = Path(__file__).parent.parent / "VERSION"
@@ -26,14 +26,32 @@ def _load_from_version_file():
             # VERSION file can be JSON or simple text
             try:
                 data = json.loads(content)
-                return (
-                    data.get("version", "0.0.0"),
-                    data.get("build", "unknown"),
-                    data.get("commit", "unknown")
-                )
+                # New format with semantic-release alignment
+                if "full_version" in data:
+                    return {
+                        "version": data.get("version", "0.0.0"),
+                        "prerelease": data.get("prerelease"),
+                        "build_type": data.get("build_type", "unknown"),
+                        "build_number": data.get("build_number", 0),
+                        "commit": data.get("commit", "unknown"),
+                        "full_version": data.get("full_version")
+                    }
+                # Legacy format
+                else:
+                    return {
+                        "version": data.get("version", "0.0.0"),
+                        "build_type": data.get("build", "unknown"),
+                        "commit": data.get("commit", "unknown"),
+                        "full_version": f"{data.get('version', '0.0.0')}-{data.get('build', 'unknown')}"
+                    }
             except json.JSONDecodeError:
                 # Simple text format: just version number
-                return (content, "release", "unknown")
+                return {
+                    "version": content,
+                    "build_type": "release",
+                    "commit": "unknown",
+                    "full_version": content
+                }
     except Exception:
         pass
     return None
@@ -43,7 +61,7 @@ def _get_git_version():
     """
     Get version information from git tags (fallback for development).
     
-    Returns a tuple of (version, build, commit) or None if git is not available.
+    Returns a dict with version info or None if git is not available.
     """
     try:
         # Get the git repository root (go up from app/ to repo root)
@@ -80,7 +98,18 @@ def _get_git_version():
             commits_since = match.group(2)
             commit_hash = match.group(3)
             
+            # Get build number (total commit count)
+            build_number_result = subprocess.run(
+                ["git", "rev-list", "--count", "HEAD"],
+                cwd=repo_root,
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            build_number = int(build_number_result.stdout.strip()) if build_number_result.returncode == 0 else 0
+            
             # Determine version and build type
+            prerelease = None
             if '-' in version_tag:
                 # Pre-release version like 1.0.0-beta.5
                 version_parts = version_tag.split('-', 1)
@@ -89,20 +118,24 @@ def _get_git_version():
                 
                 if commits_since:
                     # Development version with commits since tag
-                    build = f"{prerelease}.dev{commits_since}"
+                    build_type = "prerelease-dev"
+                    build_suffix = f".dev{commits_since}"
                 else:
                     # Exact pre-release tag
-                    build = prerelease
+                    build_type = "prerelease"
+                    build_suffix = ""
             else:
                 # Release version like 1.0.0
                 version = version_tag
                 if commits_since:
-                    build = f"dev{commits_since}"
+                    build_type = "development"
+                    build_suffix = f".dev{commits_since}"
                 else:
-                    build = "release"
+                    build_type = "release"
+                    build_suffix = ""
             
             if is_dirty:
-                build = f"{build}.dirty"
+                build_suffix = f"{build_suffix}.dirty" if build_suffix else ".dirty"
             
             # Get short commit hash
             if commit_hash:
@@ -118,10 +151,30 @@ def _get_git_version():
                 )
                 commit = commit_result.stdout.strip() if commit_result.returncode == 0 else "unknown"
             
-            return (version, build, commit)
+            # Construct full version string
+            if prerelease:
+                full_version = f"{version}-{prerelease}{build_suffix}"
+            elif build_suffix:
+                full_version = f"{version}{build_suffix}"
+            else:
+                full_version = version
+            
+            return {
+                "version": version,
+                "prerelease": prerelease,
+                "build_type": build_type,
+                "build_number": build_number,
+                "commit": commit,
+                "full_version": full_version
+            }
         
         # Fallback: use git describe output directly
-        return (git_describe, "unknown", "unknown")
+        return {
+            "version": git_describe,
+            "build_type": "unknown",
+            "commit": "unknown",
+            "full_version": git_describe
+        }
         
     except (subprocess.SubprocessError, FileNotFoundError, Exception):
         return None
@@ -135,20 +188,32 @@ if not _version_info:
     _version_info = _get_git_version()
 
 if _version_info:
-    __version__, __build__, __commit__ = _version_info
+    __version__ = _version_info.get("version", "0.0.0")
+    __prerelease__ = _version_info.get("prerelease")
+    __build_type__ = _version_info.get("build_type", "unknown")
+    __build_number__ = _version_info.get("build_number", 0)
+    __commit__ = _version_info.get("commit", "unknown")
+    __full_version__ = _version_info.get("full_version", __version__)
 else:
     # Final fallback when neither VERSION file nor git is available
     __version__ = "0.0.0"
-    __build__ = "unknown"
+    __prerelease__ = None
+    __build_type__ = "unknown"
+    __build_number__ = 0
     __commit__ = "unknown"
+    __full_version__ = "0.0.0-unknown"
 
 
 def get_version_info():
     """Return a dictionary with complete version information."""
-    return {
+    info = {
         "component": settings.mQueueClientID,
         "version": __version__,
-        "build": __build__,
+        "build_type": __build_type__,
+        "build_number": __build_number__,
         "commit": __commit__,
-        "full_version": f"{__version__}-{__build__}+{__commit__[:7]}" if __commit__ != "unknown" else f"{__version__}-{__build__}"
+        "full_version": __full_version__
     }
+    if __prerelease__:
+        info["prerelease"] = __prerelease__
+    return info

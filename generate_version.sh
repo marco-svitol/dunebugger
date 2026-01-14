@@ -27,21 +27,30 @@ if [[ "$VERSION" =~ ^v?([0-9]+\.[0-9]+\.[0-9]+)(-beta\.([0-9]+))?(-([0-9]+)-g([0
     COMMIT_HASH="${BASH_REMATCH[6]}"
     DIRTY="${BASH_REMATCH[7]}"
     
-    # Determine build type
+    # Get build number (total commit count)
+    BUILD_NUMBER=$(git rev-list --count HEAD 2>/dev/null || echo "0")
+    
+    # Determine build type and prerelease identifier
+    PRERELEASE=""
     if [ -n "$BETA" ]; then
+        PRERELEASE="beta.${BETA}"
         if [ -n "$COMMITS_SINCE" ]; then
-            BUILD="beta.${BETA}.dev${COMMITS_SINCE}"
+            BUILD_TYPE="prerelease-dev"
+            BUILD_SUFFIX=".dev${COMMITS_SINCE}"
         else
-            BUILD="beta.${BETA}"
+            BUILD_TYPE="prerelease"
+            BUILD_SUFFIX=""
         fi
     elif [ -n "$COMMITS_SINCE" ]; then
-        BUILD="dev${COMMITS_SINCE}"
+        BUILD_TYPE="development"
+        BUILD_SUFFIX=".dev${COMMITS_SINCE}"
     else
-        BUILD="release"
+        BUILD_TYPE="release"
+        BUILD_SUFFIX=""
     fi
     
     if [ -n "$DIRTY" ]; then
-        BUILD="${BUILD}.dirty"
+        BUILD_SUFFIX="${BUILD_SUFFIX}.dirty"
     fi
     
     if [ -n "$COMMIT_HASH" ]; then
@@ -50,19 +59,44 @@ if [[ "$VERSION" =~ ^v?([0-9]+\.[0-9]+\.[0-9]+)(-beta\.([0-9]+))?(-([0-9]+)-g([0
 else
     # Fallback
     BASE_VERSION="$VERSION"
-    BUILD="unknown"
+    BUILD_TYPE="unknown"
+    BUILD_SUFFIX=""
+    BUILD_NUMBER="0"
+fi
+
+# Construct the build identifier (semantic-release compatible)
+if [ -n "$PRERELEASE" ]; then
+    # Prerelease: e.g., "beta.1" or "beta.1.dev2"
+    BUILD="${PRERELEASE}${BUILD_SUFFIX}"
+    FULL_VERSION="${BASE_VERSION}-${BUILD}"
+else
+    # Release or development: e.g., "release" or "dev2"
+    if [ "$BUILD_TYPE" = "development" ]; then
+        BUILD="dev${COMMITS_SINCE}${BUILD_SUFFIX}"
+        FULL_VERSION="${BASE_VERSION}-${BUILD}"
+    else
+        BUILD="release${BUILD_SUFFIX}"
+        if [ "$BUILD_SUFFIX" = "" ]; then
+            FULL_VERSION="${BASE_VERSION}"
+        else
+            FULL_VERSION="${BASE_VERSION}-${BUILD}"
+        fi
+    fi
 fi
 
 # Create JSON VERSION file
 cat > "$VERSION_FILE" <<EOF
 {
   "version": "$BASE_VERSION",
-  "build": "$BUILD",
-  "commit": "$COMMIT"
+  "prerelease": "${PRERELEASE:-null}",
+  "build_type": "$BUILD_TYPE",
+  "build_number": $BUILD_NUMBER,
+  "commit": "$COMMIT",
+  "full_version": "$FULL_VERSION"
 }
 EOF
 
 echo "VERSION file created:"
 cat "$VERSION_FILE"
 echo ""
-echo "Version: $BASE_VERSION-$BUILD+$COMMIT"
+echo "Full version: $FULL_VERSION (build #$BUILD_NUMBER)"
