@@ -1,13 +1,11 @@
 """
 Version information for dunebugger.
 
-Version is read from a VERSION file if it exists (production deployment),
-otherwise falls back to git tags (development).
+Version is read from a VERSION file.
+Generate the VERSION file using ./generate_version.sh before running the application.
 The version follows semantic versioning (MAJOR.MINOR.PATCH).
 """
 
-import subprocess
-import re
 import json
 from pathlib import Path
 from dunebugger_settings import settings
@@ -57,135 +55,8 @@ def _load_from_version_file():
     return None
 
 
-def _get_git_version():
-    """
-    Get version information from git tags (fallback for development).
-    
-    Returns a dict with version info or None if git is not available.
-    """
-    try:
-        # Get the git repository root (go up from app/ to repo root)
-        repo_root = Path(__file__).parent.parent
-        
-        # Run git describe to get version information
-        result = subprocess.run(
-            ["git", "describe", "--tags", "--always", "--dirty"],
-            cwd=repo_root,
-            capture_output=True,
-            text=True,
-            timeout=5
-        )
-        
-        if result.returncode != 0:
-            return None
-            
-        git_describe = result.stdout.strip()
-        
-        # Parse the output
-        # Format: v1.0.0-beta.5 or v1.0.0-beta.5-3-g2a4b8c9 or v1.0.0-beta.5-dirty
-        # Pattern: (tag)-(commits_since)-(commit_hash)-(dirty)
-        
-        # Check if dirty
-        is_dirty = git_describe.endswith("-dirty")
-        if is_dirty:
-            git_describe = git_describe[:-6]  # Remove -dirty suffix
-        
-        # Try to parse structured tag format
-        match = re.match(r'^v?(.+?)(?:-(\d+)-g([0-9a-f]+))?$', git_describe)
-        
-        if match:
-            version_tag = match.group(1)
-            commits_since = match.group(2)
-            commit_hash = match.group(3)
-            
-            # Get build number (total commit count)
-            build_number_result = subprocess.run(
-                ["git", "rev-list", "--count", "HEAD"],
-                cwd=repo_root,
-                capture_output=True,
-                text=True,
-                timeout=5
-            )
-            build_number = int(build_number_result.stdout.strip()) if build_number_result.returncode == 0 else 0
-            
-            # Determine version and build type
-            prerelease = None
-            if '-' in version_tag:
-                # Pre-release version like 1.0.0-beta.5
-                version_parts = version_tag.split('-', 1)
-                version = version_parts[0]
-                prerelease = version_parts[1]
-                
-                if commits_since:
-                    # Development version with commits since tag
-                    build_type = "prerelease-dev"
-                    build_suffix = f".dev{commits_since}"
-                else:
-                    # Exact pre-release tag
-                    build_type = "prerelease"
-                    build_suffix = ""
-            else:
-                # Release version like 1.0.0
-                version = version_tag
-                if commits_since:
-                    build_type = "development"
-                    build_suffix = f".dev{commits_since}"
-                else:
-                    build_type = "release"
-                    build_suffix = ""
-            
-            if is_dirty:
-                build_suffix = f"{build_suffix}.dirty" if build_suffix else ".dirty"
-            
-            # Get short commit hash
-            if commit_hash:
-                commit = commit_hash
-            else:
-                # Get current commit if we're exactly on a tag
-                commit_result = subprocess.run(
-                    ["git", "rev-parse", "--short", "HEAD"],
-                    cwd=repo_root,
-                    capture_output=True,
-                    text=True,
-                    timeout=5
-                )
-                commit = commit_result.stdout.strip() if commit_result.returncode == 0 else "unknown"
-            
-            # Construct full version string
-            if prerelease:
-                full_version = f"{version}-{prerelease}{build_suffix}"
-            elif build_suffix:
-                full_version = f"{version}{build_suffix}"
-            else:
-                full_version = version
-            
-            return {
-                "version": version,
-                "prerelease": prerelease,
-                "build_type": build_type,
-                "build_number": build_number,
-                "commit": commit,
-                "full_version": full_version
-            }
-        
-        # Fallback: use git describe output directly
-        return {
-            "version": git_describe,
-            "build_type": "unknown",
-            "commit": "unknown",
-            "full_version": git_describe
-        }
-        
-    except (subprocess.SubprocessError, FileNotFoundError, Exception):
-        return None
-
-
-# Try to get version from VERSION file first (production)
+# Load version from VERSION file
 _version_info = _load_from_version_file()
-
-# Fall back to git for development
-if not _version_info:
-    _version_info = _get_git_version()
 
 if _version_info:
     __version__ = _version_info.get("version", "0.0.0")

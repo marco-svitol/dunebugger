@@ -1,94 +1,71 @@
 #!/bin/bash
-# Generate VERSION file for production deployment
-# This creates a JSON file with version information that doesn't require git
+# Generate VERSION file from git tags with semantic versioning
+# This script creates a JSON file with complete version metadata
 
 set -e
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-VERSION_FILE="${SCRIPT_DIR}/VERSION"
+# Get build number from total commit count
+BUILD_NUMBER=$(git rev-list --count HEAD 2>/dev/null || echo "0")
 
-echo "Generating VERSION file..."
+# Get git describe output
+GIT_DESCRIBE=$(git describe --tags --always --dirty 2>/dev/null || echo "v0.0.0-dev${BUILD_NUMBER}")
 
-# Check if git is available
-if ! command -v git &> /dev/null; then
-    echo "Error: git is required to generate VERSION file"
-    exit 1
+# Check for dirty working directory
+DIRTY=""
+if [[ "$GIT_DESCRIBE" == *"-dirty" ]]; then
+    DIRTY=".dirty"
+    GIT_DESCRIBE="${GIT_DESCRIBE%-dirty}"
 fi
 
-# Get version from git
-VERSION=$(git describe --tags --always 2>/dev/null || echo "0.0.0-unknown")
+# Extract short commit hash
 COMMIT=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 
-# Parse version
-if [[ "$VERSION" =~ ^v?([0-9]+\.[0-9]+\.[0-9]+)(-beta\.([0-9]+))?(-([0-9]+)-g([0-9a-f]+))?(-dirty)?$ ]]; then
-    BASE_VERSION="${BASH_REMATCH[1]}"
-    BETA="${BASH_REMATCH[3]}"
+# Parse git describe output
+# Format: v1.0.0-beta.3 or v1.0.0-beta.3-2-gc6e425e
+if [[ "$GIT_DESCRIBE" =~ ^v?([0-9]+\.[0-9]+\.[0-9]+)(-([a-zA-Z0-9.]+))?(-([0-9]+)-g([0-9a-f]+))?$ ]]; then
+    VERSION="${BASH_REMATCH[1]}"
+    PRERELEASE="${BASH_REMATCH[3]}"
     COMMITS_SINCE="${BASH_REMATCH[5]}"
-    COMMIT_HASH="${BASH_REMATCH[6]}"
-    DIRTY="${BASH_REMATCH[7]}"
     
-    # Get build number (total commit count)
-    BUILD_NUMBER=$(git rev-list --count HEAD 2>/dev/null || echo "0")
-    
-    # Determine build type and prerelease identifier
-    PRERELEASE=""
-    if [ -n "$BETA" ]; then
-        PRERELEASE="beta.${BETA}"
-        if [ -n "$COMMITS_SINCE" ]; then
+    # Determine build type and full version
+    if [ -n "$COMMITS_SINCE" ] && [ "$COMMITS_SINCE" -gt 0 ]; then
+        # Development build (commits after tag)
+        if [ -n "$PRERELEASE" ]; then
             BUILD_TYPE="prerelease-dev"
-            BUILD_SUFFIX=".dev${COMMITS_SINCE}"
+            FULL_VERSION="${VERSION}-${PRERELEASE}.dev${COMMITS_SINCE}${DIRTY}"
         else
+            BUILD_TYPE="development"
+            FULL_VERSION="${VERSION}.dev${COMMITS_SINCE}${DIRTY}"
+        fi
+    else
+        # On a tag
+        if [ -n "$PRERELEASE" ]; then
             BUILD_TYPE="prerelease"
-            BUILD_SUFFIX=""
-        fi
-    elif [ -n "$COMMITS_SINCE" ]; then
-        BUILD_TYPE="development"
-        BUILD_SUFFIX=".dev${COMMITS_SINCE}"
-    else
-        BUILD_TYPE="release"
-        BUILD_SUFFIX=""
-    fi
-    
-    if [ -n "$DIRTY" ]; then
-        BUILD_SUFFIX="${BUILD_SUFFIX}.dirty"
-    fi
-    
-    if [ -n "$COMMIT_HASH" ]; then
-        COMMIT="$COMMIT_HASH"
-    fi
-else
-    # Fallback
-    BASE_VERSION="$VERSION"
-    BUILD_TYPE="unknown"
-    BUILD_SUFFIX=""
-    BUILD_NUMBER="0"
-fi
-
-# Construct the build identifier (semantic-release compatible)
-if [ -n "$PRERELEASE" ]; then
-    # Prerelease: e.g., "beta.1" or "beta.1.dev2"
-    BUILD="${PRERELEASE}${BUILD_SUFFIX}"
-    FULL_VERSION="${BASE_VERSION}-${BUILD}"
-else
-    # Release or development: e.g., "release" or "dev2"
-    if [ "$BUILD_TYPE" = "development" ]; then
-        BUILD="dev${COMMITS_SINCE}${BUILD_SUFFIX}"
-        FULL_VERSION="${BASE_VERSION}-${BUILD}"
-    else
-        BUILD="release${BUILD_SUFFIX}"
-        if [ "$BUILD_SUFFIX" = "" ]; then
-            FULL_VERSION="${BASE_VERSION}"
+            FULL_VERSION="${VERSION}-${PRERELEASE}${DIRTY}"
         else
-            FULL_VERSION="${BASE_VERSION}-${BUILD}"
+            BUILD_TYPE="release"
+            FULL_VERSION="${VERSION}${DIRTY}"
         fi
     fi
+else
+    # Fallback for no tags
+    VERSION="0.0.0"
+    PRERELEASE=""
+    BUILD_TYPE="development"
+    FULL_VERSION="0.0.0-dev${BUILD_NUMBER}${DIRTY}"
 fi
 
-# Create JSON VERSION file
-cat > "$VERSION_FILE" <<EOF
+# Create VERSION JSON file
+if [ -n "$PRERELEASE" ]; then
+    PRERELEASE_JSON="\"$PRERELEASE\""
+else
+    PRERELEASE_JSON="null"
+fi
+
+cat > VERSION <<EOF
 {
-  "version": "$BASE_VERSION",
-  "prerelease": "${PRERELEASE:-null}",
+  "version": "$VERSION",
+  "prerelease": $PRERELEASE_JSON,
   "build_type": "$BUILD_TYPE",
   "build_number": $BUILD_NUMBER,
   "commit": "$COMMIT",
@@ -96,7 +73,5 @@ cat > "$VERSION_FILE" <<EOF
 }
 EOF
 
-echo "VERSION file created:"
-cat "$VERSION_FILE"
-echo ""
-echo "Full version: $FULL_VERSION (build #$BUILD_NUMBER)"
+echo "Generated VERSION file:"
+cat VERSION
