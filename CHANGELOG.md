@@ -1,3 +1,10 @@
+## [1.0.0-beta.3](https://github.com/marco-svitol/dunebugger/compare/v1.0.0-beta.2...v1.0.0-beta.3) (2026-01-14)
+
+
+### Features
+
+* new versioning scheme without commit hash ([aa9a89a](https://github.com/marco-svitol/dunebugger/commit/aa9a89a8a31a6b788f081926cfa5ec44f8f57d14))
+
 ## [1.0.0-beta.2](https://github.com/marco-svitol/dunebugger/compare/v1.0.0-beta.1...v1.0.0-beta.2) (2026-01-13)
 
 
