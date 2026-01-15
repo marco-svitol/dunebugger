@@ -1,3 +1,10 @@
+## [1.0.0-beta.6](https://github.com/marco-svitol/dunebugger/compare/v1.0.0-beta.5...v1.0.0-beta.6) (2026-01-15)
+
+
+### Features
+
+* simplify version info ([43f1f83](https://github.com/marco-svitol/dunebugger/commit/43f1f83b0dfb7b4ecadaef85e141b7e2ddccf2d1))
+
 ## [1.0.0-beta.5](https://github.com/marco-svitol/dunebugger/compare/v1.0.0-beta.4...v1.0.0-beta.5) (2026-01-15)
 
 
