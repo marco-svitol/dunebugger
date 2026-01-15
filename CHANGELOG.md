@@ -1,3 +1,14 @@
+## [1.0.0-beta.5](https://github.com/marco-svitol/dunebugger/compare/v1.0.0-beta.4...v1.0.0-beta.5) (2026-01-15)
+
+
+### ⚠ BREAKING CHANGES
+
+* simplify versioning and remove update checker
+
+### Features
+
+* simplify versioning and remove update checker ([a2360f5](https://github.com/marco-svitol/dunebugger/commit/a2360f5e0efc8082182f187281131a3835196b18))
+
 ## [1.0.0-beta.4](https://github.com/marco-svitol/dunebugger/compare/v1.0.0-beta.3...v1.0.0-beta.4) (2026-01-14)
 
 
