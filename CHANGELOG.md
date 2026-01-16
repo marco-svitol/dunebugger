@@ -1,3 +1,10 @@
+## [1.0.0-beta.7](https://github.com/marco-svitol/dunebugger/compare/v1.0.0-beta.6...v1.0.0-beta.7) (2026-01-16)
+
+
+### Bug Fixes
+
+* update dunebugger configuration for new folder structure ([deb2465](https://github.com/marco-svitol/dunebugger/commit/deb24654263e34fcc79105e0b7f67c029dbae9d8))
+
 ## [1.0.0-beta.6](https://github.com/marco-svitol/dunebugger/compare/v1.0.0-beta.5...v1.0.0-beta.6) (2026-01-15)
 
 
